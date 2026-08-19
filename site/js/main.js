@@ -223,8 +223,13 @@ function renderVehicle(t) {
 
   const gallery = imgs.length ? `
     <div class="vdp-gallery">
-      <img class="vdp-main" id="vdpMain" src="${imgs[0]}" alt="${escapeHtml(title)}">
-      ${imgs.length > 1 ? `<div class="vdp-thumbs">${imgs.map((im, i) => `<img class="vdp-thumb ${i === 0 ? 'active' : ''}" src="${im}" data-src="${im}" alt="">`).join('')}</div>` : ''}
+      <div class="vdp-main-wrap">
+        <img class="vdp-main" id="vdpMain" src="${imgs[0]}" alt="${escapeHtml(title)}">
+        ${imgs.length > 1 ? `<button class="vdp-nav vdp-prev" data-dir="-1" aria-label="Previous image">‹</button>
+        <button class="vdp-nav vdp-next" data-dir="1" aria-label="Next image">›</button>
+        <span class="vdp-count" id="vdpCount">1 / ${imgs.length}</span>` : ''}
+      </div>
+      ${imgs.length > 1 ? `<div class="vdp-thumbs">${imgs.map((im, i) => `<img class="vdp-thumb ${i === 0 ? 'active' : ''}" src="${im}" data-idx="${i}" alt="">`).join('')}</div>` : ''}
     </div>` : '<div class="vdp-noimg">📷</div>';
 
   // Full vehicle details (dealership-style label:value list)
@@ -302,13 +307,21 @@ function renderVehicle(t) {
     </section>
   `;
 
-  // Thumbnail click → swap main image
+  // Image carousel: prev/next buttons + thumbnail click
+  let cur = 0;
+  const showImage = (i) => {
+    if (!imgs.length) return;
+    cur = (i + imgs.length) % imgs.length;
+    document.getElementById('vdpMain').src = imgs[cur];
+    const count = document.getElementById('vdpCount');
+    if (count) count.textContent = `${cur + 1} / ${imgs.length}`;
+    document.querySelectorAll('.vdp-thumb').forEach((x, idx) => x.classList.toggle('active', idx === cur));
+  };
   document.querySelectorAll('.vdp-thumb').forEach((thumb) => {
-    thumb.addEventListener('click', () => {
-      document.getElementById('vdpMain').src = thumb.dataset.src;
-      document.querySelectorAll('.vdp-thumb').forEach((x) => x.classList.remove('active'));
-      thumb.classList.add('active');
-    });
+    thumb.addEventListener('click', () => showImage(parseInt(thumb.dataset.idx, 10)));
+  });
+  document.querySelectorAll('.vdp-nav').forEach((btn) => {
+    btn.addEventListener('click', () => showImage(cur + parseInt(btn.dataset.dir, 10)));
   });
 
   // Forms → simple success message (no backend yet)
@@ -383,12 +396,17 @@ function wirePaymentCalculator(price) {
   update();
 }
 
-// ─── Nav scroll effect ─────────────────────────────────────
+// ─── Nav scroll effect + mobile menu ──────────────────────
 function initNav() {
   const nav = document.getElementById('nav');
   const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 40);
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
+
+  const toggle = document.getElementById('navToggle');
+  if (toggle) toggle.addEventListener('click', () => nav.classList.toggle('open'));
+  // Close the mobile menu when a link is tapped
+  nav.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => nav.classList.remove('open')));
 }
 
 // ─── Reveal on scroll ──────────────────────────────────────

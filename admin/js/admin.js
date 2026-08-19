@@ -300,48 +300,80 @@ function openImagesModal(id) {
     </div>
     <div class="modal-actions">
       <button class="btn btn-primary" id="downloadImgsBtn">⬇ Download all (${imgs.length})</button>
-      <button class="btn btn-ghost" id="uploadImgsBtn">⬆ Upload edited images</button>
+      <button class="btn btn-ghost" id="uploadImgsBtn">⬆ Upload images</button>
+      <button class="btn btn-ghost" id="uploadFolderBtn">📁 Upload folder</button>
       <button class="btn btn-ghost" data-close>Close</button>
     </div>
   `;
   modal.classList.add('open');
 
-  // Bulk download: fetch each image and save as a zip-less set (browser downloads each)
+  // Bulk download → bundle every image into a folder ZIP (single download).
+  // Images are fetched through the worker's CORS proxy (/api/image) because
+  // images.edealer.ca doesn't send CORS headers.
   document.getElementById('downloadImgsBtn').addEventListener('click', async () => {
-    for (let i = 0; i < imgs.length; i++) {
-      try {
-        const res = await fetch(imgs[i]);
+    const btn = document.getElementById('downloadImgsBtn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ Downloading…';
+    try {
+      if (typeof JSZip === 'undefined') throw new Error('JSZip not loaded');
+      const zip = new JSZip();
+      const folder = zip.folder(`${id}-images`);
+      let ok = 0;
+      for (let i = 0; i < imgs.length; i++) {
+        const src = imgs[i];
+        const proxyUrl = `${API_BASE}/api/image?url=${encodeURIComponent(src)}`;
+        const res = await fetch(proxyUrl);
+        if (!res.ok) continue;
         const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${id}-${i + 1}.jpg`;
-        a.click();
-        URL.revokeObjectURL(url);
-        await new Promise((r) => setTimeout(r, 300));
-      } catch (e) { console.warn(`Image ${i} failed`, e); }
+        const ext = (src.match(/\.(jpg|jpeg|png|webp|gif)/i) || ['', 'jpg'])[1].toLowerCase();
+        folder.file(`${i + 1}.${ext}`, blob);
+        ok++;
+      }
+      if (!ok) throw new Error('no images fetched');
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(zipBlob);
+      a.download = `${id}-images.zip`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      btn.textContent = `✓ Downloaded ${ok} images`;
+    } catch (e) {
+      alert('Download failed: ' + e.message);
+      btn.textContent = originalText;
+    } finally {
+      btn.disabled = false;
     }
   });
 
-  // Re-upload edited images: file picker → store as data URLs in customImages
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.multiple = true;
-  document.getElementById('uploadImgsBtn').addEventListener('click', () => input.click());
-  input.addEventListener('change', async () => {
-    const files = [...input.files];
-    if (!files.length) return;
+  // Upload: accepts either hand-picked files or an entire folder.
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.multiple = true;
+
+  const folderInput = document.createElement('input');
+  folderInput.type = 'file';
+  folderInput.accept = 'image/*';
+  folderInput.multiple = true;
+  folderInput.webkitdirectory = true;
+
+  document.getElementById('uploadImgsBtn').addEventListener('click', () => fileInput.click());
+  document.getElementById('uploadFolderBtn').addEventListener('click', () => folderInput.click());
+
+  const handleFiles = async (files) => {
+    const imgs = [...files].filter((f) => f.type && f.type.startsWith('image/'));
+    if (!imgs.length) { alert('No image files found.'); return; }
     const dataUrls = [];
-    for (const f of files) {
-      dataUrls.push(await fileToDataURL(f));
-    }
+    for (const f of imgs) dataUrls.push(await fileToDataURL(f));
     if (await updateTruck(id, { customImages: dataUrls })) {
       closeModal();
       loadTrucks();
       alert(`Uploaded ${dataUrls.length} image(s). They're now on the listing.`);
     }
-  });
+  };
+  fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+  folderInput.addEventListener('change', () => handleFiles(folderInput.files));
 }
 
 function fileToDataURL(file) {

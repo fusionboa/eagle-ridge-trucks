@@ -300,6 +300,28 @@ export default {
       }
     }
 
+    // PUBLIC: image proxy — lets the admin fetch dealer-hosted images that lack
+    // CORS headers (needed for ZIP downloads + editing).
+    if (path === '/api/image' && request.method === 'GET') {
+      const target = new URL(request.url).searchParams.get('url');
+      if (!target || !/^https?:\/\//i.test(target)) return json({ error: 'url param required' }, 400);
+      try {
+        const resp = await fetch(target, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        if (!resp.ok) return json({ error: 'image fetch failed: ' + resp.status }, 502);
+        const contentType = resp.headers.get('content-type') || 'image/jpeg';
+        const body = await resp.arrayBuffer();
+        return new Response(body, {
+          headers: {
+            'Content-Type': contentType,
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'public, max-age=86400',
+          },
+        });
+      } catch (e) {
+        return json({ error: 'image fetch failed' }, 502);
+      }
+    }
+
     // PUBLIC: single listed truck (vehicle detail page)
     if (path.startsWith('/api/trucks/') && request.method === 'GET') {
       const id = decodeURIComponent(path.slice('/api/trucks/'.length));

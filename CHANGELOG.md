@@ -258,3 +258,23 @@
 
 ### Note
 - Pollinations' free text API now returns 402 (deprecated for free use), so Workers AI was the right free choice — it lives on our existing Cloudflare stack and needs no key.
+
+## v0.3.2 — Responsive + image carousel + ZIP/folder upload (Aug 19, 2026)
+
+**Jaden:** make the site adapt to phones; the listing image is "massive and hard to see" (add next/prev buttons); the admin "download all images" button doesn't work (make it download a folder); allow uploading a whole folder of images.
+
+### Changes
+- **`worker/index.js` — `/api/image` proxy:** dealer images (`images.edealer.ca`) don't send CORS headers, so the browser can't fetch them for a ZIP. The worker now proxies `GET /api/image?url=...` (fetches server-side, returns with `Access-Control-Allow-Origin: *`).
+- **Admin — bulk download as a folder ZIP:** added **JSZip** (CDN) + rewrote the download button to fetch every image through the proxy, bundle them into `{stock}-images.zip`, and download once. Verified: "✓ Downloaded 13 images".
+- **Admin — folder upload:** new "📁 Upload folder" button uses a `webkitdirectory` file input so you can pick a whole folder of edited images at once (still stored as data-URLs in `customImages`).
+- **VDP — image carousel:** prev/next arrow buttons + "1 / 20" counter; thumbnail click also navigates. Main image switched from `object-fit: cover` to `contain` with `max-height: 62vh` so the whole vehicle is visible (no more "massive/hard to see").
+- **Responsive:**
+  - Fixed a CSS grid `min-width` overflow bug (main image was rendering 2110px wide → horizontal scroll) with `min-width: 0` on the grid columns.
+  - Added a **mobile nav hamburger** (☰) to all three pages — links collapse into a dropdown on ≤900px.
+  - Confirmed list cards stack vertically, no horizontal overflow on a 390px phone viewport.
+
+### Verified (headless Chrome)
+- VDP: prev/next present, counter `1 / 20` → `2 / 20` on click, image `contain`, width 662px (no overflow) ✅
+- Mobile (390px): nav toggle visible + opens menu, cards stack, `scrollWidth == viewport` ✅
+- Admin: JSZip loaded, modal shows Download/Upload images/Upload folder, download completes → "✓ Downloaded 13 images" ✅
+- `/api/image` proxy returns the image (200, image/jpeg, CORS `*`) ✅
