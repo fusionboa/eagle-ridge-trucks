@@ -279,6 +279,19 @@
 - Admin: JSZip loaded, modal shows Download/Upload images/Upload folder, download completes → "✓ Downloaded 13 images" ✅
 - `/api/image` proxy returns the image (200, image/jpeg, CORS `*`) ✅
 
+## v0.4.1 — Cover photo picker + remove financing calculator (Aug 19, 2026)
+
+**Jaden:** add an option to change a listing's cover photo in the admin, and remove the financing thing on the listing.
+
+### Changes
+- **Admin — cover photo picker:** in the Images modal, the current cover shows a gold "⭐ Cover" badge; every other image has a "Set cover" button on hover. Clicking it moves that image to the front of `customImages` (cover = first image) and saves, updating the site + admin rows instantly.
+- **Site — financing removed:** dropped the payment calculator (`Unlock Payment Options` section) from the VDP; removed `paymentCalculatorHTML`/`computePayment`/`wirePaymentCalculator` and the `.pay-*` CSS.
+- Also cleaned a leftover em-dash in the admin Images modal title ("Images: …").
+
+### Verified (headless Chrome)
+- VDP: no "Unlock Payment Options" / "Financing" / "Estimated payment", 0 errors ✅
+- Admin Images modal: 1 "⭐ Cover" badge + 12 "Set cover" buttons on a 13-photo truck ✅
+
 ## v0.4.0 — Rebrand to dangm.ca + cars & trucks + phone contact (Aug 19, 2026)
 
 **Jaden:** rename to **dangm.ca**, show **cars and trucks** (not just trucks), contact is by **calling 605-735-1396**, and remove all the " — " em-dashes ("really AI-like and unprofessional").

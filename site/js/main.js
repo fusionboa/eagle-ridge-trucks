@@ -286,7 +286,6 @@ function renderVehicle(t) {
           ${features.map((f) => `<li class="feature"><span class="feature-check">✓</span>${escapeHtml(f)}</li>`).join('')}
         </ul>
       </section>` : ''}
-    ${paymentCalculatorHTML(priceNum(t.price))}
     <section class="vdp-contact" id="vdp-contact">
       <div class="section-head">
         <p class="eyebrow">Get in touch</p>
@@ -316,67 +315,6 @@ function renderVehicle(t) {
   document.querySelectorAll('.vdp-nav').forEach((btn) => {
     btn.addEventListener('click', () => showImage(cur + parseInt(btn.dataset.dir, 10)));
   });
-
-  wirePaymentCalculator(priceNum(t.price));
-}
-
-// ─── Payment calculator ────────────────────────────────────
-function paymentCalculatorHTML(price) {
-  if (!price || price <= 0) return '';
-  return `
-    <section class="vdp-payment">
-      <div class="section-head">
-        <p class="eyebrow">Financing</p>
-        <h2 class="section-title">Unlock Payment Options</h2>
-      </div>
-      <div class="pay-card">
-        <div class="pay-grid">
-          <label class="pay-field"><span>Down Payment</span><input type="number" id="payDown" value="0" min="0"></label>
-          <label class="pay-field"><span>Term (months)</span><input type="number" id="payTerm" value="72" min="12" max="96"></label>
-          <label class="pay-field"><span>Interest Rate %</span><input type="number" id="payRate" value="4.9" min="0" step="0.1"></label>
-          <label class="pay-field"><span>Frequency</span>
-            <select id="payFreq">
-              <option value="12">Monthly</option>
-              <option value="26" selected>Bi-weekly</option>
-              <option value="52">Weekly</option>
-            </select>
-          </label>
-        </div>
-        <div class="pay-result">
-          <span class="pay-result-label">Estimated payment</span>
-          <span class="pay-result-value" id="payAmount">$0</span>
-          <span class="pay-result-freq" id="payFreqLabel">bi-weekly</span>
-        </div>
-        <p class="pay-disclaimer">For illustration only. Taxes, fees and licence extra. OAC.</p>
-      </div>
-    </section>`;
-}
-
-function computePayment(price, down, termMonths, rate, freq) {
-  const amount = Math.max(0, price - down);
-  if (amount <= 0) return 0;
-  const r = (rate / 100) / freq;
-  const n = Math.max(1, Math.round((termMonths / 12) * freq));
-  if (r === 0) return amount / n;
-  return (amount * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-}
-
-function wirePaymentCalculator(price) {
-  const el = document.getElementById('payAmount');
-  if (!el) return;
-  const inputs = ['payDown', 'payTerm', 'payRate', 'payFreq'].map((id) => document.getElementById(id));
-  const freqLabels = { 12: 'monthly', 26: 'bi-weekly', 52: 'weekly' };
-  const update = () => {
-    const down = parseFloat(inputs[0].value) || 0;
-    const term = parseFloat(inputs[1].value) || 72;
-    const rate = parseFloat(inputs[2].value) || 0;
-    const freq = parseInt(inputs[3].value, 10) || 26;
-    const pmt = computePayment(price, down, term, rate, freq);
-    el.textContent = `$${Math.round(pmt).toLocaleString()}`;
-    document.getElementById('payFreqLabel').textContent = freqLabels[freq] || 'bi-weekly';
-  };
-  inputs.forEach((inp) => inp.addEventListener('input', update));
-  update();
 }
 
 // ─── Nav scroll effect + mobile menu ──────────────────────

@@ -633,46 +633,6 @@ section { padding: 110px 24px; }
 .vdp-form input:focus, .vdp-form textarea:focus { border-color: var(--accent); }
 .vdp-form .btn { width: 100%; }
 
-/* ─── Payment calculator ─────────────────────────────────── */
-.vdp-payment { margin-top: 64px; }
-.pay-card {
-  max-width: 720px;
-  margin: 0 auto;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 32px;
-}
-.pay-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; }
-.pay-field { display: flex; flex-direction: column; gap: 8px; }
-.pay-field span { color: var(--text-muted); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
-.pay-field input, .pay-field select {
-  background: var(--bg-2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 12px 16px;
-  border-radius: 10px;
-  font-size: 15px;
-  outline: none;
-  transition: border-color 0.3s;
-}
-.pay-field input:focus, .pay-field select:focus { border-color: var(--accent); }
-.pay-result {
-  margin-top: 28px;
-  padding: 26px;
-  background: var(--bg-2);
-  border-radius: 12px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-.pay-result-label { color: var(--text-muted); font-size: 13px; }
-.pay-result-value { font-size: 42px; font-weight: 800; color: var(--accent); }
-.pay-result-freq { color: var(--text-muted); font-size: 13px; }
-.pay-disclaimer { text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 16px; }
-
 @media (max-width: 900px) {
   .nav-links {
     display: none;

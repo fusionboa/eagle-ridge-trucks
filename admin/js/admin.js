@@ -289,13 +289,16 @@ function openImagesModal(id) {
   const title = [truck.year, truck.make, truck.model].filter(Boolean).join(' ') || truck.id;
 
   body.innerHTML = `
-    <h2>Images — ${title}</h2>
+    <h2>Images: ${title}</h2>
     <p class="hint">Download the originals, edit them (remove branding / enhance) in Gemini, then upload the edited versions back.</p>
     <div class="img-grid">
       ${imgs.map((im, i) => `
         <div class="img-cell">
           <img src="${im}" alt="">
           <span class="img-idx">#${i + 1}</span>
+          ${i === 0
+            ? '<span class="img-cover-badge" title="Cover photo">⭐ Cover</span>'
+            : `<button class="img-cover-btn" data-cover="${i}" title="Make this the cover photo">Set cover</button>`}
           <button class="img-copy" data-copy="${i}" title="Copy this image to clipboard">📋 Copy</button>
         </div>`).join('')}
     </div>
@@ -331,6 +334,21 @@ function openImagesModal(id) {
         btn.textContent = '⚠';
       } finally {
         setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1200);
+      }
+    });
+  });
+
+  // Set cover: the first image in customImages is the cover photo. Moving a
+  // chosen image to the front changes the cover on the site + admin instantly.
+  document.querySelectorAll('.img-cover-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const idx = Number(btn.dataset.cover);
+      const list = [...imgs];
+      const [img] = list.splice(idx, 1);
+      list.unshift(img);
+      if (await updateTruck(id, { customImages: list })) {
+        await loadTrucks();
+        openImagesModal(id);
       }
     });
   });

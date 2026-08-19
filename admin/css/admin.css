@@ -227,6 +227,26 @@ body {
 }
 .img-cell:hover .img-copy { opacity: 1; }
 .img-copy:hover { background: var(--accent); color: #0b0e11; }
+.img-cover-badge {
+  position: absolute; top: 8px; right: 8px;
+  background: var(--accent);
+  color: #0b0e11;
+  font-size: 11px; font-weight: 700;
+  padding: 3px 8px; border-radius: 999px;
+}
+.img-cover-btn {
+  position: absolute; top: 8px; right: 8px;
+  background: rgba(11,14,17,0.85);
+  color: #fff;
+  border: none;
+  font-size: 11px; font-weight: 600;
+  padding: 4px 9px; border-radius: 8px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.img-cell:hover .img-cover-btn { opacity: 1; }
+.img-cover-btn:hover { background: var(--accent); color: #0b0e11; }
 
 /* ─── Responsive ──────────────────────────────────────────── */
 @media (max-width: 720px) {
