@@ -410,10 +410,9 @@ async function sync() {
           method: 'POST',
           headers: { 'X-Bridge-Token': CONFIG.bridgeToken, 'X-Desc-Cap': '10' },
         });
-        if (descRes.ok) {
-          const dr = await descRes.json();
-          if (dr.generated) console.log(`   ✨ Generated ${dr.generated} AI description(s)`);
-        }
+        const dr = await descRes.json().catch(() => ({}));
+        if (dr.generated) console.log(`   ✨ Generated ${dr.generated} AI description(s)`);
+        else console.warn(`   ⚠️ Describe: ${descRes.status} — ${JSON.stringify(dr)}`);
       } catch (e) {
         console.warn(`   ⚠️ Describe call failed: ${e.message}`);
       }

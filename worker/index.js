@@ -239,7 +239,7 @@ async function generateDescription(env, truck) {
 Vehicle: ${title}
 ${facts ? `Key specs: ${facts}` : ''}`;
   try {
-    const result = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    const result = await env.AI.run('@cf/openai/gpt-oss-20b', {
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 250,
       temperature: 0.8,
@@ -247,6 +247,7 @@ ${facts ? `Key specs: ${facts}` : ''}`;
     const text = (result && (result.response || (result.choices && result.choices[0] && result.choices[0].message && result.choices[0].message.content))) || '';
     return String(text).trim();
   } catch (e) {
+    console.error('Workers AI error:', e && e.message ? e.message : String(e));
     return '';
   }
 }
