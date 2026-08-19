@@ -1,0 +1,17 @@
+# Secrets — never commit these
+sync/.env
+.env
+*.pem
+
+# Dependencies
+node_modules/
+
+# Local data
+data/images/
+data/sync-meta.json
+
+# Cloudflare
+.wrangler/
+
+# OS junk
+.DS_Store

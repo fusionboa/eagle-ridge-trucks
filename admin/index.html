@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eagle Ridge Trucks — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <!-- Login gate -->
+  <div class="login" id="loginGate">
+    <div class="login-card">
+      <div class="login-logo">ER</div>
+      <h1>Eagle Ridge Admin</h1>
+      <p>Sign in with your Google account to manage truck listings.</p>
+      <button class="btn btn-primary" id="googleSignIn">Sign in with Google</button>
+      <p class="login-error" id="loginError"></p>
+    </div>
+  </div>
+
+  <!-- App (hidden until authed) -->
+  <div class="app" id="app" hidden>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <span class="logo-mark">ER</span>
+          <span>Eagle Ridge Trucks <em>Admin</em></span>
+        </div>
+        <div class="topbar-right">
+          <button class="btn btn-ghost btn-sm" id="syncNowBtn">⟳ Sync now</button>
+          <button class="btn btn-ghost btn-sm" id="signOutBtn">Sign out</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="admin-body">
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card"><span class="stat-big" id="statListed">0</span><span>Listed</span></div>
+        <div class="stat-card"><span class="stat-big" id="statUnlisted">0</span><span>Unlisted</span></div>
+        <div class="stat-card"><span class="stat-big" id="statTotal">0</span><span>Total</span></div>
+        <div class="stat-card"><span class="stat-big" id="statLastSync">—</span><span>Last sync</span></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="listed">Listed</button>
+        <button class="tab" data-tab="unlisted">Unlisted</button>
+        <button class="tab" data-tab="all">All</button>
+        <button class="tab" data-tab="backups">🗄️ Backups</button>
+      </div>
+
+      <!-- Truck list -->
+      <div class="truck-list" id="truckList">
+        <div class="loading">Loading inventory...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit modal -->
+  <div class="modal" id="editModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-content">
+      <button class="modal-close" data-close>×</button>
+      <div class="modal-body" id="editBody"></div>
+    </div>
+  </div>
+
+  <!-- Firebase Auth (same project as FB Lister — same Google login) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script>
+    // Admin config — same Firebase project + auth as FB Lister
+    window.ADMIN_CONFIG = {
+      apiBase: 'https://eagle-ridge-trucks.YOUR_SUBDOMAIN.workers.dev/api',
+      firebase: {
+        apiKey: 'AIzaSyDbEay8z59i0YbCc3uICq6Do8RgWhZnm0I',
+        authDomain: 'fblisterpro.firebaseapp.com',
+        projectId: 'fblisterpro',
+        storageBucket: 'fblisterpro.firebasestorage.app',
+        messagingSenderId: '615842673259',
+        appId: '1:615842673259:web:360adf2accefc378fe372e',
+        measurementId: 'G-EMQZJL1HW2',
+      },
+    };
+  </script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

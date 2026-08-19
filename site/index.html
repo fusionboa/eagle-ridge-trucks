@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Eagle Ridge Trucks — premium trucks and pickups. New & used inventory, financing available. Visit us today.">
+  <meta name="keywords" content="trucks for sale, pickup trucks, used trucks, new trucks, Eagle Ridge, truck dealer">
+  <title>Eagle Ridge Trucks | Premium Trucks & Pickups</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="#top" class="nav-logo">
+        <span class="logo-mark">ER</span>
+        <span class="logo-text">EAGLE RIDGE <em>TRUCKS</em></span>
+      </a>
+      <div class="nav-links">
+        <a href="inventory.html">Inventory</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+      </div>
+      <a href="inventory.html" class="nav-cta">View Trucks</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="hero" id="top">
+    <div class="hero-bg" id="heroBg"></div>
+    <div class="hero-content">
+      <p class="hero-eyebrow reveal">PREMIUM TRUCKS · NEW & USED</p>
+      <h1 class="hero-title reveal">Built to haul.<br>Built to <span class="accent">last.</span></h1>
+      <p class="hero-sub reveal">Discover the toughest, most capable trucks on the lot — inspected, certified, and ready for work.</p>
+      <div class="hero-actions reveal">
+        <a href="inventory.html" class="btn btn-primary">Browse Inventory</a>
+        <a href="#contact" class="btn btn-ghost">Contact Us</a>
+      </div>
+      <div class="hero-stats reveal">
+        <div class="stat"><span class="stat-num" id="statCount">—</span><span class="stat-label">Trucks in stock</span></div>
+        <div class="stat"><span class="stat-num">100%</span><span class="stat-label">Inspected</span></div>
+        <div class="stat"><span class="stat-num">7 days</span><span class="stat-label">Money-back</span></div>
+      </div>
+    </div>
+    <div class="hero-scroll"><span>Scroll</span><div class="scroll-line"></div></div>
+  </header>
+
+  <!-- Flagship trucks (most expensive) -->
+  <section class="inventory" id="flagship">
+    <div class="section-head">
+      <p class="eyebrow">THE FLAGSHIPS</p>
+      <h2 class="section-title">Our Most Capable Trucks</h2>
+      <p class="section-sub">The top of the line — maximum power, maximum presence.</p>
+    </div>
+
+    <div class="truck-grid flagship-grid" id="truckGrid">
+      <div class="loading">Loading inventory...</div>
+    </div>
+
+    <div class="flagship-more">
+      <a href="inventory.html" class="btn btn-ghost">Browse the full collection →</a>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section class="about" id="about">
+    <div class="about-inner">
+      <div class="about-text">
+        <p class="eyebrow">WHY EAGLE RIDGE</p>
+        <h2 class="section-title">A dealership you can trust</h2>
+        <p>For years, Eagle Ridge has been the name truck owners rely on. Every vehicle is hand-inspected, certified, and backed by our team — because your truck isn't just a vehicle, it's your livelihood.</p>
+        <ul class="about-list">
+          <li>✓ Certified pre-owned inspections</li>
+          <li>✓ Financing available — on the spot</li>
+          <li>✓ Trade-ins welcome</li>
+          <li>✓ After-sales support & service</li>
+        </ul>
+      </div>
+      <div class="about-visual reveal">
+        <div class="about-card">
+          <span class="about-card-num">10+</span>
+          <span class="about-card-label">Years serving drivers</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section class="contact" id="contact">
+    <div class="section-head">
+      <p class="eyebrow">GET IN TOUCH</p>
+      <h2 class="section-title">Find your next truck</h2>
+      <p class="section-sub">Call, visit, or send us a message — we'll get you behind the wheel.</p>
+    </div>
+    <div class="contact-card">
+      <div class="contact-info">
+        <div class="contact-row"><span class="contact-label">Phone</span><a href="tel:">Call the dealership</a></div>
+        <div class="contact-row"><span class="contact-label">Hours</span><span>Mon–Sat · 9am – 6pm</span></div>
+        <div class="contact-row"><span class="contact-label">Address</span><span>Visit our lot today</span></div>
+      </div>
+      <form class="contact-form" id="contactForm">
+        <input type="text" placeholder="Your name" required>
+        <input type="tel" placeholder="Phone number" required>
+        <textarea placeholder="Which truck are you interested in?" rows="3" required></textarea>
+        <button type="submit" class="btn btn-primary">Send Message</button>
+      </form>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="logo-mark">ER</span>
+        <span class="logo-text">EAGLE RIDGE <em>TRUCKS</em></span>
+      </div>
+      <p>© <span id="year"></span> Eagle Ridge Trucks. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Truck modal -->
+  <div class="modal" id="truckModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-content" role="dialog" aria-modal="true">
+      <button class="modal-close" data-close>×</button>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "eagle-ridge-trucks-sync",
+  "version": "0.1.0",
+  "description": "FTP sync for Eagle Ridge Trucks — pulls inventory from the dealership feed and downloads images",
+  "main": "sync.js",
+  "scripts": {
+    "start": "node sync.js",
+    "once": "node sync.js --once"
+  },
+  "dependencies": {
+    "ftp": "^0.3.10",
+    "csv-parse": "^5.5.6"
+  }
+}

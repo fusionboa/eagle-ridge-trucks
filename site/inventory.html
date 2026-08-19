@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Browse our full truck inventory — new & used trucks for sale. Search by make, model, price. Eagle Ridge Trucks.">
+  <meta name="keywords" content="trucks for sale, pickup trucks, used trucks, new trucks, Eagle Ridge, truck dealer, truck inventory">
+  <title>Truck Inventory | Eagle Ridge Trucks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="page-inventory">
+  <!-- Navigation -->
+  <nav class="nav scrolled" id="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">
+        <span class="logo-mark">ER</span>
+        <span class="logo-text">EAGLE RIDGE <em>TRUCKS</em></span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="inventory.html" class="active">Inventory</a>
+        <a href="index.html#about">About</a>
+        <a href="index.html#contact">Contact</a>
+      </div>
+      <a href="#inventory" class="nav-cta">View Trucks</a>
+    </div>
+  </nav>
+
+  <!-- Page hero -->
+  <header class="page-hero" id="top">
+    <div class="page-hero-bg"></div>
+    <div class="page-hero-content">
+      <p class="hero-eyebrow reveal visible">FULL INVENTORY</p>
+      <h1 class="page-hero-title reveal visible">The Collection</h1>
+      <p class="page-hero-sub reveal visible">Every truck on our lot — inspected, certified, and ready to work.</p>
+    </div>
+  </header>
+
+  <!-- Inventory -->
+  <section class="inventory" id="inventory">
+    <div class="filters">
+      <div class="filter-group">
+        <input type="text" id="searchInput" class="filter-search" placeholder="Search make, model, or trim...">
+      </div>
+      <div class="filter-group">
+        <select id="makeFilter" class="filter-select">
+          <option value="">All Makes</option>
+        </select>
+        <select id="sortFilter" class="filter-select">
+          <option value="newest">Newest first</option>
+          <option value="price-low">Price: low to high</option>
+          <option value="price-high">Price: high to low</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="truck-grid" id="truckGrid">
+      <div class="loading">Loading inventory...</div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="logo-mark">ER</span>
+        <span class="logo-text">EAGLE RIDGE <em>TRUCKS</em></span>
+      </div>
+      <p>© <span id="year"></span> Eagle Ridge Trucks. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Truck modal -->
+  <div class="modal" id="truckModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-content" role="dialog" aria-modal="true">
+      <button class="modal-close" data-close>×</button>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    // Page mode: this is the FULL inventory page
+    window.SITE_PAGE = 'inventory';
+  </script>
+  <script src="js/main.js"></script>
+</body>
+</html>

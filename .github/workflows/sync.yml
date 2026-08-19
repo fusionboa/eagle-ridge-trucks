@@ -1,0 +1,37 @@
+name: Truck Feed Sync
+
+# Runs the FTP → Worker sync on GitHub's free servers, every hour.
+# No Pixel, no always-on machine needed.
+
+on:
+  schedule:
+    - cron: '0 * * * *'     # every hour
+  workflow_dispatch:        # allow manual "Run workflow" from GitHub UI
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install sync deps
+        working-directory: sync
+        run: npm ci --no-audit --no-fund
+
+      - name: Run FTP sync → push to worker
+        working-directory: sync
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+          FTP_PATH: ${{ secrets.FTP_PATH }}
+          CSV_FILE: ${{ secrets.CSV_FILE }}
+          WORKER_URL: ${{ secrets.WORKER_URL }}
+          BRIDGE_TOKEN: ${{ secrets.BRIDGE_TOKEN }}
+        run: node sync.js --once
