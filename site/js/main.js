@@ -1,25 +1,21 @@
 // ============================================================
 // Eagle Ridge Trucks — Storefront JS
-// Loads trucks from the API, renders the grid with animations,
-// handles search/filter/sort, and the truck detail modal.
+// Loads trucks from the API, renders the inventory list (dealership-
+// style horizontal cards), the home flagship grid, and the vehicle
+// detail page (VDP) with a payment calculator.
 // ============================================================
 
-// Where the site gets its data. In production this is the Cloudflare
-// Worker URL; when testing locally it can point at the local data file.
-// API_BASE is the worker root (no trailing /api) — the fetch below appends its own path.
+// API_BASE is the worker root (no trailing /api) — fetches append their own path.
 const API_BASE = (window.SITE_CONFIG?.apiBase || '').replace(/\/+$/, '');
 const DATA_FALLBACK = 'data/trucks.json';
 
-// Which page are we on?
-//   'home'      → index.html: show only the most expensive trucks (flagships)
-//   'inventory' → inventory.html: show ALL listed trucks with filters
+// Page mode: 'home' | 'inventory' | 'vehicle'
 const PAGE = window.SITE_PAGE || 'home';
-// How many flagships to show on the home page
 const FLAGSHIP_COUNT = 3;
 
 let allTrucks = [];
 
-// ─── Load trucks ───────────────────────────────────────────
+// ─── Load trucks (home + inventory) ────────────────────────
 async function loadTrucks() {
   try {
     const res = await fetch(`${API_BASE}/trucks`);
@@ -27,7 +23,6 @@ async function loadTrucks() {
     const data = await res.json();
     allTrucks = normalizeTrucks(Array.isArray(data) ? data : data.trucks || []);
   } catch (e) {
-    // Fallback: read the local JSON (for local testing without the worker)
     try {
       const res = await fetch(DATA_FALLBACK);
       const data = await res.json();
@@ -40,46 +35,82 @@ async function loadTrucks() {
   updateStatCount();
 }
 
-// Normalize + only show listed trucks on the public site
+// ─── Load a single vehicle (VDP) ───────────────────────────
+async function loadVehicle() {
+  const id = new URLSearchParams(location.search).get('id');
+  const el = document.getElementById('vehicleContent');
+  if (!id) {
+    el.innerHTML = '<div class="empty">No vehicle specified. <a href="inventory.html">Browse inventory</a></div>';
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/trucks/${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error('not found');
+    const data = await res.json();
+    const t = normalizeTrucks([data.truck])[0];
+    if (!t) throw new Error('not found');
+    renderVehicle(t);
+  } catch (e) {
+    el.innerHTML = '<div class="empty">Vehicle not found. <a href="inventory.html">Browse inventory</a></div>';
+  }
+}
+
+// Keep every field; just normalize the image list.
 function normalizeTrucks(trucks) {
   return trucks
     .filter((t) => t && t.listed !== false)
     .map((t) => ({
-      id: t.id || t.stock || '',
-      year: t.year || '',
-      make: t.make || '',
-      model: t.model || '',
-      trim: t.trim || '',
-      price: t.price || '',
-      mileage: t.mileage || '',
-      bodyStyle: t.bodyStyle || '',
-      exteriorColor: t.exteriorColor || '',
-      interiorColor: t.interiorColor || '',
-      fuelType: t.fuelType || '',
-      transmission: t.transmission || '',
-      drivetrain: t.drivetrain || '',
-      engine: t.engine || '',
-      description: t.description || '',
-      aiDescription: t.aiDescription || '',
+      ...t,
       images: (t.customImages && t.customImages.length ? t.customImages : t.images || []).map(resolveImage),
     }));
 }
 
-// Resolve image paths (local files or full URLs)
 function resolveImage(img) {
   if (/^https?:\/\//i.test(img)) return img;
-  return `data/${img}`; // relative to the site
+  return `data/${img}`;
 }
 
-// ─── Render ────────────────────────────────────────────────
+// Shared price helper ("34544 CAD" → 34544)
+function priceNum(p) {
+  const n = parseFloat(String(p).replace(/[^0-9.]/g, ''));
+  return isNaN(n) ? -Infinity : n;
+}
+function formatPrice(p) {
+  const n = priceNum(p);
+  return n <= 0 ? 'Call for price' : `$${n.toLocaleString()}`;
+}
+
+// ─── Attribute tags (the dealership pill-style spec chips) ──
+function buildTags(t) {
+  const tags = [];
+  if (t.mileage) tags.push(`${Number(t.mileage).toLocaleString()} km`);
+  if (t.bodyStyle) tags.push(t.bodyStyle);
+  if (t.transmission) tags.push(t.transmission);
+  if (t.drivetrain) tags.push(t.drivetrain);
+  if (t.engine) tags.push(t.engine);
+  if (t.fuelType) tags.push(t.fuelType);
+  if (t.exteriorColor) tags.push(t.exteriorColor);
+  return tags;
+}
+function tagsHTML(t, extraClass = '') {
+  const tags = buildTags(t);
+  if (!tags.length) return '';
+  return `<div class="tags ${extraClass}">${tags.map((x) => `<span class="tag">${escapeHtml(x)}</span>`).join('')}</div>`;
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
+// ─── Render (home vs inventory) ────────────────────────────
 function renderAll() {
   if (PAGE === 'home') {
-    // Home page: top N most expensive trucks
     const byPrice = [...allTrucks].sort((a, b) => priceNum(b.price) - priceNum(a.price));
     renderGrid(byPrice.slice(0, FLAGSHIP_COUNT), true);
     return;
   }
-  // Inventory page: full list with filters
   populateMakes();
   const filtered = applyFilters(allTrucks);
   renderGrid(filtered);
@@ -87,9 +118,10 @@ function renderAll() {
 
 function populateMakes() {
   const select = document.getElementById('makeFilter');
+  if (!select) return;
   const makes = [...new Set(allTrucks.map((t) => t.make).filter(Boolean))].sort();
   select.innerHTML = '<option value="">All Makes</option>' +
-    makes.map((m) => `<option value="${m}">${m}</option>`).join('');
+    makes.map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
 }
 
 function applyFilters(list) {
@@ -111,101 +143,184 @@ function applyFilters(list) {
   return out;
 }
 
-// Shared price helper (also used by the home page flagship sort)
-function priceNum(p) {
-  const n = parseFloat(String(p).replace(/[^0-9.]/g, ''));
-  return isNaN(n) ? -Infinity : n;
-}
-
+// ─── Grid / cards ──────────────────────────────────────────
 function renderGrid(list, isFlagship) {
   const grid = document.getElementById('truckGrid');
   if (!list.length) {
     grid.innerHTML = '<div class="empty">No trucks match your search.</div>';
     return;
   }
-  grid.innerHTML = list.map((t, i) => cardHTML(t, i)).join('');
-  // Trigger reveal animations
+  grid.innerHTML = list.map((t, i) => cardHTML(t, i, isFlagship)).join('');
   requestAnimationFrame(() => {
     grid.querySelectorAll('.truck-card').forEach((c) => c.classList.add('in-view'));
   });
-  // Attach click handlers
-  grid.querySelectorAll('.truck-card').forEach((card, idx) => {
-    card.addEventListener('click', () => openModal(list[idx]));
-  });
 }
 
-function cardHTML(t, i) {
+function cardHTML(t, i, isFlagship) {
   const img = t.images[0] || '';
   const title = [t.year, t.make, t.model, t.trim].filter(Boolean).join(' ');
-  const price = t.price ? `$${priceNum(t.price).toLocaleString()}` : 'Call for price';
-  return `
-    <article class="truck-card reveal" style="transition-delay:${Math.min(i * 0.05, 0.4)}s">
-      <div class="truck-card-img-wrap">
-        ${img ? `<img class="truck-card-img" src="${img}" alt="${title}" loading="lazy">` : '<div class="truck-card-img"></div>'}
-        ${t.bodyStyle ? `<span class="truck-badge">${t.bodyStyle}</span>` : ''}
-      </div>
-      <div class="truck-card-body">
-        <h3 class="truck-card-title">${title}</h3>
-        <p class="truck-card-sub">${t.exteriorColor || ''} · ${t.mileage ? `${Number(t.mileage).toLocaleString()} km` : ''}</p>
-        <div class="truck-card-price">${price}</div>
-        <div class="truck-card-meta">
-          ${t.transmission ? `<span>⚙️ ${t.transmission}</span>` : ''}
-          ${t.drivetrain ? `<span>🔗 ${t.drivetrain}</span>` : ''}
-          ${t.fuelType ? `<span>⛽ ${t.fuelType}</span>` : ''}
+  const price = formatPrice(t.price);
+  const href = `vehicle.html?id=${encodeURIComponent(t.id)}`;
+
+  if (isFlagship) {
+    // Home page — vertical flagship card
+    return `
+      <a class="truck-card reveal" href="${href}" style="transition-delay:${Math.min(i * 0.05, 0.4)}s">
+        <div class="truck-card-img-wrap">
+          ${img ? `<img class="truck-card-img" src="${img}" alt="${escapeHtml(title)}" loading="lazy">` : '<div class="truck-card-img"></div>'}
+          ${t.bodyStyle ? `<span class="truck-badge">${escapeHtml(t.bodyStyle)}</span>` : ''}
         </div>
+        <div class="truck-card-body">
+          <h3 class="truck-card-title">${escapeHtml(title)}</h3>
+          <p class="truck-card-sub">${escapeHtml(t.exteriorColor || '')}${t.exteriorColor && t.mileage ? ' · ' : ''}${t.mileage ? `${Number(t.mileage).toLocaleString()} km` : ''}</p>
+          <div class="truck-card-price">${escapeHtml(price)}</div>
+          ${tagsHTML(t)}
+          <span class="truck-card-cta">View Details →</span>
+        </div>
+      </a>`;
+  }
+
+  // Inventory page — horizontal list card (image left, details right)
+  return `
+    <a class="truck-card truck-card-list reveal" href="${href}" style="transition-delay:${Math.min(i * 0.04, 0.3)}s">
+      <div class="truck-card-img-wrap list-img">
+        ${img ? `<img class="truck-card-img" src="${img}" alt="${escapeHtml(title)}" loading="lazy">` : '<div class="truck-card-img"></div>'}
+        ${t.bodyStyle ? `<span class="truck-badge">${escapeHtml(t.bodyStyle)}</span>` : ''}
       </div>
-    </article>`;
+      <div class="truck-card-body list-body">
+        <div class="list-top">
+          <div class="list-info">
+            <h3 class="truck-card-title">${escapeHtml(title)}</h3>
+            <p class="truck-card-sub">Stock #${escapeHtml(t.id)}</p>
+          </div>
+          <div class="list-price">
+            <div class="truck-card-price">${escapeHtml(price)}</div>
+            <span class="truck-card-cta">View Details →</span>
+          </div>
+        </div>
+        ${tagsHTML(t)}
+      </div>
+    </a>`;
 }
 
-// ─── Modal ─────────────────────────────────────────────────
-function openModal(t) {
-  const modal = document.getElementById('truckModal');
-  const body = document.getElementById('modalBody');
+// ─── Vehicle detail page (VDP) ─────────────────────────────
+function renderVehicle(t) {
   const title = [t.year, t.make, t.model, t.trim].filter(Boolean).join(' ');
-  const price = t.price ? `$${priceNum(t.price).toLocaleString()}` : 'Call for price';
+  const price = formatPrice(t.price);
+  const imgs = (t.images || []).filter(Boolean);
+  const desc = t.aiDescription || t.description || '';
 
-  // Gallery (first image large, rest as thumbs)
-  const imgs = t.images.filter(Boolean);
   const gallery = imgs.length ? `
-    <div class="modal-gallery">
-      <img class="modal-main-img" id="modalMainImg" src="${imgs[0]}" alt="${title}">
-      ${imgs.length > 1 ? `<div class="modal-thumbs">${imgs.slice(1).map((im, i) => `<img class="modal-thumb" src="${im}" data-src="${im}" alt="">`).join('')}</div>` : ''}
-    </div>` : '';
+    <div class="vdp-gallery">
+      <img class="vdp-main" id="vdpMain" src="${imgs[0]}" alt="${escapeHtml(title)}">
+      ${imgs.length > 1 ? `<div class="vdp-thumbs">${imgs.map((im, i) => `<img class="vdp-thumb ${i === 0 ? 'active' : ''}" src="${im}" data-src="${im}" alt="">`).join('')}</div>` : ''}
+    </div>` : '<div class="vdp-noimg">📷</div>';
 
   const specs = [
-    ['Year', t.year], ['Make', t.make], ['Model', t.model], ['Trim', t.trim],
-    ['Body', t.bodyStyle], ['Color', t.exteriorColor], ['Interior', t.interiorColor],
     ['Mileage', t.mileage ? `${Number(t.mileage).toLocaleString()} km` : ''],
-    ['Transmission', t.transmission], ['Drivetrain', t.drivetrain],
-    ['Fuel', t.fuelType], ['Engine', t.engine], ['Stock', t.id],
+    ['Body Style', t.bodyStyle],
+    ['Transmission', t.transmission],
+    ['Drivetrain', t.drivetrain],
+    ['Engine', t.engine],
+    ['Fuel Type', t.fuelType],
+    ['Exterior Color', t.exteriorColor],
+    ['Interior Color', t.interiorColor],
+    ['Stock #', t.id],
+    ['VIN', t.vin],
   ].filter(([, v]) => v);
 
-  body.innerHTML = `
-    ${gallery}
-    <h2 class="modal-title">${title}</h2>
-    <div class="modal-price">${price}</div>
-    <div class="modal-specs">
-      ${specs.map(([k, v]) => `<div class="modal-spec"><div class="modal-spec-label">${k}</div><div class="modal-spec-value">${v}</div></div>`).join('')}
+  document.getElementById('vehicleContent').innerHTML = `
+    <div class="vdp-hero">
+      <a href="inventory.html" class="vdp-back">← Back to inventory</a>
+      <h1 class="vdp-title">${escapeHtml(title)}</h1>
+      <div class="vdp-price">${escapeHtml(price)}</div>
+      ${tagsHTML(t, 'vdp-tags')}
     </div>
-    ${(t.aiDescription || t.description) ? `<p class="modal-desc">${t.aiDescription || t.description}</p>` : ''}
-    <a href="#contact" class="btn btn-primary modal-cta" data-close>Enquire about this truck</a>
+    <div class="vdp-layout">
+      <div class="vdp-gallery-col">${gallery}</div>
+      <div class="vdp-info-col">
+        <div class="vdp-specs">
+          ${specs.map(([k, v]) => `<div class="vdp-spec"><div class="vdp-spec-label">${k}</div><div class="vdp-spec-value">${escapeHtml(v)}</div></div>`).join('')}
+        </div>
+        ${desc ? `<div class="vdp-desc"><h2>About this vehicle</h2><p>${escapeHtml(desc)}</p></div>` : ''}
+        <div class="vdp-actions">
+          <a href="index.html#contact" class="btn btn-primary">Confirm Availability</a>
+          <a href="index.html#contact" class="btn btn-ghost">Request More Info</a>
+        </div>
+      </div>
+    </div>
+    ${paymentCalculatorHTML(priceNum(t.price))}
   `;
 
-  // Thumb click → swap main image
-  body.querySelectorAll('.modal-thumb').forEach((thumb) => {
+  // Thumbnail click → swap main image
+  document.querySelectorAll('.vdp-thumb').forEach((thumb) => {
     thumb.addEventListener('click', () => {
-      document.getElementById('modalMainImg').src = thumb.dataset.src;
+      document.getElementById('vdpMain').src = thumb.dataset.src;
+      document.querySelectorAll('.vdp-thumb').forEach((x) => x.classList.remove('active'));
+      thumb.classList.add('active');
     });
   });
 
-  modal.classList.add('open');
-  document.body.style.overflow = 'hidden';
+  wirePaymentCalculator(priceNum(t.price));
 }
 
-function closeModal() {
-  const modal = document.getElementById('truckModal');
-  modal.classList.remove('open');
-  document.body.style.overflow = '';
+// ─── Payment calculator ────────────────────────────────────
+function paymentCalculatorHTML(price) {
+  if (!price || price <= 0) return '';
+  return `
+    <section class="vdp-payment">
+      <div class="section-head">
+        <p class="eyebrow">Financing</p>
+        <h2 class="section-title">Unlock Payment Options</h2>
+      </div>
+      <div class="pay-card">
+        <div class="pay-grid">
+          <label class="pay-field"><span>Down Payment</span><input type="number" id="payDown" value="0" min="0"></label>
+          <label class="pay-field"><span>Term (months)</span><input type="number" id="payTerm" value="72" min="12" max="96"></label>
+          <label class="pay-field"><span>Interest Rate %</span><input type="number" id="payRate" value="4.9" min="0" step="0.1"></label>
+          <label class="pay-field"><span>Frequency</span>
+            <select id="payFreq">
+              <option value="12">Monthly</option>
+              <option value="26" selected>Bi-weekly</option>
+              <option value="52">Weekly</option>
+            </select>
+          </label>
+        </div>
+        <div class="pay-result">
+          <span class="pay-result-label">Estimated payment</span>
+          <span class="pay-result-value" id="payAmount">—</span>
+          <span class="pay-result-freq" id="payFreqLabel">bi-weekly</span>
+        </div>
+        <p class="pay-disclaimer">For illustration only. Taxes, fees and licence extra. OAC.</p>
+      </div>
+    </section>`;
+}
+
+function computePayment(price, down, termMonths, rate, freq) {
+  const amount = Math.max(0, price - down);
+  if (amount <= 0) return 0;
+  const r = (rate / 100) / freq;
+  const n = Math.max(1, Math.round((termMonths / 12) * freq));
+  if (r === 0) return amount / n;
+  return (amount * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+}
+
+function wirePaymentCalculator(price) {
+  const el = document.getElementById('payAmount');
+  if (!el) return;
+  const inputs = ['payDown', 'payTerm', 'payRate', 'payFreq'].map((id) => document.getElementById(id));
+  const freqLabels = { 12: 'monthly', 26: 'bi-weekly', 52: 'weekly' };
+  const update = () => {
+    const down = parseFloat(inputs[0].value) || 0;
+    const term = parseFloat(inputs[1].value) || 72;
+    const rate = parseFloat(inputs[2].value) || 0;
+    const freq = parseInt(inputs[3].value, 10) || 26;
+    const pmt = computePayment(price, down, term, rate, freq);
+    el.textContent = `$${Math.round(pmt).toLocaleString()}`;
+    document.getElementById('payFreqLabel').textContent = freqLabels[freq] || 'bi-weekly';
+  };
+  inputs.forEach((inp) => inp.addEventListener('input', update));
+  update();
 }
 
 // ─── Nav scroll effect ─────────────────────────────────────
@@ -216,7 +331,7 @@ function initNav() {
   onScroll();
 }
 
-// ─── Reveal on scroll (IntersectionObserver) ───────────────
+// ─── Reveal on scroll ──────────────────────────────────────
 function initReveals() {
   const io = new IntersectionObserver((entries) => {
     entries.forEach((e) => {
@@ -229,32 +344,27 @@ function initReveals() {
   document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
 }
 
-// ─── Stat count ────────────────────────────────────────────
 function updateStatCount() {
   const el = document.getElementById('statCount');
   if (el) el.textContent = allTrucks.length;
 }
 
-// ─── Wire up events ────────────────────────────────────────
+// ─── Boot ──────────────────────────────────────────────────
 function init() {
   initNav();
-  initReveals();
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  // Inventory page filters only
+  if (PAGE === 'vehicle') {
+    loadVehicle();
+    return;
+  }
+
   if (PAGE === 'inventory') {
     ['searchInput', 'makeFilter', 'sortFilter'].forEach((id) => {
       document.getElementById(id).addEventListener('input', renderAll);
     });
   }
 
-  // Modal close
-  document.getElementById('truckModal').addEventListener('click', (e) => {
-    if (e.target.hasAttribute('data-close')) closeModal();
-  });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
-
-  // Contact form (simple success message) — only exists on the home page
   const contactForm = document.getElementById('contactForm');
   if (contactForm) contactForm.addEventListener('submit', (e) => {
     e.preventDefault();

@@ -271,6 +271,20 @@ export default {
       }
     }
 
+    // PUBLIC: single listed truck (vehicle detail page)
+    if (path.startsWith('/api/trucks/') && request.method === 'GET') {
+      const id = decodeURIComponent(path.slice('/api/trucks/'.length));
+      try {
+        const row = await db.prepare('SELECT data FROM trucks WHERE id = ?').bind(id).first();
+        if (!row) return json({ error: 'Not found' }, 404);
+        const truck = JSON.parse(row.data);
+        if (truck.listed !== true) return json({ error: 'Not found' }, 404);
+        return json({ truck });
+      } catch (e) {
+        return json({ error: 'DB error: ' + e.message }, 500);
+      }
+    }
+
     // BRIDGE: enrichment state (id → engine/aiDescription) so the sync job can
     // skip VIN-decoding / AI-description work it already did.
     if (path === '/api/bridge/state' && request.method === 'GET') {

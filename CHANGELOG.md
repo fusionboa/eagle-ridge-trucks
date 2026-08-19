@@ -208,3 +208,34 @@
 ### Verified (computed style, not DOM)
 - `/inventory` and `/` both now show the card at **computed `opacity: 1`**, `visible: true`, price `$34,544` ✅
 - 0 console errors ✅
+
+## v0.3.0 — Dealership-style layout + Vehicle Detail Page (Aug 19, 2026)
+
+**Jaden's request:** copy the layout from Eagle Ridge GM's real site (he saved the VLP + VDP HTML from the dealership) — how they show cars — but keep our dark/gold luxury look. Clicking a listing should open a dedicated page, not a modal.
+
+### New layout
+- **Inventory list → horizontal cards** (image left, details right), mirroring the dealership's VLP:
+  - Title (year make model trim) + Stock #
+  - Big gold price
+  - **Attribute tag pills** (the dealership's spec chips): mileage, body style, transmission, drivetrain, engine, fuel, exterior colour
+  - "View Details →" CTA
+  - Whole card is a link → `vehicle.html?id=<stock>`
+- **New Vehicle Detail Page (`site/vehicle.html`)** — replaces the old detail modal:
+  - Hero title + price + tags
+  - Image gallery (main + thumbnail strip, click-to-swap)
+  - Full spec grid (mileage, body, transmission, drivetrain, engine, fuel, colours, stock #, VIN)
+  - "About this vehicle" description (AI `aiDescription` → falls back to feed `description`)
+  - CTAs: Confirm Availability / Request More Info (→ home contact form)
+  - **Payment calculator** (the dealership's "Unlock Payment Options"): down payment, term, interest rate, frequency (weekly/bi-weekly/monthly) → live estimated payment (standard amortization formula)
+- **Home flagships** now also link to the VDP and show tags + CTA.
+
+### Supporting changes
+- **`worker/index.js`** — new public `GET /api/trucks/:id` (single *listed* truck) for the VDP.
+- **`main.js`** — `PAGE === 'vehicle'` mode (`loadVehicle`/`renderVehicle`), `buildTags()`/`tagsHTML()` tag chips, `paymentCalculatorHTML()`/`computePayment()`, cards link to the VDP instead of opening a modal. Modal code + modal divs removed from the two HTML pages.
+- **`styles.css`** — list-card, tag pill, VDP, and payment-calculator styles + responsive fallbacks.
+
+### Verified (headless Chrome)
+- Inventory: horizontal card, `opacity: 1`, tags `[10 km, SUV, AUTOMATIC, FWD, In-Line 3-cyl (L3T), GASOLINE, White]`, href → `vehicle.html?id=13969015` ✅
+- VDP: title/price/gallery (20 thumbs)/9 specs/AI description/payment calc all render; default $256 bi-weekly → $219 after $5,000 down ✅
+- Home flagships still render + link to VDP ✅
+- 0 console errors across all three pages ✅
