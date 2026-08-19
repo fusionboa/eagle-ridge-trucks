@@ -290,7 +290,8 @@
 ### Changes
 - **Admin — "💾 Save images (N)" button** (primary action in the Images modal, replaces "Copy all"): writes the **actual image files** into a folder you pick via the File System Access API (`showDirectoryPicker`, Chrome/Edge). You end up with `01.jpg`, `02.jpg`, … real files in a folder — ready to copy/drag into Gemini.
 - **Fallback — "⬇ Download ZIP"**: browsers without `showDirectoryPicker` (Firefox/Safari) still get the ZIP of real images.
-- Extracted shared helpers `fetchImageBlob()` (proxy fetch) + `extOf()`.
+- **Hover-to-copy each image:** every thumbnail now shows a "📋 Copy" button on hover — clicking copies that **single image to the clipboard as a real PNG** (single-image clipboard copy IS supported by Chrome; only copying many images at once isn't). This pastes straight into Gemini, the true "Ctrl+C an image" behaviour.
+- Extracted shared helpers `fetchImageBlob()` (proxy fetch), `extOf()`, and `toPngBlob()` (JPEG→PNG for the clipboard).
 
 ### Verified
 - Deployed live — `admin.js` uses `saveImgsBtn` + `showDirectoryPicker`, old `copyImgsBtn` gone ✅

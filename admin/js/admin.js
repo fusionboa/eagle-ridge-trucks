@@ -296,6 +296,7 @@ function openImagesModal(id) {
         <div class="img-cell">
           <img src="${im}" alt="">
           <span class="img-idx">#${i + 1}</span>
+          <button class="img-copy" data-copy="${i}" title="Copy this image to clipboard">📋 Copy</button>
         </div>`).join('')}
     </div>
     <div class="modal-actions">
@@ -307,6 +308,32 @@ function openImagesModal(id) {
     </div>
   `;
   modal.classList.add('open');
+
+  // Hover-to-copy: each thumbnail shows a 📋 button on hover; clicking copies
+  // that ONE image to the clipboard as a real PNG. Single-image clipboard IS
+  // supported by Chrome (only copying MANY images at once isn't), so this
+  // pastes straight into Gemini/etc. — the true "Ctrl+C an image" behaviour.
+  document.querySelectorAll('.img-copy').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const idx = Number(btn.dataset.copy);
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '⏳';
+      try {
+        if (!navigator.clipboard || !window.ClipboardItem) throw new Error('unsupported');
+        const blob = await fetchImageBlob(imgs[idx]);
+        if (!blob) throw new Error('fetch failed');
+        const png = await toPngBlob(blob);
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
+        btn.textContent = '✓';
+      } catch (err) {
+        btn.textContent = '⚠';
+      } finally {
+        setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1200);
+      }
+    });
+  });
 
   // Bulk download → bundle every image into a folder ZIP (single download).
   // Images are fetched through the worker's CORS proxy (/api/image) because
@@ -458,6 +485,24 @@ async function fetchImageBlob(src) {
 }
 function extOf(src) {
   return (src.match(/\.(jpg|jpeg|png|webp|gif)/i) || ['', 'jpg'])[1].toLowerCase();
+}
+
+// Convert any image blob to PNG — the only format ClipboardItem reliably supports.
+function toPngBlob(blob) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image load failed')); };
+    img.src = url;
+  });
 }
 
 // ─── Helpers ────────────────────────────────────────────────
