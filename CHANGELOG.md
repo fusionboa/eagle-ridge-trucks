@@ -279,6 +279,26 @@
 - Admin: JSZip loaded, modal shows Download/Upload images/Upload folder, download completes → "✓ Downloaded 13 images" ✅
 - `/api/image` proxy returns the image (200, image/jpeg, CORS `*`) ✅
 
+## v0.4.2 — Hero fix + Forum (comparison posts) (Aug 19, 2026)
+
+**Jaden:** the first section of the landing page shows nothing ("wheres the text?"), and add a separate forum for posting comparisons like "GMC Acadia vs …" that he can write in the admin, with a title + small text + optional image, that shows up for local searches.
+
+### Hero bug fixed
+- `initReveals()` was defined but **never called**, so every `.reveal` element (hero text, about) stayed `opacity: 0`. Added `initReveals()` to `init()`. Verified hero title/eyebrow `opacity: 1`.
+
+### Forum feature
+- **D1** — new `forum_posts` table (id, title, body, image, created_at, updated_at). Created lazily in the worker via `ensureForumTable()` (so it doesn't depend on `wrangler d1 execute`, which isn't authorized in this account).
+- **Worker** — `GET /api/forum` (list), `GET /api/forum/:id` (single), `POST /api/admin/forum` (create/update), `DELETE /api/admin/forum/:id` (delete).
+- **Site** — new `forum.html` (post grid) + `forum-post.html` (single post). Forum link added to every page's nav.
+- **SEO** — each post gets `document.title = "{title} near you | dangm.ca"` + a local meta description, so "GMC Acadia vs …" queries rank locally.
+- **Admin** — new "💬 Forum" tab + "+ New post" button. Create/edit posts with title, body, and an optional image (reuses the KV upload endpoint).
+
+### Verified (live)
+- Forum API round-trip: list → create → single → delete → empty ✅
+- Home hero title + eyebrow `opacity: 1` (visible) ✅
+- Forum page renders "No posts yet" cleanly, 0 page errors ✅
+- Admin forum tab + New post button deployed ✅
+
 ## v0.4.1 — Cover photo picker + remove financing calculator (Aug 19, 2026)
 
 **Jaden:** add an option to change a listing's cover photo in the admin, and remove the financing thing on the listing.

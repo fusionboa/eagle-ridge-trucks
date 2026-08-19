@@ -348,13 +348,102 @@ function updateStatCount() {
   if (el) el.textContent = allTrucks.length;
 }
 
+// ─── Forum (comparison posts) ─────────────────────────────
+async function loadForum() {
+  const el = document.getElementById('forumList');
+  try {
+    const res = await fetch(`${API_BASE}/forum`);
+    if (!res.ok) throw new Error('failed');
+    const data = await res.json();
+    const posts = data.posts || [];
+    if (!posts.length) {
+      el.innerHTML = '<div class="empty">No posts yet. Check back soon.</div>';
+      return;
+    }
+    el.innerHTML = posts.map((p) => forumCardHTML(p)).join('');
+  } catch (e) {
+    el.innerHTML = '<div class="empty">Could not load posts.</div>';
+  }
+}
+
+function forumCardHTML(p) {
+  const title = p.title || 'Untitled';
+  const full = String(p.body || '');
+  const body = full.replace(/\n/g, ' ').slice(0, 160);
+  const img = p.image
+    ? `<div class="forum-card-img-wrap"><img class="forum-card-img" src="${p.image}" alt="${escapeHtml(title)}" loading="lazy"></div>`
+    : '';
+  return `
+    <a class="forum-card reveal" href="forum-post.html?id=${encodeURIComponent(p.id)}">
+      ${img}
+      <div class="forum-card-body">
+        <h2 class="forum-card-title">${escapeHtml(title)}</h2>
+        <p class="forum-card-sub">${escapeHtml(body)}${full.length > 160 ? '…' : ''}</p>
+        <span class="forum-card-cta">Read more →</span>
+      </div>
+    </a>`;
+}
+
+async function loadForumPost() {
+  const id = new URLSearchParams(location.search).get('id');
+  const el = document.getElementById('forumPost');
+  if (!id) {
+    el.innerHTML = '<div class="empty">No post specified. <a href="forum.html">Browse the forum</a></div>';
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/forum/${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error('not found');
+    const data = await res.json();
+    const p = data.post;
+    if (!p) throw new Error('not found');
+    // SEO: put the comparison title + local intent into the page title.
+    document.title = `${p.title} near you | dangm.ca`;
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute('content', `${p.title} near you. Compare vehicles, specs, and pricing at dangm.ca in Vancouver and the Tri-Cities.`);
+    el.innerHTML = `
+      <div class="forum-post">
+        <a href="forum.html" class="vdp-back">← Back to forum</a>
+        <h1 class="forum-post-title">${escapeHtml(p.title)}</h1>
+        ${p.image ? `<img class="forum-post-img" src="${p.image}" alt="${escapeHtml(p.title)}">` : ''}
+        <div class="forum-post-body">${formatPostBody(p.body)}</div>
+        <div class="forum-post-cta">
+          <a href="inventory.html" class="btn btn-primary">Browse Inventory</a>
+          <a href="tel:6057351396" class="btn btn-ghost">Call 605-735-1396</a>
+        </div>
+      </div>`;
+  } catch (e) {
+    el.innerHTML = '<div class="empty">Post not found. <a href="forum.html">Browse the forum</a></div>';
+  }
+}
+
+function formatPostBody(body) {
+  return String(body || '')
+    .split(/\n+/)
+    .map((para) => para.trim())
+    .filter(Boolean)
+    .map((para) => `<p>${escapeHtml(para)}</p>`)
+    .join('');
+}
+
 // ─── Boot ──────────────────────────────────────────────────
 function init() {
   initNav();
+  initReveals();
   document.getElementById('year').textContent = new Date().getFullYear();
 
   if (PAGE === 'vehicle') {
     loadVehicle();
+    return;
+  }
+
+  if (PAGE === 'forum') {
+    loadForum();
+    return;
+  }
+
+  if (PAGE === 'forum-post') {
+    loadForumPost();
     return;
   }
 

@@ -18,3 +18,14 @@ CREATE TABLE IF NOT EXISTS backups (
   data TEXT NOT NULL,            -- JSON blob of the published listing
   backed_up_at TEXT DEFAULT (datetime('now'))
 );
+
+-- Forum posts ("GMC Acadia vs ..." comparison articles) — published from the
+-- admin, shown on the public forum page, indexed for local SEO.
+CREATE TABLE IF NOT EXISTS forum_posts (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  body TEXT,
+  image TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);

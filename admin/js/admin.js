@@ -8,6 +8,7 @@
 const API_BASE = (window.ADMIN_CONFIG?.apiBase || '').replace(/\/+$/, '');
 let allTrucks = [];
 let allBackups = [];
+let forumPosts = [];
 let authToken = localStorage.getItem('er_admin_token') || '';
 let devMode = localStorage.getItem('er_dev_mode') === 'true';
 const DEV_KEY = 'er-dev-2026-test';
@@ -158,6 +159,37 @@ function renderList() {
         const t = allBackups.find((b) => b.id === id);
         if (t) openEditModal(id, t);
       });
+    });
+    return;
+  }
+
+  // Forum tab: comparison posts ("GMC Acadia vs ...")
+  if (currentTab === 'forum') {
+    if (!forumPosts.length) {
+      list.innerHTML = '<div class="empty">No posts yet. Click "+ New post" to write your first comparison.</div>';
+      return;
+    }
+    list.innerHTML = forumPosts.map((p) => `
+      <div class="truck-row" data-id="${p.id}">
+        <div class="truck-row-img">${p.image ? `<img src="${p.image}" alt="">` : '<div class="img-placeholder">📝</div>'}</div>
+        <div class="truck-row-info">
+          <div class="truck-row-title">${escapeHtml(p.title)}</div>
+          <div class="truck-row-sub">${escapeHtml(String(p.body || '').slice(0, 140))}</div>
+        </div>
+        <div class="truck-row-actions">
+          <button class="btn btn-sm btn-ghost" data-action="edit-post">Edit</button>
+          <button class="btn btn-sm btn-ghost" data-action="delete-post">Delete</button>
+        </div>
+      </div>
+    `).join('');
+
+    list.querySelectorAll('.truck-row').forEach((row) => {
+      const id = row.dataset.id;
+      row.querySelector('[data-action="edit-post"]').addEventListener('click', () => {
+        const p = forumPosts.find((x) => x.id === id);
+        if (p) openForumModal(p);
+      });
+      row.querySelector('[data-action="delete-post"]').addEventListener('click', () => deleteForumPost(id));
     });
     return;
   }
@@ -549,6 +581,96 @@ function closeModal() {
   document.querySelectorAll('.modal').forEach((m) => m.classList.remove('open'));
 }
 
+// ─── Forum posts ────────────────────────────────────────────
+async function loadForumPosts() {
+  try {
+    const res = await fetch(`${API_BASE}/api/forum`);
+    if (res.ok) {
+      const data = await res.json();
+      forumPosts = data.posts || [];
+      if (currentTab === 'forum') renderList();
+    }
+  } catch (e) { console.error(e); }
+}
+
+function openForumModal(post) {
+  const modal = document.getElementById('editModal');
+  const body = document.getElementById('editBody');
+  const p = post || {};
+  body.innerHTML = `
+    <h2>${post ? 'Edit post' : 'New forum post'}</h2>
+    <div class="edit-form">
+      <label class="field field-full">
+        <span>Title</span>
+        <input type="text" id="forumTitle" value="${escapeHtml(p.title || '')}" placeholder="e.g. GMC Acadia vs Chevrolet Traverse">
+      </label>
+      <label class="field field-full">
+        <span>Body</span>
+        <textarea id="forumBody" rows="8" placeholder="Write the comparison...">${escapeHtml(p.body || '')}</textarea>
+      </label>
+      <label class="field field-full">
+        <span>Image (optional)</span>
+        <input type="file" id="forumImageInput" accept="image/*">
+        ${p.image ? `<div class="hint">Current image:</div><img src="${p.image}" style="max-height:80px;border-radius:6px;margin-top:8px">` : ''}
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="saveForumBtn">Save post</button>
+      <button class="btn btn-ghost" data-close>Cancel</button>
+    </div>
+  `;
+  modal.classList.add('open');
+
+  document.getElementById('saveForumBtn').addEventListener('click', async () => {
+    const title = document.getElementById('forumTitle').value.trim();
+    const bodyText = document.getElementById('forumBody').value.trim();
+    if (!title) { alert('Title is required'); return; }
+    const btn = document.getElementById('saveForumBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Saving…';
+    try {
+      let image = p.image || '';
+      const fileInput = document.getElementById('forumImageInput');
+      if (fileInput.files && fileInput.files[0]) {
+        const f = fileInput.files[0];
+        const up = await fetch(`${API_BASE}/api/admin/upload-image`, {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': f.type || 'image/jpeg' }),
+          body: f,
+        });
+        if (up.ok) {
+          const upJson = await up.json();
+          image = upJson.url || image;
+        }
+      }
+      const res = await fetch(`${API_BASE}/api/admin/forum`, {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ id: p.id, title, body: bodyText, image }),
+      });
+      if (!res.ok) { alert('Save failed'); btn.disabled = false; btn.textContent = 'Save post'; return; }
+      closeModal();
+      loadForumPosts();
+    } catch (e) {
+      alert('Save failed: ' + e.message);
+      btn.disabled = false;
+      btn.textContent = 'Save post';
+    }
+  });
+}
+
+async function deleteForumPost(id) {
+  if (!confirm('Delete this post?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/forum/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    if (!res.ok) { alert('Delete failed'); return; }
+    loadForumPosts();
+  } catch (e) { alert('Delete failed'); }
+}
+
 // ─── Wire up ────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   // Firebase Google sign-in (same popup flow as FB Lister)
@@ -569,6 +691,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('syncNowBtn').addEventListener('click', async () => {
     alert('Sync requested — the bridge on the server pulls from FTP hourly. If you just changed the feed, it will update on the next sync.');
   });
+  document.getElementById('newPostBtn').addEventListener('click', () => openForumModal());
 
   // Tabs
   document.querySelectorAll('.tab').forEach((tab) => {
@@ -576,7 +699,8 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
       tab.classList.add('active');
       currentTab = tab.dataset.tab;
-      renderList();
+      if (currentTab === 'forum') loadForumPosts();
+      else renderList();
     });
   });
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Eagle Ridge Trucks — Admin</title>
+  <title>dangm.ca — Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -13,9 +13,9 @@
   <!-- Login gate -->
   <div class="login" id="loginGate">
     <div class="login-card">
-      <div class="login-logo">ER</div>
-      <h1>Eagle Ridge Admin</h1>
-      <p>Sign in with your Google account to manage truck listings.</p>
+      <div class="login-logo">DG</div>
+      <h1>dangm.ca Admin</h1>
+      <p>Sign in with your Google account to manage listings and forum posts.</p>
       <button class="btn btn-primary" id="googleSignIn">Sign in with Google</button>
       <button class="btn btn-ghost" id="devModeBtn" style="margin-top:10px">🧪 Test mode — skip Google login</button>
       <p class="login-error" id="loginError"></p>
@@ -27,10 +27,11 @@
     <header class="topbar">
       <div class="topbar-inner">
         <div class="brand">
-          <span class="logo-mark">ER</span>
-          <span>Eagle Ridge Trucks <em>Admin</em></span>
+          <span class="logo-mark">DG</span>
+          <span>dangm.ca <em>Admin</em></span>
         </div>
         <div class="topbar-right">
+          <button class="btn btn-primary btn-sm" id="newPostBtn">+ New post</button>
           <button class="btn btn-ghost btn-sm" id="syncNowBtn">⟳ Sync now</button>
           <button class="btn btn-ghost btn-sm" id="signOutBtn">Sign out</button>
         </div>
@@ -52,6 +53,7 @@
         <button class="tab" data-tab="unlisted">Unlisted</button>
         <button class="tab" data-tab="all">All</button>
         <button class="tab" data-tab="backups">🗄️ Backups</button>
+        <button class="tab" data-tab="forum">💬 Forum</button>
       </div>
 
       <!-- Truck list -->

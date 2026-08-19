@@ -100,6 +100,13 @@ function isAdmin(user, env) {
   return allowed.includes(user.email);
 }
 
+// ─── Forum schema (self-healing) ────────────────────────────────────────────
+// The forum_posts table is created lazily here so we don't depend on a separate
+// migration step (wrangler d1 execute isn't always available in this account).
+async function ensureForumTable(env) {
+  await env.D1.exec('CREATE TABLE IF NOT EXISTS forum_posts (id TEXT PRIMARY KEY, title TEXT NOT NULL, body TEXT, image TEXT, created_at TEXT, updated_at TEXT);');
+}
+
 // ─── Feed parsing (CSV or JSON) ─────────────────────────────────────────────
 function parseCSVLine(line) {
   // Minimal CSV parser handling quoted fields
@@ -367,6 +374,30 @@ async function handle(request, env) {
       }
     }
 
+    // PUBLIC: forum posts (comparison articles, e.g. "GMC Acadia vs ...")
+    if (path === '/api/forum' && request.method === 'GET') {
+      try {
+        await ensureForumTable(env);
+        const all = await db.prepare('SELECT * FROM forum_posts ORDER BY created_at DESC').all();
+        return json({ posts: all.results || [] });
+      } catch (e) {
+        return json({ error: 'DB error: ' + e.message }, 500);
+      }
+    }
+
+    // PUBLIC: single forum post
+    if (path.startsWith('/api/forum/') && request.method === 'GET') {
+      try {
+        await ensureForumTable(env);
+        const id = decodeURIComponent(path.slice('/api/forum/'.length));
+        const row = await db.prepare('SELECT * FROM forum_posts WHERE id = ?').bind(id).first();
+        if (!row) return json({ error: 'Not found' }, 404);
+        return json({ post: row });
+      } catch (e) {
+        return json({ error: 'DB error: ' + e.message }, 500);
+      }
+    }
+
     // BRIDGE: enrichment state (id → engine/aiDescription) so the sync job can
     // skip VIN-decoding / AI-description work it already did.
     if (path === '/api/bridge/state' && request.method === 'GET') {
@@ -473,6 +504,34 @@ async function handle(request, env) {
       await db.prepare('UPDATE trucks SET data = ?, updated_at = ? WHERE id = ?')
         .bind(JSON.stringify(truck), truck.updatedAt, id).run();
       return json({ ok: true, truck });
+    }
+
+    // Admin: create/update a forum post
+    if (path === '/api/admin/forum' && request.method === 'POST') {
+      await ensureForumTable(env);
+      const body = await request.json().catch(() => ({}));
+      const title = String(body.title || '').trim();
+      if (!title) return json({ error: 'title required' }, 400);
+      const now = new Date().toISOString();
+      const id = body.id || `post-${crypto.randomUUID()}`;
+      const existing = await db.prepare('SELECT id FROM forum_posts WHERE id = ?').bind(id).first();
+      if (existing) {
+        await db.prepare('UPDATE forum_posts SET title = ?, body = ?, image = ?, updated_at = ? WHERE id = ?')
+          .bind(title, String(body.body || ''), String(body.image || ''), now, id).run();
+      } else {
+        await db.prepare('INSERT INTO forum_posts (id, title, body, image, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
+          .bind(id, title, String(body.body || ''), String(body.image || ''), now, now).run();
+      }
+      const row = await db.prepare('SELECT * FROM forum_posts WHERE id = ?').bind(id).first();
+      return json({ ok: true, post: row });
+    }
+
+    // Admin: delete a forum post
+    if (path.startsWith('/api/admin/forum/') && request.method === 'DELETE') {
+      await ensureForumTable(env);
+      const id = decodeURIComponent(path.slice('/api/admin/forum/'.length));
+      await db.prepare('DELETE FROM forum_posts WHERE id = ?').bind(id).run();
+      return json({ ok: true });
     }
 
     // Admin: view backups (published trucks that left the feed)

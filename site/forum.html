@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Vehicle details at dangm.ca. New & used cars and trucks for sale.">
-  <title>Vehicle Details | dangm.ca</title>
+  <meta name="description" content="Car and truck comparisons, reviews, and buying guides from dangm.ca. GMC, Chevrolet, Buick, and more, near you in Vancouver and the Tri-Cities.">
+  <meta name="keywords" content="car comparison, truck comparison, GMC vs Chevrolet, car reviews, Vancouver, Tri-Cities, dangm.ca">
+  <title>Comparisons & Reviews | dangm.ca</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="page-vehicle">
+<body class="page-inventory">
   <!-- Navigation -->
   <nav class="nav scrolled" id="nav">
     <div class="nav-inner">
@@ -20,8 +21,8 @@
       </a>
       <div class="nav-links">
         <a href="index.html">Home</a>
-        <a href="inventory.html" class="active">Inventory</a>
-        <a href="forum.html">Forum</a>
+        <a href="inventory.html">Inventory</a>
+        <a href="forum.html" class="active">Forum</a>
         <a href="index.html#about">About</a>
         <a href="index.html#contact">Contact</a>
       </div>
@@ -30,10 +31,22 @@
     </div>
   </nav>
 
-  <!-- Vehicle detail (rendered by main.js) -->
-  <main class="vehicle-main" id="vehicleContent">
-    <div class="loading">Loading vehicle...</div>
-  </main>
+  <!-- Page hero -->
+  <header class="page-hero" id="top">
+    <div class="page-hero-bg"></div>
+    <div class="page-hero-content">
+      <p class="hero-eyebrow reveal visible">COMPARE & LEARN</p>
+      <h1 class="page-hero-title reveal visible">The Forum</h1>
+      <p class="page-hero-sub reveal visible">Side-by-side comparisons, reviews, and buying guides for the vehicles near you.</p>
+    </div>
+  </header>
+
+  <!-- Posts -->
+  <section class="inventory" id="forum">
+    <div class="forum-grid" id="forumList">
+      <div class="loading">Loading posts...</div>
+    </div>
+  </section>
 
   <footer class="footer">
     <div class="footer-inner">
@@ -46,7 +59,7 @@
   </footer>
 
   <script>
-    window.SITE_PAGE = 'vehicle';
+    window.SITE_PAGE = 'forum';
     window.SITE_CONFIG = { apiBase: 'https://eagle-ridge-trucks.fblister.workers.dev/api' };
   </script>
   <script src="js/main.js"></script>
