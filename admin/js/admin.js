@@ -299,8 +299,8 @@ function openImagesModal(id) {
         </div>`).join('')}
     </div>
     <div class="modal-actions">
-      <button class="btn btn-primary" id="copyImgsBtn">📋 Copy all (${imgs.length})</button>
-      <button class="btn btn-ghost" id="downloadImgsBtn">⬇ Download all</button>
+      <button class="btn btn-primary" id="saveImgsBtn">💾 Save images (${imgs.length})</button>
+      <button class="btn btn-ghost" id="downloadImgsBtn">⬇ Download ZIP</button>
       <button class="btn btn-ghost" id="uploadImgsBtn">⬆ Upload images</button>
       <button class="btn btn-ghost" id="uploadFolderBtn">📁 Upload folder</button>
       <button class="btn btn-ghost" data-close>Close</button>
@@ -347,48 +347,63 @@ function openImagesModal(id) {
     }
   });
 
-  // Copy all → Chrome can't write MULTIPLE raw images in one clipboard call
-  // ("Support for multiple ClipboardItems is not implemented"), but it CAN hold
-  // a single HTML block full of embedded <img> tags. Pasting into Gmail / Docs /
-  // Photos / Word then drops every image in. We embed data-URLs (not remote
-  // links) so the images travel with the clipboard, not the URLs.
-  document.getElementById('copyImgsBtn').addEventListener('click', async () => {
-    const btn = document.getElementById('copyImgsBtn');
+  // Save images → write the actual image FILES into a folder you pick
+  // (Chrome/Edge via the File System Access API) so you get real files to
+  // copy/drag into Gemini. Falls back to a ZIP download elsewhere.
+  document.getElementById('saveImgsBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('saveImgsBtn');
     const originalText = btn.textContent;
     btn.disabled = true;
-    btn.textContent = '⏳ Copying…';
-    try {
-      if (!navigator.clipboard || !window.ClipboardItem) throw new Error('Clipboard copy not supported');
-      const htmlParts = [];
-      const urlParts = [];
-      let ok = 0;
-      for (let i = 0; i < imgs.length; i++) {
-        const proxyUrl = `${API_BASE}/api/image?url=${encodeURIComponent(imgs[i])}`;
-        const res = await fetch(proxyUrl);
-        if (!res.ok) continue;
-        const dataUrl = await fileToDataURL(await res.blob());
-        htmlParts.push(`<img src="${dataUrl}" style="max-width:640px;">`);
-        urlParts.push(imgs[i]);
-        ok++;
+
+    // Pick the folder FIRST — it needs this click's user-activation.
+    let dir = null;
+    if (window.showDirectoryPicker) {
+      try {
+        dir = await window.showDirectoryPicker({ mode: 'readwrite' });
+      } catch (e) {
+        if (e.name === 'AbortError') { btn.disabled = false; return; } // user cancelled
+        dir = null; // fall through to ZIP
       }
-      if (!ok) throw new Error('no images fetched');
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'text/html': new Blob([htmlParts.join('<br>')], { type: 'text/html' }),
-          'text/plain': new Blob([urlParts.join('\n')], { type: 'text/plain' }),
-        }),
-      ]);
-      btn.textContent = `✓ Copied ${ok} images`;
+    }
+
+    btn.textContent = dir ? '⏳ Saving…' : '⏳ Downloading…';
+    try {
+      let ok = 0;
+      if (dir) {
+        for (let i = 0; i < imgs.length; i++) {
+          const blob = await fetchImageBlob(imgs[i]);
+          if (!blob) continue;
+          const name = `${String(i + 1).padStart(2, '0')}.${extOf(imgs[i])}`;
+          const fh = await dir.getFileHandle(name, { create: true });
+          const w = await fh.createWritable();
+          await w.write(blob);
+          await w.close();
+          ok++;
+        }
+        btn.textContent = `✓ Saved ${ok} images to folder`;
+      } else {
+        if (typeof JSZip === 'undefined') throw new Error('JSZip not loaded');
+        const zip = new JSZip();
+        const folder = zip.folder(`${id}-images`);
+        for (let i = 0; i < imgs.length; i++) {
+          const blob = await fetchImageBlob(imgs[i]);
+          if (!blob) continue;
+          folder.file(`${String(i + 1).padStart(2, '0')}.${extOf(imgs[i])}`, blob);
+          ok++;
+        }
+        if (!ok) throw new Error('no images fetched');
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(zipBlob);
+        a.download = `${id}-images.zip`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+        btn.textContent = `✓ Downloaded ${ok} images (ZIP)`;
+      }
       setTimeout(() => { btn.textContent = originalText; }, 3000);
     } catch (e) {
-      // Fallback: copy the raw image URLs as text so nothing is lost.
-      try {
-        await navigator.clipboard.writeText(imgs.join('\n'));
-        btn.textContent = '✓ Copied URLs (fallback)';
-      } catch (_) {
-        alert('Copy failed: ' + e.message);
-        btn.textContent = originalText;
-      }
+      if (e.name !== 'AbortError') alert('Save failed: ' + e.message);
+      btn.textContent = originalText;
     } finally {
       btn.disabled = false;
     }
@@ -431,6 +446,18 @@ function fileToDataURL(file) {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+// Fetch an image through the worker's CORS proxy and return its blob (null on failure).
+async function fetchImageBlob(src) {
+  try {
+    const res = await fetch(`${API_BASE}/api/image?url=${encodeURIComponent(src)}`);
+    if (!res.ok) return null;
+    return await res.blob();
+  } catch (e) { return null; }
+}
+function extOf(src) {
+  return (src.match(/\.(jpg|jpeg|png|webp|gif)/i) || ['', 'jpg'])[1].toLowerCase();
 }
 
 // ─── Helpers ────────────────────────────────────────────────

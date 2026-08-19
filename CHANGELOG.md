@@ -279,17 +279,19 @@
 - Admin: JSZip loaded, modal shows Download/Upload images/Upload folder, download completes → "✓ Downloaded 13 images" ✅
 - `/api/image` proxy returns the image (200, image/jpeg, CORS `*`) ✅
 
-## v0.3.3 — Copy all images to clipboard (Aug 19, 2026)
+## v0.3.3 — Save images as real files (Aug 19, 2026)
 
-**Jaden:** "instead just make an option to copy all images and paste" (instead of/in addition to the ZIP download) — so I can paste straight into Gemini.
+**Jaden:** "make an option to copy all images and paste" → "still link! we need images only to be downloaded then i can copy!" — i.e. he needs actual image FILES, not links.
+
+### Why "copy" couldn't work
+- Chrome throws `NotAllowedError: Support for multiple ClipboardItems is not implemented` when you try to write multiple raw images in one `navigator.clipboard.write()`.
+- The HTML-block workaround still surfaced as links when pasted into Gemini (it reads the `text/plain` fallback).
 
 ### Changes
-- **Admin — "📋 Copy all (N)" button** (primary action in the Images modal): fetches every image through the `/api/image` proxy and copies them all to the clipboard.
-- **Root cause found:** Chrome throws `NotAllowedError: Support for multiple ClipboardItems is not implemented` when you try to write multiple raw images in one `navigator.clipboard.write()` call — that's why the first attempt silently fell back to pasting raw links ("i need the images not the links").
-- **Fix — copy as an HTML block:** embed each image as a `<img src="data:...">` (data-URL, so the actual image bytes travel with the clipboard, not a remote link) inside a single `ClipboardItem` with `text/html` + `text/plain`. This is the standard way Chrome supports multiple images on the clipboard. Pasting into Gmail / Docs / Photos / Word drops every image in.
-- **Kept "⬇ Download all"** as a secondary button (not removed).
+- **Admin — "💾 Save images (N)" button** (primary action in the Images modal, replaces "Copy all"): writes the **actual image files** into a folder you pick via the File System Access API (`showDirectoryPicker`, Chrome/Edge). You end up with `01.jpg`, `02.jpg`, … real files in a folder — ready to copy/drag into Gemini.
+- **Fallback — "⬇ Download ZIP"**: browsers without `showDirectoryPicker` (Firefox/Safari) still get the ZIP of real images.
+- Extracted shared helpers `fetchImageBlob()` (proxy fetch) + `extOf()`.
 
 ### Verified
-- Deployed live — `admin.js` now uses `text/html` + `text/plain` ClipboardItem, no more multi-`ClipboardItem` array ✅
+- Deployed live — `admin.js` uses `saveImgsBtn` + `showDirectoryPicker`, old `copyImgsBtn` gone ✅
 - `node --check` clean ✅
-- Confirmed root cause via headless Chrome: multi-item write → `NotAllowedError`; single HTML item is the supported path ✅
