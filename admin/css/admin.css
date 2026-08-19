@@ -19,6 +19,10 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* The hidden attribute must always win — .login/.app set their own display,
+   which would otherwise override the browser's default [hidden] rule. */
+[hidden] { display: none !important; }
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg);

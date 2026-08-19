@@ -174,7 +174,7 @@ function parseTrucks(csvText) {
       fuelType: get('fuel_type', 'FuelType', 'Fuel'),
       transmission: get('transmission', 'Transmission', 'Trans'),
       drivetrain: get('drivetrain', 'Drivetrain', 'DriveType', 'Drive'),
-      engine: get('engine', 'Engine', 'EngineType'),
+      engine: get('engine', 'Engine', 'EngineType') || extractEngine(get('description', 'Description', 'Comments', 'Details', 'AdText')),
       condition: get('condition'),
       address: get('address'),
       dealerName: get('dealer_name'),
@@ -188,6 +188,13 @@ function parseTrucks(csvText) {
       updatedAt: new Date().toISOString(),
     };
   });
+}
+
+// The edealer feed has NO engine column — pull displacement out of the description when possible
+function extractEngine(desc) {
+  if (!desc) return '';
+  const m = String(desc).match(/(\d+(?:\.\d+)?L(?:\s*[VWI]\d+)?)/i);
+  return m ? m[1].toUpperCase() : '';
 }
 
 // ─── Download all images for a truck ────────────────────────────────────────

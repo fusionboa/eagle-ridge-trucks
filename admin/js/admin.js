@@ -397,7 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Modal close
   document.querySelectorAll('.modal').forEach((m) => {
-    m.addEventListener('click', (e) => { if (e.target.dataset.close) closeModal(); });
+    m.addEventListener('click', (e) => { if (e.target.hasAttribute('data-close')) closeModal(); });
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 

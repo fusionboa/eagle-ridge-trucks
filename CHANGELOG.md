@@ -145,3 +145,26 @@
 
 ### Also logged (Aug 19)
 - **Fusion AI specialist-model family idea** added to `~/Desktop/context.md` (Library AI section) — one small model per domain (Fusion AI Programmer, Fusion AI Kernel Dev, ...) each with its own growing library + a router.
+
+## v0.2.2 — SITE + ADMIN UI FIXES (Aug 19, 2026, late night)
+
+**Jaden reported:** site throws `TypeError at main.js:257`, trucks show no price/engine, admin still shows the login thing on top, and the edit modal's Cancel/× buttons don't close it.
+
+### Fixes
+- **`site/js/main.js` — inventory page crashed:** `init()` called `document.getElementById('contactForm').addEventListener(...)` but `inventory.html` has no contact form → TypeError → `loadTrucks()` never ran → page showed zero trucks. Fixed: guard `if (contactForm)`.
+- **`site/js/main.js` — "$NaN" prices:** prices come from the feed as `"34544 CAD"` strings, so `Number(t.price)` = NaN. Cards + modal now use the existing `priceNum()` helper → `$34,544`. Verified live: flagship shows `$106,823`.
+- **Modal close buttons never worked (site + admin):** handlers checked `e.target.dataset.close`, but `data-close=""` is an empty string (falsy) → × / Cancel / backdrop clicks did nothing. Switched to `e.target.hasAttribute('data-close')` in both `main.js` and `admin.js`. Verified: modal closes.
+- **`admin/css/admin.css` — login gate floated on top of the app:** `.login { display: grid }` overrode the browser's default `[hidden]` rule, so `loginGate.hidden = true` didn't visually hide it. Added `[hidden] { display: none !important; }`. Verified: gate display:none, app visible.
+- **`admin/js/admin.js` — price field showed empty in Edit modal:** input was `type="number"` but prices are `"34544 CAD"` strings (browser can't parse → empty + console warning). Switched to `type="text"`.
+- **`sync/sync.js` — engine always empty:** confirmed the edealer feed has NO engine column (52 columns, zero engine/motor/cyl). Added `extractEngine()` — pulls displacement from the description (e.g. `6.2L`, `2.0L Turbo`) when available.
+
+### Verified (headless Chrome click-through)
+- Home page: flagship shows with real price ✅
+- Inventory page: no crash, trucks render with prices ✅
+- Truck modal: opens, shows price, × closes ✅
+- Admin: login gate hidden, 383 trucks, Edit modal opens, Cancel closes ✅
+- Zero console errors ✅
+
+### Notes
+- All trucks remain **unlisted** (clean state — test listings unlisted after each test).
+- One mystery left: truck `13781719` (2017 Silverado) lost its price (`""` in D1 after the hourly sync) — 1 of 383, revisit later.

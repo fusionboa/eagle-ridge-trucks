@@ -136,7 +136,7 @@ function renderGrid(list, isFlagship) {
 function cardHTML(t, i) {
   const img = t.images[0] || '';
   const title = [t.year, t.make, t.model, t.trim].filter(Boolean).join(' ');
-  const price = t.price ? `$${Number(t.price).toLocaleString()}` : 'Call for price';
+  const price = t.price ? `$${priceNum(t.price).toLocaleString()}` : 'Call for price';
   return `
     <article class="truck-card reveal" style="transition-delay:${Math.min(i * 0.05, 0.4)}s">
       <div class="truck-card-img-wrap">
@@ -161,7 +161,7 @@ function openModal(t) {
   const modal = document.getElementById('truckModal');
   const body = document.getElementById('modalBody');
   const title = [t.year, t.make, t.model, t.trim].filter(Boolean).join(' ');
-  const price = t.price ? `$${Number(t.price).toLocaleString()}` : 'Call for price';
+  const price = t.price ? `$${priceNum(t.price).toLocaleString()}` : 'Call for price';
 
   // Gallery (first image large, rest as thumbs)
   const imgs = t.images.filter(Boolean);
@@ -249,12 +249,13 @@ function init() {
 
   // Modal close
   document.getElementById('truckModal').addEventListener('click', (e) => {
-    if (e.target.dataset.close) closeModal();
+    if (e.target.hasAttribute('data-close')) closeModal();
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
-  // Contact form (simple success message)
-  document.getElementById('contactForm').addEventListener('submit', (e) => {
+  // Contact form (simple success message) — only exists on the home page
+  const contactForm = document.getElementById('contactForm');
+  if (contactForm) contactForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button');
     btn.textContent = '✓ Message sent';
