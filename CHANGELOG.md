@@ -124,3 +124,19 @@
 - [ ] Gemini image pipeline (manual for now — download → edit → re-upload)
 - [ ] Remove test mode + restore Google-only admin before "real" launch
 - [ ] Dad's dealership website / blog ideas for max sales
+
+## v0.2.1 — ADMIN FIXED (Aug 19, 2026)
+
+**Jaden reported: the admin page "just doesn't do anything" / the test-mode button appears dead.**
+
+### Root cause (real bug, not browser cache)
+- The admin sends a custom **`X-Dev-Key`** header on every API call, but the worker's CORS preflight only allowed `Content-Type, Authorization`.
+- The browser's OPTIONS preflight got rejected → **every fetch died silently** → page looked dead even though the code was deployed correctly.
+- curl tests passed because curl doesn't do CORS preflight — that's why it looked fine server-side.
+
+### Fix
+- `worker/index.js`: `Access-Control-Allow-Headers` now includes **`X-Dev-Key, X-Bridge-Token`** → redeployed (version `8a66686b`).
+- Verified: preflight returns the new headers; `/api/admin/trucks` with dev key + browser Origin returns all 383 trucks ✅
+
+### Also logged (Aug 19)
+- **Fusion AI specialist-model family idea** added to `~/Desktop/context.md` (Library AI section) — one small model per domain (Fusion AI Programmer, Fusion AI Kernel Dev, ...) each with its own growing library + a router.
