@@ -454,25 +454,30 @@ function openImagesModal(id) {
   const handleFiles = async (files) => {
     const imgs = [...files].filter((f) => f.type && f.type.startsWith('image/'));
     if (!imgs.length) { alert('No image files found.'); return; }
-    const dataUrls = [];
-    for (const f of imgs) dataUrls.push(await fileToDataURL(f));
-    if (await updateTruck(id, { customImages: dataUrls })) {
+    // Upload each image as raw bytes to KV (NOT base64 — D1 rows cap at 2MB).
+    const urls = [];
+    let ok = 0;
+    for (const f of imgs) {
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/upload-image`, {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': f.type || 'image/jpeg' }),
+          body: f,
+        });
+        if (!res.ok) { console.error('image upload failed:', res.status); continue; }
+        const data = await res.json();
+        if (data.url) { urls.push(data.url); ok++; }
+      } catch (e) { console.error(e); }
+    }
+    if (!ok) { alert('Upload failed — no images uploaded.'); return; }
+    if (await updateTruck(id, { customImages: urls })) {
       closeModal();
       loadTrucks();
-      alert(`Uploaded ${dataUrls.length} image(s). They're now on the listing.`);
+      alert(`Uploaded ${ok} image(s). They're now on the listing.`);
     }
   };
   fileInput.addEventListener('change', () => handleFiles(fileInput.files));
   folderInput.addEventListener('change', () => handleFiles(folderInput.files));
-}
-
-function fileToDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 }
 
 // Fetch an image through the worker's CORS proxy and return its blob (null on failure).

@@ -279,6 +279,29 @@
 - Admin: JSZip loaded, modal shows Download/Upload images/Upload folder, download completes → "✓ Downloaded 13 images" ✅
 - `/api/image` proxy returns the image (200, image/jpeg, CORS `*`) ✅
 
+## v0.3.4 — Fix bulk image upload (KV storage instead of D1) (Aug 19, 2026)
+
+**Jaden:** bulk image upload (folder + multiple files) fails with `Cross-Origin Request Blocked … 500` on `/api/admin/truck/:id`.
+
+### Root cause
+- Uploaded images were stored as **base64 data-URLs in D1**, but D1 rows cap at **2MB** (`D1_ERROR: string or blob too big: SQLITE_TOOBIG`). Multiple photos blow past 2MB instantly.
+- The thrown error also bypassed the CORS headers, so the browser showed the misleading "CORS header missing" message instead of the real error.
+
+### Changes
+- **Image storage moved to Cloudflare KV** (raw bytes, not base64):
+  - New KV namespace `eagle-ridge-images` (`IMAGES` binding) added to `wrangler.toml`.
+  - Worker `POST /api/admin/upload-image` — accepts raw image bytes, stores in KV, returns an absolute `/images/…` URL.
+  - Worker `GET /images/:key` — serves the stored image (correct content-type, CORS `*`, immutable cache).
+- **Admin upload** now POSTs each file's raw bytes to KV and stores the small returned URLs in `customImages` (instead of base64 data-URLs).
+- **Global CORS-safe error handler** — any uncaught worker error now returns a JSON `{ error }` 500 **with** `Access-Control-Allow-Origin: *`, so the real error shows in the browser instead of a bare HTML error page.
+- Removed the now-unused `fileToDataURL` helper.
+
+### Verified (live)
+- Confirmed 1MB/2MB uploads → 200, 3MB → 500 with `D1_ERROR: SQLITE_TOOBIG` (the bug).
+- New flow: uploaded 2 PNGs via the real browser file-chooser → 2 `POST /api/admin/upload-image` (raw `image/png`) → alert "Uploaded 2 image(s)" → truck's `customImages` are KV URLs ✅
+- `GET /images/:key` returns the exact bytes (69-byte PNG round-trips) with CORS ✅
+- Cleaned up test junk left in trucks `14360329` / `13781719`.
+
 ## v0.3.3 — Save images as real files (Aug 19, 2026)
 
 **Jaden:** "make an option to copy all images and paste" → "still link! we need images only to be downloaded then i can copy!" — i.e. he needs actual image FILES, not links.

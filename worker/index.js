@@ -255,6 +255,16 @@ ${facts ? `Key specs: ${facts}` : ''}`;
 // ─── Router ─────────────────────────────────────────────────────────────────
 export default {
   async fetch(request, env) {
+    return handle(request, env).catch((e) =>
+      new Response(JSON.stringify({ error: 'Internal error: ' + (e && e.message ? e.message : String(e)) }), {
+        status: 500,
+        headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+      })
+    );
+  },
+};
+
+async function handle(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
     const db = env.D1;
@@ -297,6 +307,26 @@ export default {
         return json({ trucks });
       } catch (e) {
         return json({ error: 'DB error: ' + e.message }, 500);
+      }
+    }
+
+    // PUBLIC: serve uploaded truck images from KV (customImages live here
+    // because D1 rows cap at 2MB — images are raw bytes, not base64).
+    if (path.startsWith('/images/') && request.method === 'GET') {
+      const key = decodeURIComponent(path.slice('/images/'.length));
+      try {
+        const obj = await env.IMAGES.getWithMetadata(key, 'arrayBuffer');
+        if (!obj || !obj.value) return json({ error: 'Not found' }, 404);
+        const contentType = (obj.metadata && obj.metadata.contentType) || 'image/jpeg';
+        return new Response(obj.value, {
+          headers: {
+            'Content-Type': contentType,
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'public, max-age=31536000, immutable',
+          },
+        });
+      } catch (e) {
+        return json({ error: 'KV error: ' + e.message }, 500);
       }
     }
 
@@ -408,6 +438,24 @@ export default {
       return json({ trucks });
     }
 
+    // Admin: upload an image to KV (raw bytes in the body). Returns the URL to
+    // store in customImages. Images go to KV because D1 rows cap at 2MB.
+    if (path === '/api/admin/upload-image' && request.method === 'POST') {
+      try {
+        const contentType = request.headers.get('Content-Type') || 'image/jpeg';
+        const m = contentType.match(/image\/(jpeg|png|webp|gif)/i);
+        const ext = m ? (m[1].toLowerCase() === 'jpeg' ? 'jpg' : m[1].toLowerCase()) : 'jpg';
+        const key = `img-${crypto.randomUUID()}.${ext}`;
+        const body = await request.arrayBuffer();
+        if (!body.byteLength) return json({ error: 'empty body' }, 400);
+        await env.IMAGES.put(key, body, { metadata: { contentType } });
+        const origin = new URL(request.url).origin;
+        return json({ url: `${origin}/images/${key}` });
+      } catch (e) {
+        return json({ error: 'Upload failed: ' + e.message }, 500);
+      }
+    }
+
     // Admin: update a truck
     if (path.startsWith('/api/admin/truck/') && request.method === 'POST') {
       const id = decodeURIComponent(path.slice('/api/admin/truck/'.length));
@@ -455,5 +503,4 @@ export default {
     }
 
     return json({ error: 'Not found' }, 404);
-  },
-};
+}
