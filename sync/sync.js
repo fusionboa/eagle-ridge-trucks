@@ -56,6 +56,15 @@ const CONFIG = {
   // Bridge token — shared secret that must match the worker's BRIDGE_TOKEN
   bridgeToken: process.env.BRIDGE_TOKEN || '',
 
+  // Groq AI (same key as FB Lister) — used for SEO descriptions. Never committed;
+  // passed as a GitHub Actions secret / local env var.
+  groqApiKey: process.env.GROQ_API_KEY || '',
+  aiModel: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
+
+  // Enrichment tuning
+  vinDecodeThrottle: 250,                          // ms between VPIC calls (stay under 5 req/s)
+  aiDescCap: parseInt(process.env.AI_DESC_CAP || '25', 10), // max AI descriptions per run
+
   // Local storage (also kept for offline fallback)
   dataDir: path.join(__dirname, '..', 'data'),
   trucksFile: path.join(__dirname, '..', 'data', 'trucks.json'),
@@ -197,6 +206,139 @@ function extractEngine(desc) {
   return m ? m[1].toUpperCase() : '';
 }
 
+// ─── Enrichment: VIN decoding + AI descriptions ───────────────────────────────
+function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+// NHTSA VPIC — the proper, free VIN decoder (no key). Groq can't decode VINs,
+// so this is the authoritative source for engine + spec fields.
+async function decodeVin(vin) {
+  const url = `https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/${encodeURIComponent(vin)}?format=json`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const data = await res.json();
+  const r = data.Results && data.Results[0];
+  if (!r) return null;
+  return {
+    make: r.Make || '',
+    model: r.Model || '',
+    year: r.ModelYear || '',
+    trim: r.Trim || '',
+    bodyStyle: r.BodyClass || '',
+    fuelType: r.FuelTypePrimary || '',
+    drivetrain: r.DriveType || '',
+    transmission: r.TransmissionStyle || '',
+    cylinders: r.EngineCylinders || '',
+    config: r.EngineConfiguration || '',
+    displacement: r.EngineDisplacementL || '',
+    engineModel: r.EngineModel || '',
+  };
+}
+
+// Build a human-readable engine string from VPIC fields, e.g. "1.2L In-Line 3-cyl (L3T)"
+function buildEngine(v) {
+  const parts = [];
+  if (v.displacement) parts.push(`${v.displacement}L`);
+  if (v.config) parts.push(v.config);
+  if (v.cylinders) parts.push(`${v.cylinders}-cyl`);
+  if (v.engineModel) parts.push(`(${v.engineModel})`);
+  return parts.join(' ').trim();
+}
+
+// Groq AI — generate a clean, SEO-friendly dealership description.
+async function generateAiDescription(truck, groqKey) {
+  const title = [truck.year, truck.make, truck.model, truck.trim].filter(Boolean).join(' ');
+  const facts = [
+    truck.engine ? `Engine: ${truck.engine}` : '',
+    truck.transmission ? `Transmission: ${truck.transmission}` : '',
+    truck.drivetrain ? `Drivetrain: ${truck.drivetrain}` : '',
+    truck.fuelType ? `Fuel: ${truck.fuelType}` : '',
+    truck.bodyStyle ? `Body: ${truck.bodyStyle}` : '',
+    truck.exteriorColor ? `Exterior: ${truck.exteriorColor}` : '',
+    truck.mileage ? `Mileage: ${truck.mileage} ${truck.mileageUnit || 'km'}` : '',
+  ].filter(Boolean).join(' | ');
+  const prompt = `Write a polished, SEO-friendly dealership description for this vehicle. 2-3 sentences, plain text (no markdown, no hashtags, no emoji), warm premium tone, no pricing, no invented specs:
+\n${title}\n${facts}`;
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
+      body: JSON.stringify({
+        model: CONFIG.aiModel,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 220,
+      }),
+    });
+    if (!res.ok) return '';
+    const data = await res.json();
+    return (data.choices?.[0]?.message?.content || '').trim();
+  } catch (e) {
+    return '';
+  }
+}
+
+// Enrich the freshly-parsed trucks:
+//   1. VIN-decode (fill engine + missing specs) — skips trucks the worker already has
+//   2. Groq AI descriptions — capped per run, skips trucks already described
+async function enrichTrucks(trucks) {
+  // Read the worker's current enrichment state so we don't redo work every hour
+  let stateMap = {};
+  if (CONFIG.workerUrl && CONFIG.bridgeToken) {
+    try {
+      const res = await fetch(`${CONFIG.workerUrl}/api/bridge/state`, {
+        headers: { 'X-Bridge-Token': CONFIG.bridgeToken },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        for (const t of data.trucks || []) stateMap[t.id] = t;
+      }
+    } catch (e) {
+      console.warn(`   ⚠️ Couldn't read bridge state: ${e.message}`);
+    }
+  }
+
+  // 1. VIN decode for trucks missing an engine
+  let decoded = 0;
+  for (const truck of trucks) {
+    const alreadyHasEngine = (stateMap[truck.id] && stateMap[truck.id].engine) || truck.engine;
+    if (!alreadyHasEngine && truck.vin && truck.vin.length === 17) {
+      const v = await decodeVin(truck.vin);
+      if (v) {
+        truck.engine = buildEngine(v);
+        if (!truck.transmission && v.transmission) truck.transmission = v.transmission;
+        if (!truck.drivetrain && v.drivetrain) truck.drivetrain = v.drivetrain;
+        if (!truck.fuelType && v.fuelType) truck.fuelType = v.fuelType;
+        if (!truck.bodyStyle && v.bodyStyle) truck.bodyStyle = v.bodyStyle;
+        if (!truck.make && v.make) truck.make = v.make;
+        if (!truck.model && v.model) truck.model = v.model;
+        if (!truck.year && v.year) truck.year = v.year;
+        if (!truck.trim && v.trim) truck.trim = v.trim;
+        decoded++;
+      }
+      await sleep(CONFIG.vinDecodeThrottle);
+    }
+  }
+  if (decoded) console.log(`   🔧 VIN-decoded ${decoded} truck(s) (engine + missing specs)`);
+
+  // 2. Groq AI descriptions (capped, skip already-done)
+  if (CONFIG.groqApiKey) {
+    let generated = 0;
+    for (const truck of trucks) {
+      if (generated >= CONFIG.aiDescCap) break;
+      const alreadyHasDesc = (stateMap[truck.id] && stateMap[truck.id].aiDescription) || truck.aiDescription;
+      if (alreadyHasDesc) continue;
+      const desc = await generateAiDescription(truck, CONFIG.groqApiKey);
+      if (desc) { truck.aiDescription = desc; generated++; }
+      await sleep(300); // be gentle on Groq rate limits
+    }
+    if (generated) console.log(`   ✨ Generated ${generated} AI description(s)`);
+  } else {
+    console.log('   ⚠️ No GROQ_API_KEY set — skipping AI descriptions.');
+  }
+
+  return trucks;
+}
+
 // ─── Download all images for a truck ────────────────────────────────────────
 async function downloadTruckImages(truck) {
   const results = [];
@@ -231,6 +373,9 @@ async function sync() {
     // 2. Parse trucks
     const trucks = parseTrucks(csvText);
     console.log(`   🚛 Found ${trucks.length} trucks in feed`);
+
+    // 2b. Enrich: VIN-decode engines/specs + generate AI descriptions
+    await enrichTrucks(trucks);
 
     // 3. Load existing state (preserve admin fields like listed/featured)
     let existing = {};

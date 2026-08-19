@@ -187,6 +187,9 @@ async function runSync(env, trucks) {
         listed: prev.listed === true,
         featured: prev.featured === true,
         customImages: Array.isArray(prev.customImages) ? prev.customImages : [],
+        // Preserve enriched fields the feed doesn't provide (VIN decoder / AI)
+        engine: t.engine || prev.engine || '',
+        aiDescription: t.aiDescription || prev.aiDescription || '',
         updatedAt: now,
       };
       await db.prepare('UPDATE trucks SET data = ?, updated_at = ? WHERE id = ?')
@@ -268,6 +271,21 @@ export default {
       }
     }
 
+    // BRIDGE: enrichment state (id → engine/aiDescription) so the sync job can
+    // skip VIN-decoding / AI-description work it already did.
+    if (path === '/api/bridge/state' && request.method === 'GET') {
+      const bridgeToken = request.headers.get('X-Bridge-Token') || '';
+      if (!env.BRIDGE_TOKEN || bridgeToken !== env.BRIDGE_TOKEN) {
+        return json({ error: 'Forbidden — bad bridge token' }, 403);
+      }
+      const all = await db.prepare('SELECT id, data FROM trucks').all();
+      const trucks = (all.results || []).map((r) => {
+        const d = JSON.parse(r.data);
+        return { id: r.id, engine: d.engine || '', aiDescription: d.aiDescription || '' };
+      });
+      return json({ trucks });
+    }
+
     // BRIDGE: receive pushed trucks from the sync job (BEFORE the admin gate —
     // it uses its own shared-secret auth, not Google login)
     if (path === '/api/bridge/upload' && request.method === 'POST') {
@@ -302,7 +320,7 @@ export default {
       if (!existing) return json({ error: 'Truck not found' }, 404);
       const truck = JSON.parse(existing.data);
       // Allow updating details + admin fields
-      const editable = ['listed', 'featured', 'price', 'description', 'year', 'make', 'model', 'trim', 'mileage', 'exteriorColor', 'interiorColor', 'transmission', 'drivetrain', 'fuelType', 'engine', 'bodyStyle', 'customImages'];
+      const editable = ['listed', 'featured', 'price', 'description', 'aiDescription', 'year', 'make', 'model', 'trim', 'mileage', 'exteriorColor', 'interiorColor', 'transmission', 'drivetrain', 'fuelType', 'engine', 'bodyStyle', 'customImages'];
       for (const k of editable) {
         if (body[k] !== undefined) truck[k] = body[k];
       }

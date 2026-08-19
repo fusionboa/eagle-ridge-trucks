@@ -143,7 +143,7 @@ function renderList() {
           <div class="truck-row-title">${[t.year, t.make, t.model, t.trim].filter(Boolean).join(' ') || t.id}</div>
           <div class="truck-row-sub">${t.id} · left the feed · backed up ${t.backedUpAt ? new Date(t.backedUpAt).toLocaleString() : ''}</div>
         </div>
-        <div class="truck-row-price">${t.price ? `$${Number(t.price).toLocaleString()}` : '—'}</div>
+        <div class="truck-row-price">${formatPrice(t.price)}</div>
         <div class="truck-row-actions">
           <button class="btn btn-sm btn-primary" data-action="restore">↩ Restore</button>
           <button class="btn btn-sm btn-ghost" data-action="edit-backup">Edit</button>
@@ -180,7 +180,7 @@ function renderList() {
         <div class="truck-row-title">${[t.year, t.make, t.model, t.trim].filter(Boolean).join(' ') || t.id}</div>
         <div class="truck-row-sub">${t.id} · ${t.mileage ? `${Number(t.mileage).toLocaleString()} km` : '—'} · ${t.exteriorColor || '—'}</div>
       </div>
-      <div class="truck-row-price">${t.price ? `$${Number(t.price).toLocaleString()}` : '—'}</div>
+      <div class="truck-row-price">${formatPrice(t.price)}</div>
       <div class="truck-row-actions">
         <button class="btn btn-sm ${t.listed ? 'btn-ghost' : 'btn-primary'}" data-action="toggle">${t.listed ? 'Unlist' : 'List'}</button>
         <button class="btn btn-sm btn-ghost" data-action="edit">Edit</button>
@@ -354,6 +354,16 @@ function fileToDataURL(file) {
 }
 
 // ─── Helpers ────────────────────────────────────────────────
+// Parse prices like "34544 CAD" → 34544 (the feed ships price as a string with currency)
+function priceNum(p) {
+  const n = parseFloat(String(p || '').replace(/[^0-9.]/g, ''));
+  return isNaN(n) ? null : n;
+}
+function formatPrice(p) {
+  const n = priceNum(p);
+  return n === null ? '—' : `$${n.toLocaleString()}`;
+}
+
 function escapeHtml(s) {
   return String(s || '').replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',

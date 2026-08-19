@@ -168,3 +168,26 @@
 ### Notes
 - All trucks remain **unlisted** (clean state — test listings unlisted after each test).
 - One mystery left: truck `13781719` (2017 Silverado) lost its price (`""` in D1 after the hourly sync) — 1 of 383, revisit later.
+
+## v0.2.3 — NaN price fix + VIN decoder + AI descriptions (Aug 19, 2026)
+
+**Jaden reported:** admin dashboard shows "NaN" at price (edit shows it fine), and engine is still missing. Asked to use the **proper VIN decoder** (NOT Groq — Groq can't decode VINs) + the **Groq API from FB Lister** for other enrichment.
+
+### Fixes / features
+- **`admin/js/admin.js` — NaN price:** dashboard rows used `Number(t.price)` on `"34544 CAD"` strings → `NaN`. Added `priceNum()` + `formatPrice()` helpers and used them in both the main list and the backups list → `$34,544`.
+- **`sync/sync.js` — VIN decoder (proper):** new `decodeVin()` hits the free NHTSA **VPIC** API (`vpic.nhtsa.dot.gov/.../DecodeVinValues/{VIN}`) for trucks with empty engine. Builds a readable engine string (e.g. `In-Line 3-cyl (L3T)`) via `buildEngine()` and back-fills missing transmission/drivetrain/fuelType/bodyStyle/make/model/year/trim. Throttled 250ms (under VPIC's 5 req/s).
+- **`sync/sync.js` — Groq AI descriptions:** new `generateAiDescription()` writes a 2-3 sentence, SEO-friendly, premium-tone description per truck (`aiDescription` field). Capped at `AI_DESC_CAP` (default 25) per run and skips trucks already described. **Model switched to `openai/gpt-oss-20b`** — Groq deprecated `llama-3.1-8b-instant` (returns 404 model_not_found); verified `openai/gpt-oss-20b` returns clean prose (no leaked reasoning).
+- **`sync/sync.js` — skip already-done work:** `enrichTrucks()` reads the worker's new `/api/bridge/state` (id → engine/aiDescription) so the hourly job doesn't re-decode / re-describe trucks every hour.
+- **`worker/index.js`:** (1) `runSync()` now **preserves `engine` + `aiDescription`** when the fresh feed value is empty (so enrichment survives re-syncs), (2) new **`GET /api/bridge/state`** endpoint (bridge-token auth) returns enrichment state, (3) `aiDescription` added to the admin-editable fields.
+- **`site/js/main.js`:** truck detail modal now prefers `aiDescription` (falls back to feed `description`).
+- **`.github/workflows/sync.yml`:** passes `GROQ_API_KEY` secret to the sync job.
+- **GitHub secret `GROQ_API_KEY`** added (same key as FB Lister).
+
+### Resolved from v0.2.2
+- The `13781719` "lost price" mystery: it was my own edit-test artifact (number input couldn't hold `"19995 CAD"`, saved `""`); the hourly sync re-pulled fresh data and healed it. Confirmed **0 empty prices** in D1 now.
+
+### Verified
+- NHTSA VPIC decodes the real VIN `KL4AMBSL4SB169810` → 2025 Buick Encore GX, 3-cyl In-Line, L3T, FWD, Gasoline ✅
+- Groq `openai/gpt-oss-20b` returns a clean description (status 200); `qwen3.6-27b` leaks `<think>` reasoning so it's NOT used ✅
+- Public `/api/trucks` returns the listed truck; inventory page renders it with `$34,544` (headless Chrome, 0 console errors) ✅
+- All 4 JS files pass `node --check` ✅

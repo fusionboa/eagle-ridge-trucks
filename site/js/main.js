@@ -60,6 +60,7 @@ function normalizeTrucks(trucks) {
       drivetrain: t.drivetrain || '',
       engine: t.engine || '',
       description: t.description || '',
+      aiDescription: t.aiDescription || '',
       images: (t.customImages && t.customImages.length ? t.customImages : t.images || []).map(resolveImage),
     }));
 }
@@ -186,7 +187,7 @@ function openModal(t) {
     <div class="modal-specs">
       ${specs.map(([k, v]) => `<div class="modal-spec"><div class="modal-spec-label">${k}</div><div class="modal-spec-value">${v}</div></div>`).join('')}
     </div>
-    ${t.description ? `<p class="modal-desc">${t.description}</p>` : ''}
+    ${(t.aiDescription || t.description) ? `<p class="modal-desc">${t.aiDescription || t.description}</p>` : ''}
     <a href="#contact" class="btn btn-primary modal-cta" data-close>Enquire about this truck</a>
   `;
 
