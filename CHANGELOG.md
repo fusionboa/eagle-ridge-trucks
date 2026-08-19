@@ -251,7 +251,7 @@
 - Description now shows the catchy prose (`aiDescription`) separately from the feature list.
 
 ### AI descriptions — switched to a DIFFERENT free AI
-- **Groq → Cloudflare Workers AI** (`@cf/meta/llama-3.1-8b-instruct`): free, no API key, runs inside our own worker via the new `env.AI` binding.
+- **Groq → Cloudflare Workers AI** (`@cf/openai/gpt-oss-20b`): free, no API key, runs inside our own worker via the new `env.AI` binding. (First tried `@cf/meta/llama-3.1-8b-instruct` — it was deprecated 2026-05-30, so switched to the valid `gpt-oss-20b`.)
 - New worker endpoint **`POST /api/bridge/describe`** (bridge-token auth) — generates descriptions for trucks missing `aiDescription` (LISTED first, capped at 10/call so it ramps up each hourly sync).
 - `sync.js` no longer calls Groq — it calls `/api/bridge/describe` after each upload. Groq key + env removed from the workflow.
 - **Catchy prompt** with an explicit guard: *"Do NOT mention Eagle Ridge, any dealership name, phone number, or URL."*
