@@ -191,3 +191,20 @@
 - Groq `openai/gpt-oss-20b` returns a clean description (status 200); `qwen3.6-27b` leaks `<think>` reasoning so it's NOT used ✅
 - Public `/api/trucks` returns the listed truck; inventory page renders it with `$34,544` (headless Chrome, 0 console errors) ✅
 - All 4 JS files pass `node --check` ✅
+
+## v0.2.4 — TRUCKS WERE INVISIBLE (opacity: 0) — the real "doesn't show" bug (Aug 19, 2026)
+
+**Jaden reported (repeatedly):** "does not show on the inventory page still." The truck was listed, the API returned it, the DOM had the card — but it was **invisible**.
+
+### Root cause
+- `renderGrid()` adds the `in-view` class to each truck card (staggered fade-in via `requestAnimationFrame`).
+- But the CSS only had `.reveal.visible { opacity: 1 }` — there was **no `.reveal.in-view` rule**.
+- So every card rendered with `.reveal` (which is `opacity: 0`) + `.in-view` (no effect) → **stayed at opacity 0 forever**.
+- Headless-Chrome tests checked the DOM (`cardCount: 1`, correct HTML), not the *computed* style, so it kept "passing" while the user saw a blank grid. Classic.
+
+### Fix
+- `site/css/styles.css` — added `.reveal.in-view { opacity: 1; transform: translateY(0); }`.
+
+### Verified (computed style, not DOM)
+- `/inventory` and `/` both now show the card at **computed `opacity: 1`**, `visible: true`, price `$34,544` ✅
+- 0 console errors ✅
