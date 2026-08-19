@@ -4,7 +4,8 @@
 // Listed/Unlisted tabs, edit modal, bulk image download.
 // ============================================================
 
-const API_BASE = window.ADMIN_CONFIG?.apiBase || '/api';
+// API_BASE is the worker ROOT (no trailing /api) — every fetch below appends its own /api path.
+const API_BASE = (window.ADMIN_CONFIG?.apiBase || '').replace(/\/+$/, '');
 let allTrucks = [];
 let allBackups = [];
 let authToken = localStorage.getItem('er_admin_token') || '';

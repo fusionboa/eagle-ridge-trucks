@@ -125,18 +125,23 @@
 - [ ] Remove test mode + restore Google-only admin before "real" launch
 - [ ] Dad's dealership website / blog ideas for max sales
 
-## v0.2.1 — ADMIN FIXED (Aug 19, 2026)
+## v0.2.1 — ADMIN FIXED FOR REAL (Aug 19, 2026)
 
-**Jaden reported: the admin page "just doesn't do anything" / the test-mode button appears dead.**
+**Jaden reported: the admin page "just doesn't do anything" / the test-mode button appears dead.** Caught and reproduced with headless Chrome (console showed `Error: Failed to load` in a real browser while curl passed).
 
-### Root cause (real bug, not browser cache)
-- The admin sends a custom **`X-Dev-Key`** header on every API call, but the worker's CORS preflight only allowed `Content-Type, Authorization`.
-- The browser's OPTIONS preflight got rejected → **every fetch died silently** → page looked dead even though the code was deployed correctly.
-- curl tests passed because curl doesn't do CORS preflight — that's why it looked fine server-side.
+### Root cause #1 — DOUBLE `/api` in the request URL (the real killer)
+- `ADMIN_CONFIG.apiBase` was set to `https://eagle-ridge-trucks.fblister.workers.dev/api` and every fetch in `admin.js` appends its own `/api/...` path → requests went to **`/api/api/admin/trucks`** → the worker route never matched → non-2xx → `Failed to load`.
+- curl tests missed it because they hit the correct `/api/admin/trucks` path directly.
+- **Fix:** `apiBase` now points at the worker ROOT (no trailing `/api`); `admin.js` strips any trailing slash from `API_BASE`. Same fix applied to the public site (`main.js` + added missing `window.SITE_CONFIG` to `index.html`/`inventory.html` — the site was silently falling back to local sample data instead of the worker).
 
-### Fix
-- `worker/index.js`: `Access-Control-Allow-Headers` now includes **`X-Dev-Key, X-Bridge-Token`** → redeployed (version `8a66686b`).
-- Verified: preflight returns the new headers; `/api/admin/trucks` with dev key + browser Origin returns all 383 trucks ✅
+### Root cause #2 — CORS preflight rejected `X-Dev-Key`
+- The admin sends a custom `X-Dev-Key` header, but the worker only allowed `Content-Type, Authorization` in `Access-Control-Allow-Headers` → any browser preflight failed (curl doesn't preflight, so it hid this too).
+- **Fix:** `worker/index.js` now allows `X-Dev-Key, X-Bridge-Token` → redeployed (version `8a66686b`).
+
+### Verified (real browser, headless Chrome)
+- No console errors; admin boots straight to the dashboard with **383/383 trucks** (all unlisted, as designed) ✅
+- Browser requests `/api/admin/trucks` (correct, single `/api`) and gets 200 ✅
+- Preflight returns the new allowed headers ✅
 
 ### Also logged (Aug 19)
 - **Fusion AI specialist-model family idea** added to `~/Desktop/context.md` (Library AI section) — one small model per domain (Fusion AI Programmer, Fusion AI Kernel Dev, ...) each with its own growing library + a router.

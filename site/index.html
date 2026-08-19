@@ -129,6 +129,10 @@
     </div>
   </div>
 
+  <script>
+    // Data source: the live Cloudflare Worker (falls back to local data/trucks.json if unreachable)
+    window.SITE_CONFIG = { apiBase: 'https://eagle-ridge-trucks.fblister.workers.dev/api' };
+  </script>
   <script src="js/main.js"></script>
 </body>
 </html>

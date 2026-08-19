@@ -6,7 +6,8 @@
 
 // Where the site gets its data. In production this is the Cloudflare
 // Worker URL; when testing locally it can point at the local data file.
-const API_BASE = window.SITE_CONFIG?.apiBase || '/api';
+// API_BASE is the worker root (no trailing /api) — the fetch below appends its own path.
+const API_BASE = (window.SITE_CONFIG?.apiBase || '').replace(/\/+$/, '');
 const DATA_FALLBACK = 'data/trucks.json';
 
 // Which page are we on?
