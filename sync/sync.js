@@ -234,13 +234,14 @@ async function decodeVin(vin) {
   };
 }
 
-// Build a human-readable engine string from VPIC fields, e.g. "1.2L In-Line 3-cyl (L3T)"
+// Build a human-readable engine string from VPIC fields, e.g. "In-Line 3-cyl (L3T)".
+// VPIC's EngineModel can be verbose ("LV3 - GEN 5, SIDI, VVT...") — keep just the code.
 function buildEngine(v) {
   const parts = [];
   if (v.displacement) parts.push(`${v.displacement}L`);
   if (v.config) parts.push(v.config);
   if (v.cylinders) parts.push(`${v.cylinders}-cyl`);
-  if (v.engineModel) parts.push(`(${v.engineModel})`);
+  if (v.engineModel) parts.push(`(${String(v.engineModel).split(/[ -]/)[0]})`);
   return parts.join(' ').trim();
 }
 
