@@ -12,6 +12,8 @@ data/sync-meta.json
 
 # Cloudflare
 .wrangler/
+# Pages build output (regenerated from site/ + admin/)
+pages-dist/
 
 # OS junk
 .DS_Store

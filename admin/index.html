@@ -17,6 +17,7 @@
       <h1>Eagle Ridge Admin</h1>
       <p>Sign in with your Google account to manage truck listings.</p>
       <button class="btn btn-primary" id="googleSignIn">Sign in with Google</button>
+      <button class="btn btn-ghost" id="devModeBtn" style="margin-top:10px">🧪 Test mode — skip Google login</button>
       <p class="login-error" id="loginError"></p>
     </div>
   </div>
@@ -75,7 +76,7 @@
   <script>
     // Admin config — same Firebase project + auth as FB Lister
     window.ADMIN_CONFIG = {
-      apiBase: 'https://eagle-ridge-trucks.YOUR_SUBDOMAIN.workers.dev/api',
+      apiBase: 'https://eagle-ridge-trucks.fblister.workers.dev/api',
       firebase: {
         apiKey: 'AIzaSyDbEay8z59i0YbCc3uICq6Do8RgWhZnm0I',
         authDomain: 'fblisterpro.firebaseapp.com',

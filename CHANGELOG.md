@@ -88,3 +88,39 @@
 - **No DMS feed** — Eagle Ridge is FTP-only, so Cloudflare can't fetch it directly (Workers can't do raw FTP). The Node bridge translates FTP → HTTP and pushes to the worker. Pixel 2 stays as the FB Lister bridge, NOT this project's server.
 - **Email-gated admin** — reuses FB Lister's Google JWT + ADMIN_EMAILS pattern.
 - **Bulk image download** — admin can download all images for a truck, edit in Gemini (remove Eagle Ridge branding / enhance), then upload back.
+
+## v0.2.0 — DEPLOYED LIVE + TEST MODE (Aug 18, 2026)
+
+**Jaden's request:** deploy it so he can test — and make the admin work WITHOUT Google login for now.
+
+### Deployed to production 🚀
+- **Worker LIVE:** `https://eagle-ridge-trucks.fblister.workers.dev` — D1 tables created in the REAL `fblister-prod-db` (trucks + backups, 11 tables total)
+- **Site + Admin LIVE:** `https://eagle-ridge-trucks.pages.dev` (`/` = luxury storefront, `/admin/` = admin panel)
+- **GitHub repo:** `fusionboa/eagle-ridge-trucks` — hourly Actions sync running (383 real trucks pulled from FTP)
+- **Full pipeline verified end-to-end:** FTP → GitHub Actions → Worker → D1 (383 trucks) → public API
+
+### Bugs fixed along the way
+- `verifyGoogleToken` referenced `env` without it being passed in → admin auth would always fail. Fixed: env passed through.
+- Worker deployed with a **stale version / tables missing from production D1** (`no such table: trucks`) → re-applied schema to the real prod D1 (`wrangler d1 execute --remote`).
+- **Bridge 401 bug:** `/api/bridge/upload` was checked AFTER the admin gate, so it demanded a Google token before checking the bridge token. Moved bridge auth BEFORE the admin gate.
+- `BRIDGE_TOKEN` mismatch: trailing newline (`0x0a`) in the stored secret vs GitHub's clean copy → re-set with no trailing newline.
+
+### 🧪 TEST MODE (no Google login)
+- **Worker:** `DEV_MODE` + `DEV_KEY` secrets. When `DEV_MODE=true`, a request with header `X-Dev-Key: er-dev-2026-test` is treated as an admin (bypasses both token check AND email allowlist).
+- **Admin page:** auto-boots straight into the dashboard on open (no login screen) — sends `X-Dev-Key` on every API call.
+- **How to revert to Google login later:**
+  - `admin/js/admin.js` → comment out `enterDevMode();`, uncomment `initAuth();`
+  - Remove `DEV_MODE` + `DEV_KEY` secrets (`npx wrangler secret delete DEV_MODE` / `DEV_KEY`)
+  - Remove the dev bypass block in `worker/index.js` `authUser()`
+- Debug endpoint `/api/debug` was added for troubleshooting then **commented out** (left in the file, inert).
+
+### Verified
+- Dev key → `/api/admin/trucks` returns the real 383 trucks ✅
+- No key → 401 ✅ / wrong key → 401 ✅ / bridge token still required for sync ✅
+- Public site + admin page both 200 ✅
+
+### Remaining (next steps)
+- [ ] SEO pass: per-truck landing pages, Vehicle schema, Google Business Profile, blog posts
+- [ ] Gemini image pipeline (manual for now — download → edit → re-upload)
+- [ ] Remove test mode + restore Google-only admin before "real" launch
+- [ ] Dad's dealership website / blog ideas for max sales

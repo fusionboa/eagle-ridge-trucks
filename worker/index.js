@@ -24,7 +24,7 @@
 // We accept the SAME Firebase project so the same Google login works here.
 const GOOGLE_CERTS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
 
-async function verifyGoogleToken(token) {
+async function verifyGoogleToken(token, env) {
   try {
     // Decode JWT header/payload (unverified) to get kid + email
     const parts = token.split('.');
@@ -73,15 +73,26 @@ function base64urlToBytes(s) {
 }
 
 // ─── Auth helpers ───────────────────────────────────────────────────────────
-async function authUser(request) {
+async function authUser(request, env) {
+  // TEST MODE: when DEV_MODE=true, a request carrying X-Dev-Key is treated as
+  // an admin. This lets Jaden test the admin panel WITHOUT Google sign-in.
+  // ⚠️ Remove DEV_MODE / DEV_KEY before going fully live.
+  if (env.DEV_MODE === 'true') {
+    const devKey = request.headers.get('X-Dev-Key') || '';
+    if (devKey && env.DEV_KEY && devKey === env.DEV_KEY) {
+      return { email: 'dev@test.local', name: 'Dev Test', sub: 'dev-test-mode', isDev: true };
+    }
+  }
   const auth = request.headers.get('Authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
   if (!token) return null;
-  return verifyGoogleToken(token);
+  return verifyGoogleToken(token, env);
 }
 
 function isAdmin(user, env) {
   if (!user || !user.email) return false;
+  // Dev test mode bypasses the email allowlist
+  if (user.isDev) return true;
   const allowed = (env.ADMIN_EMAILS || '')
     .split(',')
     .map((s) => s.trim().toLowerCase())
@@ -235,17 +246,44 @@ export default {
     // Health
     if (path === '/api/health') return json({ ok: true, service: 'eagle-ridge-trucks' });
 
+    // DEBUG (commented out — remove later): inspect env for test-mode debugging
+    // if (path === '/api/debug') {
+    //   return json({
+    //     devMode: env.DEV_MODE || null,
+    //     devKeyLen: env.DEV_KEY ? env.DEV_KEY.length : 0,
+    //     devKeyFirst: env.DEV_KEY ? env.DEV_KEY.slice(0, 4) : null,
+    //   });
+    // }
+
     // PUBLIC: list listed trucks
     if (path === '/api/trucks' && request.method === 'GET') {
-      const all = await db.prepare('SELECT data FROM trucks').all();
-      const trucks = (all.results || [])
-        .map((r) => JSON.parse(r.data))
-        .filter((t) => t.listed === true);
-      return json({ trucks });
+      try {
+        const all = await db.prepare('SELECT data FROM trucks').all();
+        const trucks = (all.results || [])
+          .map((r) => JSON.parse(r.data))
+          .filter((t) => t.listed === true);
+        return json({ trucks });
+      } catch (e) {
+        return json({ error: 'DB error: ' + e.message }, 500);
+      }
+    }
+
+    // BRIDGE: receive pushed trucks from the sync job (BEFORE the admin gate —
+    // it uses its own shared-secret auth, not Google login)
+    if (path === '/api/bridge/upload' && request.method === 'POST') {
+      const bridgeToken = request.headers.get('X-Bridge-Token') || '';
+      if (!env.BRIDGE_TOKEN || bridgeToken !== env.BRIDGE_TOKEN) {
+        return json({ error: 'Forbidden — bad bridge token' }, 403);
+      }
+      const body = await request.json().catch(() => ({}));
+      const trucks = body.trucks;
+      if (!Array.isArray(trucks)) return json({ error: 'trucks array required' }, 400);
+      const result = await runSync(env, trucks);
+      return json(result, result.ok ? 200 : 500);
     }
 
     // ─── Admin (all below require auth + admin email) ───
-    const user = await authUser(request);
+    const user = await authUser(request, env);
     if (!user) return json({ error: 'Unauthorized' }, 401);
     if (!isAdmin(user, env)) return json({ error: 'Forbidden — not an admin email' }, 403);
 
@@ -300,23 +338,6 @@ export default {
     // Admin: trigger sync now (tell the bridge to pull + push)
     if (path === '/api/admin/sync' && request.method === 'POST') {
       return json({ ok: true, message: 'Sync requested — the bridge will pull from FTP and push here.' });
-    }
-
-    // BRIDGE: receive pushed trucks from the sync job
-    // Auth: shared secret (X-Bridge-Token) — used by GitHub Actions cron.
-    // Also accepts a Google admin JWT (Bearer) as an alternative.
-    if (path === '/api/bridge/upload' && request.method === 'POST') {
-      const bridgeToken = request.headers.get('X-Bridge-Token') || '';
-      const isBridgeAuthed = env.BRIDGE_TOKEN && bridgeToken === env.BRIDGE_TOKEN;
-      const isAdminAuthed = isAdmin(user, env);
-      if (!isBridgeAuthed && !isAdminAuthed) {
-        return json({ error: 'Forbidden — bad bridge token or not an admin' }, 403);
-      }
-      const body = await request.json().catch(() => ({}));
-      const trucks = body.trucks;
-      if (!Array.isArray(trucks)) return json({ error: 'trucks array required' }, 400);
-      const result = await runSync(env, trucks);
-      return json(result, result.ok ? 200 : 500);
     }
 
     return json({ error: 'Not found' }, 404);

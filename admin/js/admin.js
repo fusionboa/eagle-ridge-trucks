@@ -8,6 +8,8 @@ const API_BASE = window.ADMIN_CONFIG?.apiBase || '/api';
 let allTrucks = [];
 let allBackups = [];
 let authToken = localStorage.getItem('er_admin_token') || '';
+let devMode = localStorage.getItem('er_dev_mode') === 'true';
+const DEV_KEY = 'er-dev-2026-test';
 let currentTab = 'listed';
 
 // ─── Auth (Firebase, same project as FB Lister) ────────────
@@ -41,8 +43,20 @@ function initAuth() {
 function signOut() {
   if (firebaseAuth) firebaseAuth.signOut();
   authToken = '';
+  devMode = false;
   localStorage.removeItem('er_admin_token');
+  localStorage.removeItem('er_dev_mode');
   location.reload();
+}
+
+// TEST MODE — skip Google login (worker must have DEV_MODE=true + DEV_KEY set)
+function enterDevMode() {
+  devMode = true;
+  localStorage.setItem('er_dev_mode', 'true');
+  authToken = DEV_KEY;
+  document.getElementById('loginGate').hidden = true;
+  document.getElementById('app').hidden = false;
+  loadTrucks();
 }
 
 // ─── App boot ───────────────────────────────────────────────
@@ -55,9 +69,7 @@ function showApp() {
 // ─── Load trucks ────────────────────────────────────────────
 async function loadTrucks() {
   try {
-    const res = await fetch(`${API_BASE}/api/admin/trucks`, {
-      headers: { 'Authorization': `Bearer ${authToken}` },
-    });
+    const res = await fetch(`${API_BASE}/api/admin/trucks`, { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to load');
     const data = await res.json();
     allTrucks = data.trucks || [];
@@ -71,12 +83,18 @@ async function loadTrucks() {
   loadBackups();
 }
 
+// Headers for API calls — dev mode sends X-Dev-Key, real mode sends the Google token
+function authHeaders(extra = {}) {
+  if (devMode) {
+    return { 'X-Dev-Key': authToken, ...extra };
+  }
+  return { 'Authorization': `Bearer ${authToken}`, ...extra };
+}
+
 // Load backups (published trucks that left the feed)
 async function loadBackups() {
   try {
-    const res = await fetch(`${API_BASE}/api/admin/backups`, {
-      headers: { 'Authorization': `Bearer ${authToken}` },
-    });
+    const res = await fetch(`${API_BASE}/api/admin/backups`, { headers: authHeaders() });
     if (res.ok) {
       const data = await res.json();
       allBackups = data.backups || [];
@@ -89,7 +107,7 @@ async function restoreBackup(id) {
   try {
     const res = await fetch(`${API_BASE}/api/admin/backup/${encodeURIComponent(id)}`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${authToken}` },
+      headers: authHeaders(),
     });
     if (!res.ok) { alert('Restore failed'); return; }
     alert('Restored as an unlisted draft — review it, then List it.');
@@ -197,7 +215,7 @@ async function updateTruck(id, patch) {
   try {
     const res = await fetch(`${API_BASE}/api/admin/truck/${encodeURIComponent(id)}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(patch),
     });
     if (!res.ok) { alert('Update failed'); return false; }
@@ -359,6 +377,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('signOutBtn').addEventListener('click', signOut);
+
+  // Test mode — skip Google login
+  document.getElementById('devModeBtn').addEventListener('click', enterDevMode);
   document.getElementById('syncNowBtn').addEventListener('click', async () => {
     alert('Sync requested — the bridge on the server pulls from FTP hourly. If you just changed the feed, it will update on the next sync.');
   });
@@ -379,5 +400,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
-  initAuth();
+  // 🔧 TEST MODE: boot straight into the admin (no Google login).
+  // Comment out enterDevMode() and uncomment initAuth() to go back to Google sign-in.
+  enterDevMode();
+  // initAuth();
 });
