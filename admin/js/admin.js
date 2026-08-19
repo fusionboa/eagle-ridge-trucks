@@ -244,7 +244,7 @@ function openEditModal(id) {
       ${field('Make', 'make')}
       ${field('Model', 'model')}
       ${field('Trim', 'trim')}
-      ${field('Price', 'price', 'number')}
+      ${field('Price', 'price', 'text')}  <!-- text, not number: prices come from the feed as "34544 CAD" strings -->
       ${field('Mileage', 'mileage', 'number')}
       ${field('Exterior Color', 'exteriorColor')}
       ${field('Interior Color', 'interiorColor')}
