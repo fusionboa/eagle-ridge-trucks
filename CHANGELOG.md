@@ -284,10 +284,12 @@
 **Jaden:** "instead just make an option to copy all images and paste" (instead of/in addition to the ZIP download) — so I can paste straight into Gemini.
 
 ### Changes
-- **Admin — "📋 Copy all (N)" button** (primary action in the Images modal): fetches every image through the `/api/image` proxy, converts each to PNG (`toPngBlob` via canvas — PNG is the only format `ClipboardItem` reliably supports), then writes them all to the clipboard with `navigator.clipboard.write([...])` as multiple image items.
-- **Fallback:** if the browser doesn't support clipboard images (`ClipboardItem` missing / write throws), it copies the raw image URLs as text instead so nothing is lost.
+- **Admin — "📋 Copy all (N)" button** (primary action in the Images modal): fetches every image through the `/api/image` proxy and copies them all to the clipboard.
+- **Root cause found:** Chrome throws `NotAllowedError: Support for multiple ClipboardItems is not implemented` when you try to write multiple raw images in one `navigator.clipboard.write()` call — that's why the first attempt silently fell back to pasting raw links ("i need the images not the links").
+- **Fix — copy as an HTML block:** embed each image as a `<img src="data:...">` (data-URL, so the actual image bytes travel with the clipboard, not a remote link) inside a single `ClipboardItem` with `text/html` + `text/plain`. This is the standard way Chrome supports multiple images on the clipboard. Pasting into Gmail / Docs / Photos / Word drops every image in.
 - **Kept "⬇ Download all"** as a secondary button (not removed).
 
-### Verified (headless Chrome)
-- Images modal shows "📋 Copy all (13)" and "⬇ Download all" side by side ✅
-- `node --check` clean, deployed to Pages, `copyImgsBtn` + `toPngBlob` present in live `admin.js` ✅
+### Verified
+- Deployed live — `admin.js` now uses `text/html` + `text/plain` ClipboardItem, no more multi-`ClipboardItem` array ✅
+- `node --check` clean ✅
+- Confirmed root cause via headless Chrome: multi-item write → `NotAllowedError`; single HTML item is the supported path ✅

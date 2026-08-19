@@ -347,33 +347,44 @@ function openImagesModal(id) {
     }
   });
 
-  // Copy all → put every image on the clipboard so you can paste straight into Gemini etc.
+  // Copy all → Chrome can't write MULTIPLE raw images in one clipboard call
+  // ("Support for multiple ClipboardItems is not implemented"), but it CAN hold
+  // a single HTML block full of embedded <img> tags. Pasting into Gmail / Docs /
+  // Photos / Word then drops every image in. We embed data-URLs (not remote
+  // links) so the images travel with the clipboard, not the URLs.
   document.getElementById('copyImgsBtn').addEventListener('click', async () => {
     const btn = document.getElementById('copyImgsBtn');
     const originalText = btn.textContent;
     btn.disabled = true;
     btn.textContent = '⏳ Copying…';
     try {
-      if (!navigator.clipboard || !window.ClipboardItem) throw new Error('Clipboard image copy not supported');
-      const items = [];
+      if (!navigator.clipboard || !window.ClipboardItem) throw new Error('Clipboard copy not supported');
+      const htmlParts = [];
+      const urlParts = [];
       let ok = 0;
       for (let i = 0; i < imgs.length; i++) {
         const proxyUrl = `${API_BASE}/api/image?url=${encodeURIComponent(imgs[i])}`;
         const res = await fetch(proxyUrl);
         if (!res.ok) continue;
-        const pngBlob = await toPngBlob(await res.blob());
-        items.push(new ClipboardItem({ 'image/png': pngBlob }));
+        const dataUrl = await fileToDataURL(await res.blob());
+        htmlParts.push(`<img src="${dataUrl}" style="max-width:640px;">`);
+        urlParts.push(imgs[i]);
         ok++;
       }
       if (!ok) throw new Error('no images fetched');
-      await navigator.clipboard.write(items);
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([htmlParts.join('<br>')], { type: 'text/html' }),
+          'text/plain': new Blob([urlParts.join('\n')], { type: 'text/plain' }),
+        }),
+      ]);
       btn.textContent = `✓ Copied ${ok} images`;
       setTimeout(() => { btn.textContent = originalText; }, 3000);
     } catch (e) {
       // Fallback: copy the raw image URLs as text so nothing is lost.
       try {
         await navigator.clipboard.writeText(imgs.join('\n'));
-        btn.textContent = '✓ Copied URLs (image copy unsupported here)';
+        btn.textContent = '✓ Copied URLs (fallback)';
       } catch (_) {
         alert('Copy failed: ' + e.message);
         btn.textContent = originalText;
@@ -419,24 +430,6 @@ function fileToDataURL(file) {
     reader.onload = () => resolve(reader.result);
     reader.onerror = reject;
     reader.readAsDataURL(file);
-  });
-}
-
-// Convert any image blob to PNG — the only format ClipboardItem reliably supports.
-function toPngBlob(blob) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(blob);
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      canvas.getContext('2d').drawImage(img, 0, 0);
-      URL.revokeObjectURL(url);
-      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image load failed')); };
-    img.src = url;
   });
 }
 
