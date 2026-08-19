@@ -510,6 +510,75 @@ section { padding: 110px 24px; }
 .vdp-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
 .vdp-noimg { display: grid; place-items: center; aspect-ratio: 16/10; background: var(--bg-2); border-radius: var(--radius); font-size: 40px; }
 
+/* VDP details, features, forms */
+.vdp-details h2 { font-size: 20px; margin-bottom: 16px; }
+.vdp-details dl { display: flex; flex-direction: column; margin: 0; }
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.detail-row dt { color: var(--text-muted); font-size: 13px; font-weight: 500; }
+.detail-row dd { margin: 0; font-size: 14px; font-weight: 600; text-align: right; }
+.vdp-desc { margin: 40px 0 0; }
+.vdp-desc h2 { font-size: 20px; margin-bottom: 12px; }
+.vdp-desc p { color: var(--text-muted); line-height: 1.75; font-size: 16px; }
+.vdp-features { margin-top: 64px; }
+.feature-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+}
+.feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+}
+.feature-check { color: var(--accent); font-weight: 700; flex: 0 0 auto; }
+.vdp-contact { margin-top: 64px; }
+.vdp-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+.vdp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+}
+.vdp-form h3 { font-size: 18px; margin-bottom: 6px; }
+.vdp-form input, .vdp-form textarea {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 13px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.3s;
+}
+.vdp-form input:focus, .vdp-form textarea:focus { border-color: var(--accent); }
+.vdp-form .btn { width: 100%; }
+
 /* ─── Payment calculator ─────────────────────────────────── */
 .vdp-payment { margin-top: 64px; }
 .pay-card {
@@ -563,4 +632,5 @@ section { padding: 110px 24px; }
   .vdp-layout { grid-template-columns: 1fr; }
   .list-top { flex-direction: column; gap: 6px; }
   .list-price { text-align: left; }
+  .vdp-form-grid { grid-template-columns: 1fr; }
 }

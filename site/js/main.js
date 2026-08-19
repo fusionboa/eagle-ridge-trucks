@@ -203,12 +203,23 @@ function cardHTML(t, i, isFlagship) {
     </a>`;
 }
 
+// Split the feed's comma-separated feature list into individual items.
+function splitFeatures(desc) {
+  if (!desc) return [];
+  return desc
+    .split(',')
+    .map((s) => s.trim())
+    .map((s) => s.replace(/^and\s+/i, '').replace(/\.$/, ''))
+    .filter((s) => s.length > 1);
+}
+
 // ─── Vehicle detail page (VDP) ─────────────────────────────
 function renderVehicle(t) {
   const title = [t.year, t.make, t.model, t.trim].filter(Boolean).join(' ');
   const price = formatPrice(t.price);
   const imgs = (t.images || []).filter(Boolean);
-  const desc = t.aiDescription || t.description || '';
+  const desc = t.aiDescription || '';         // catchy prose (Workers AI)
+  const features = splitFeatures(t.description); // full equipment list
 
   const gallery = imgs.length ? `
     <div class="vdp-gallery">
@@ -216,17 +227,18 @@ function renderVehicle(t) {
       ${imgs.length > 1 ? `<div class="vdp-thumbs">${imgs.map((im, i) => `<img class="vdp-thumb ${i === 0 ? 'active' : ''}" src="${im}" data-src="${im}" alt="">`).join('')}</div>` : ''}
     </div>` : '<div class="vdp-noimg">📷</div>';
 
-  const specs = [
-    ['Mileage', t.mileage ? `${Number(t.mileage).toLocaleString()} km` : ''],
+  // Full vehicle details (dealership-style label:value list)
+  const details = [
     ['Body Style', t.bodyStyle],
+    ['Engine', t.engine],
+    ['Exterior Colour', t.exteriorColor],
+    ['Interior Colour', t.interiorColor],
     ['Transmission', t.transmission],
     ['Drivetrain', t.drivetrain],
-    ['Engine', t.engine],
     ['Fuel Type', t.fuelType],
-    ['Exterior Color', t.exteriorColor],
-    ['Interior Color', t.interiorColor],
-    ['Stock #', t.id],
+    ['Mileage', t.mileage ? `${Number(t.mileage).toLocaleString()} km` : ''],
     ['VIN', t.vin],
+    ['Stock #', t.id],
   ].filter(([, v]) => v);
 
   document.getElementById('vehicleContent').innerHTML = `
@@ -239,17 +251,55 @@ function renderVehicle(t) {
     <div class="vdp-layout">
       <div class="vdp-gallery-col">${gallery}</div>
       <div class="vdp-info-col">
-        <div class="vdp-specs">
-          ${specs.map(([k, v]) => `<div class="vdp-spec"><div class="vdp-spec-label">${k}</div><div class="vdp-spec-value">${escapeHtml(v)}</div></div>`).join('')}
+        <div class="vdp-details">
+          <h2>Vehicle Details</h2>
+          <dl>
+            ${details.map(([k, v]) => `<div class="detail-row"><dt>${k}</dt><dd>${escapeHtml(v)}</dd></div>`).join('')}
+          </dl>
         </div>
-        ${desc ? `<div class="vdp-desc"><h2>About this vehicle</h2><p>${escapeHtml(desc)}</p></div>` : ''}
         <div class="vdp-actions">
-          <a href="index.html#contact" class="btn btn-primary">Confirm Availability</a>
-          <a href="index.html#contact" class="btn btn-ghost">Request More Info</a>
+          <a href="#vdp-contact" class="btn btn-primary">Confirm Availability</a>
+          <a href="#vdp-contact" class="btn btn-ghost">Request More Info</a>
         </div>
       </div>
     </div>
+    ${desc ? `<div class="vdp-desc"><h2>About this vehicle</h2><p>${escapeHtml(desc)}</p></div>` : ''}
+    ${features.length ? `
+      <section class="vdp-features">
+        <div class="section-head">
+          <p class="eyebrow">Standard Equipment</p>
+          <h2 class="section-title">Features & Options</h2>
+        </div>
+        <ul class="feature-grid">
+          ${features.map((f) => `<li class="feature"><span class="feature-check">✓</span>${escapeHtml(f)}</li>`).join('')}
+        </ul>
+      </section>` : ''}
     ${paymentCalculatorHTML(priceNum(t.price))}
+    <section class="vdp-contact" id="vdp-contact">
+      <div class="section-head">
+        <p class="eyebrow">Get in touch</p>
+        <h2 class="section-title">Take the next step</h2>
+      </div>
+      <div class="vdp-form-grid">
+        <form class="vdp-form" data-form="testdrive">
+          <h3>Book a Test Drive</h3>
+          <input type="text" placeholder="First name" required>
+          <input type="text" placeholder="Last name" required>
+          <input type="tel" placeholder="Phone number" required>
+          <input type="email" placeholder="Email" required>
+          <input type="date" placeholder="Preferred date">
+          <button type="submit" class="btn btn-primary">Book Test Drive</button>
+        </form>
+        <form class="vdp-form" data-form="info">
+          <h3>Request More Info</h3>
+          <input type="text" placeholder="Name" required>
+          <input type="tel" placeholder="Phone number" required>
+          <input type="email" placeholder="Email" required>
+          <textarea placeholder="What would you like to know?" rows="4" required></textarea>
+          <button type="submit" class="btn btn-ghost">Request Info</button>
+        </form>
+      </div>
+    </section>
   `;
 
   // Thumbnail click → swap main image
@@ -258,6 +308,16 @@ function renderVehicle(t) {
       document.getElementById('vdpMain').src = thumb.dataset.src;
       document.querySelectorAll('.vdp-thumb').forEach((x) => x.classList.remove('active'));
       thumb.classList.add('active');
+    });
+  });
+
+  // Forms → simple success message (no backend yet)
+  document.querySelectorAll('.vdp-form').forEach((form) => {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const btn = form.querySelector('button');
+      btn.textContent = '✓ Sent';
+      setTimeout(() => { btn.textContent = form.dataset.form === 'testdrive' ? 'Book Test Drive' : 'Request Info'; form.reset(); }, 2500);
     });
   });
 

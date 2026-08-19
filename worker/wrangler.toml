@@ -8,6 +8,10 @@ binding = "D1"
 database_name = "fblister-prod-db"
 database_id = "10542189-fb0f-4a9b-9b86-19143bdc5418"
 
+# Workers AI (free) — used to generate catchy listing descriptions
+[ai]
+binding = "AI"
+
 # Environment variables
 [vars]
 ADMIN_EMAILS = "jadenmichalmarwaha@gmail.com,jadenmichalmarwaha2@gmail.com"

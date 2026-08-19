@@ -34,5 +34,4 @@ jobs:
           CSV_FILE: ${{ secrets.CSV_FILE }}
           WORKER_URL: ${{ secrets.WORKER_URL }}
           BRIDGE_TOKEN: ${{ secrets.BRIDGE_TOKEN }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: node sync.js --once

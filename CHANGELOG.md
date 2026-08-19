@@ -239,3 +239,22 @@
 - VDP: title/price/gallery (20 thumbs)/9 specs/AI description/payment calc all render; default $256 bi-weekly → $219 after $5,000 down ✅
 - Home flagships still render + link to VDP ✅
 - 0 console errors across all three pages ✅
+
+## v0.3.1 — Full VDP info + Workers AI descriptions (Aug 19, 2026)
+
+**Jaden:** "the full info when you click on car isnt there — make it like the HTML I sent" + "add a different free AI to gen the description, make it catchy, don't mention Eagle Ridge".
+
+### VDP — now matches the dealership's detail page
+- **Vehicle Details** — proper label:value list (Body Style, Engine, Exterior/Interior Colour, Transmission, Drivetrain, Fuel Type, Mileage, VIN, Stock #).
+- **Features & Options ("Standard Equipment")** — NEW: the feed's `description` field is actually a comma-separated feature list, so `splitFeatures()` breaks it into checkmarked items (e.g. "✓ LED exterior lighting", "✓ heated power side mirrors"…). 23 features rendered for the listed truck.
+- **Book a Test Drive + Request More Info** — NEW forms (mirroring the dealership) with a simple "✓ Sent" success state.
+- Description now shows the catchy prose (`aiDescription`) separately from the feature list.
+
+### AI descriptions — switched to a DIFFERENT free AI
+- **Groq → Cloudflare Workers AI** (`@cf/meta/llama-3.1-8b-instruct`): free, no API key, runs inside our own worker via the new `env.AI` binding.
+- New worker endpoint **`POST /api/bridge/describe`** (bridge-token auth) — generates descriptions for trucks missing `aiDescription` (LISTED first, capped at 10/call so it ramps up each hourly sync).
+- `sync.js` no longer calls Groq — it calls `/api/bridge/describe` after each upload. Groq key + env removed from the workflow.
+- **Catchy prompt** with an explicit guard: *"Do NOT mention Eagle Ridge, any dealership name, phone number, or URL."*
+
+### Note
+- Pollinations' free text API now returns 402 (deprecated for free use), so Workers AI was the right free choice — it lives on our existing Cloudflare stack and needs no key.

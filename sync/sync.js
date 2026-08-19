@@ -56,14 +56,11 @@ const CONFIG = {
   // Bridge token — shared secret that must match the worker's BRIDGE_TOKEN
   bridgeToken: process.env.BRIDGE_TOKEN || '',
 
-  // Groq AI (same key as FB Lister) — used for SEO descriptions. Never committed;
-  // passed as a GitHub Actions secret / local env var.
-  groqApiKey: process.env.GROQ_API_KEY || '',
-  aiModel: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
+  // AI descriptions are generated in the Cloudflare Worker via Workers AI
+  // (free, no key) — see /api/bridge/describe. No Groq key needed here.
 
   // Enrichment tuning
   vinDecodeThrottle: 250,                          // ms between VPIC calls (stay under 5 req/s)
-  aiDescCap: parseInt(process.env.AI_DESC_CAP || '25', 10), // max AI descriptions per run
 
   // Local storage (also kept for offline fallback)
   dataDir: path.join(__dirname, '..', 'data'),
@@ -245,42 +242,8 @@ function buildEngine(v) {
   return parts.join(' ').trim();
 }
 
-// Groq AI — generate a clean, SEO-friendly dealership description.
-async function generateAiDescription(truck, groqKey) {
-  const title = [truck.year, truck.make, truck.model, truck.trim].filter(Boolean).join(' ');
-  const facts = [
-    truck.engine ? `Engine: ${truck.engine}` : '',
-    truck.transmission ? `Transmission: ${truck.transmission}` : '',
-    truck.drivetrain ? `Drivetrain: ${truck.drivetrain}` : '',
-    truck.fuelType ? `Fuel: ${truck.fuelType}` : '',
-    truck.bodyStyle ? `Body: ${truck.bodyStyle}` : '',
-    truck.exteriorColor ? `Exterior: ${truck.exteriorColor}` : '',
-    truck.mileage ? `Mileage: ${truck.mileage} ${truck.mileageUnit || 'km'}` : '',
-  ].filter(Boolean).join(' | ');
-  const prompt = `Write a polished, SEO-friendly dealership description for this vehicle. 2-3 sentences, plain text (no markdown, no hashtags, no emoji), warm premium tone, no pricing, no invented specs:
-\n${title}\n${facts}`;
-  try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
-      body: JSON.stringify({
-        model: CONFIG.aiModel,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        max_tokens: 220,
-      }),
-    });
-    if (!res.ok) return '';
-    const data = await res.json();
-    return (data.choices?.[0]?.message?.content || '').trim();
-  } catch (e) {
-    return '';
-  }
-}
-
-// Enrich the freshly-parsed trucks:
-//   1. VIN-decode (fill engine + missing specs) — skips trucks the worker already has
-//   2. Groq AI descriptions — capped per run, skips trucks already described
+// Enrich the freshly-parsed trucks: VIN-decode (fill engine + missing specs),
+// skipping trucks the worker already has. AI descriptions are done in the worker.
 async function enrichTrucks(trucks) {
   // Read the worker's current enrichment state so we don't redo work every hour
   let stateMap = {};
@@ -320,22 +283,6 @@ async function enrichTrucks(trucks) {
     }
   }
   if (decoded) console.log(`   🔧 VIN-decoded ${decoded} truck(s) (engine + missing specs)`);
-
-  // 2. Groq AI descriptions (capped, skip already-done)
-  if (CONFIG.groqApiKey) {
-    let generated = 0;
-    for (const truck of trucks) {
-      if (generated >= CONFIG.aiDescCap) break;
-      const alreadyHasDesc = (stateMap[truck.id] && stateMap[truck.id].aiDescription) || truck.aiDescription;
-      if (alreadyHasDesc) continue;
-      const desc = await generateAiDescription(truck, CONFIG.groqApiKey);
-      if (desc) { truck.aiDescription = desc; generated++; }
-      await sleep(300); // be gentle on Groq rate limits
-    }
-    if (generated) console.log(`   ✨ Generated ${generated} AI description(s)`);
-  } else {
-    console.log('   ⚠️ No GROQ_API_KEY set — skipping AI descriptions.');
-  }
 
   return trucks;
 }
@@ -454,6 +401,21 @@ async function sync() {
         }
       } catch (e) {
         console.warn(`   ⚠️ Worker unreachable: ${e.message}`);
+      }
+
+      // AI descriptions — generated in the worker via Workers AI (free, no key).
+      // Capped so it ramps up gradually across hourly syncs.
+      try {
+        const descRes = await fetch(`${CONFIG.workerUrl}/api/bridge/describe`, {
+          method: 'POST',
+          headers: { 'X-Bridge-Token': CONFIG.bridgeToken, 'X-Desc-Cap': '10' },
+        });
+        if (descRes.ok) {
+          const dr = await descRes.json();
+          if (dr.generated) console.log(`   ✨ Generated ${dr.generated} AI description(s)`);
+        }
+      } catch (e) {
+        console.warn(`   ⚠️ Describe call failed: ${e.message}`);
       }
     } else {
       console.log('   ⚠️ No WORKER_URL/BRIDGE_TOKEN set — local file only');

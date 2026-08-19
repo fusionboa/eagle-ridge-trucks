@@ -223,6 +223,34 @@ async function runSync(env, trucks) {
   return { ok: true, count: trucks.length, removed, backedUp };
 }
 
+// ─── AI description generation (Cloudflare Workers AI — free, no key) ────────
+async function generateDescription(env, truck) {
+  const title = [truck.year, truck.make, truck.model, truck.trim].filter(Boolean).join(' ');
+  const facts = [
+    truck.engine ? `engine ${truck.engine}` : '',
+    truck.transmission ? truck.transmission.toLowerCase() : '',
+    truck.drivetrain ? truck.drivetrain : '',
+    truck.fuelType ? truck.fuelType.toLowerCase() : '',
+    truck.bodyStyle ? truck.bodyStyle.toLowerCase() : '',
+    truck.exteriorColor ? `${truck.exteriorColor.toLowerCase()} paint` : '',
+  ].filter(Boolean).join(', ');
+  const prompt = `Write a catchy, exciting 2-3 sentence car listing description for this vehicle. Use a premium, energetic, sales-friendly tone. Do NOT mention "Eagle Ridge", any dealership name, any phone number, or any URL. Describe only the vehicle and how it feels to drive it.
+
+Vehicle: ${title}
+${facts ? `Key specs: ${facts}` : ''}`;
+  try {
+    const result = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 250,
+      temperature: 0.8,
+    });
+    const text = (result && (result.response || (result.choices && result.choices[0] && result.choices[0].message && result.choices[0].message.content))) || '';
+    return String(text).trim();
+  } catch (e) {
+    return '';
+  }
+}
+
 // ─── Router ─────────────────────────────────────────────────────────────────
 export default {
   async fetch(request, env) {
@@ -312,6 +340,37 @@ export default {
       if (!Array.isArray(trucks)) return json({ error: 'trucks array required' }, 400);
       const result = await runSync(env, trucks);
       return json(result, result.ok ? 200 : 500);
+    }
+
+    // BRIDGE: generate missing AI descriptions via Workers AI (called by the
+    // sync job after each upload — capped so it ramps up gradually).
+    if (path === '/api/bridge/describe' && request.method === 'POST') {
+      const bridgeToken = request.headers.get('X-Bridge-Token') || '';
+      if (!env.BRIDGE_TOKEN || bridgeToken !== env.BRIDGE_TOKEN) {
+        return json({ error: 'Forbidden — bad bridge token' }, 403);
+      }
+      const cap = parseInt((request.headers.get('X-Desc-Cap') || '10'), 10);
+      const all = await db.prepare('SELECT id, data FROM trucks').all();
+      const trucks = (all.results || []).map((r) => ({ id: r.id, ...JSON.parse(r.data) }));
+      // Describe LISTED trucks first, then the rest
+      trucks.sort((a, b) => (b.listed === true) - (a.listed === true));
+      let generated = 0;
+      let failed = 0;
+      for (const t of trucks) {
+        if (generated >= cap) break;
+        if (t.aiDescription) continue;
+        const desc = await generateDescription(env, t);
+        if (desc) {
+          t.aiDescription = desc;
+          const now = new Date().toISOString();
+          await db.prepare('UPDATE trucks SET data = ?, updated_at = ? WHERE id = ?')
+            .bind(JSON.stringify(t), now, t.id).run();
+          generated++;
+        } else {
+          failed++;
+        }
+      }
+      return json({ ok: true, generated, failed });
     }
 
     // ─── Admin (all below require auth + admin email) ───
