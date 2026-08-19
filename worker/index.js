@@ -234,7 +234,7 @@ async function generateDescription(env, truck) {
     truck.bodyStyle ? truck.bodyStyle.toLowerCase() : '',
     truck.exteriorColor ? `${truck.exteriorColor.toLowerCase()} paint` : '',
   ].filter(Boolean).join(', ');
-  const prompt = `Write a catchy, exciting 2-3 sentence car listing description for this vehicle. Use a premium, energetic, sales-friendly tone. Do NOT mention "Eagle Ridge", any dealership name, any phone number, or any URL. Describe only the vehicle and how it feels to drive it.
+  const prompt = `Write a catchy, exciting 2-3 sentence car listing description for this vehicle. Use a premium, energetic, sales-friendly tone. Do NOT mention any dealership name, phone number, or URL. Do NOT use em-dashes or dashes. Describe only the vehicle and how it feels to drive it.
 
 Vehicle: ${title}
 ${facts ? `Key specs: ${facts}` : ''}`;
@@ -245,7 +245,8 @@ ${facts ? `Key specs: ${facts}` : ''}`;
       temperature: 0.8,
     });
     const text = (result && (result.response || (result.choices && result.choices[0] && result.choices[0].message && result.choices[0].message.content))) || '';
-    return String(text).trim();
+    // Belt-and-braces: strip any dashes the model slipped in anyway.
+    return String(text).trim().replace(/\s*[—–]\s*/g, ', ');
   } catch (e) {
     console.error('Workers AI error:', e && e.message ? e.message : String(e));
     return '';

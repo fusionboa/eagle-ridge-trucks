@@ -1,5 +1,5 @@
 // ============================================================
-// Eagle Ridge Trucks — Storefront JS
+// dangm.ca — Storefront JS
 // Loads trucks from the API, renders the inventory list (dealership-
 // style horizontal cards), the home flagship grid, and the vehicle
 // detail page (VDP) with a payment calculator.
@@ -104,6 +104,14 @@ function escapeHtml(s) {
   }[c]));
 }
 
+// Strip em/en dashes (AI prose loves them; they read unprofessional) → comma.
+function cleanText(s) {
+  return String(s || '')
+    .replace(/\s*[—–]\s*/g, ', ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 // ─── Render (home vs inventory) ────────────────────────────
 function renderAll() {
   if (PAGE === 'home') {
@@ -147,7 +155,7 @@ function applyFilters(list) {
 function renderGrid(list, isFlagship) {
   const grid = document.getElementById('truckGrid');
   if (!list.length) {
-    grid.innerHTML = '<div class="empty">No trucks match your search.</div>';
+    grid.innerHTML = '<div class="empty">No vehicles match your search.</div>';
     return;
   }
   grid.innerHTML = list.map((t, i) => cardHTML(t, i, isFlagship)).join('');
@@ -218,7 +226,7 @@ function renderVehicle(t) {
   const title = [t.year, t.make, t.model, t.trim].filter(Boolean).join(' ');
   const price = formatPrice(t.price);
   const imgs = (t.images || []).filter(Boolean);
-  const desc = t.aiDescription || '';         // catchy prose (Workers AI)
+  const desc = cleanText(t.aiDescription || ''); // catchy prose (Workers AI)
   const features = splitFeatures(t.description); // full equipment list
 
   const gallery = imgs.length ? `
@@ -263,8 +271,7 @@ function renderVehicle(t) {
           </dl>
         </div>
         <div class="vdp-actions">
-          <a href="#vdp-contact" class="btn btn-primary">Confirm Availability</a>
-          <a href="#vdp-contact" class="btn btn-ghost">Request More Info</a>
+          <a href="tel:6057351396" class="btn btn-primary">Call 605-735-1396</a>
         </div>
       </div>
     </div>
@@ -284,25 +291,11 @@ function renderVehicle(t) {
       <div class="section-head">
         <p class="eyebrow">Get in touch</p>
         <h2 class="section-title">Take the next step</h2>
+        <p class="section-sub">Call us for pricing, availability, and test drives.</p>
       </div>
-      <div class="vdp-form-grid">
-        <form class="vdp-form" data-form="testdrive">
-          <h3>Book a Test Drive</h3>
-          <input type="text" placeholder="First name" required>
-          <input type="text" placeholder="Last name" required>
-          <input type="tel" placeholder="Phone number" required>
-          <input type="email" placeholder="Email" required>
-          <input type="date" placeholder="Preferred date">
-          <button type="submit" class="btn btn-primary">Book Test Drive</button>
-        </form>
-        <form class="vdp-form" data-form="info">
-          <h3>Request More Info</h3>
-          <input type="text" placeholder="Name" required>
-          <input type="tel" placeholder="Phone number" required>
-          <input type="email" placeholder="Email" required>
-          <textarea placeholder="What would you like to know?" rows="4" required></textarea>
-          <button type="submit" class="btn btn-ghost">Request Info</button>
-        </form>
+      <div class="vdp-contact-actions">
+        <a href="tel:6057351396" class="btn btn-primary">Call 605-735-1396</a>
+        <a href="inventory.html" class="btn btn-ghost">Back to inventory</a>
       </div>
     </section>
   `;
@@ -322,16 +315,6 @@ function renderVehicle(t) {
   });
   document.querySelectorAll('.vdp-nav').forEach((btn) => {
     btn.addEventListener('click', () => showImage(cur + parseInt(btn.dataset.dir, 10)));
-  });
-
-  // Forms → simple success message (no backend yet)
-  document.querySelectorAll('.vdp-form').forEach((form) => {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const btn = form.querySelector('button');
-      btn.textContent = '✓ Sent';
-      setTimeout(() => { btn.textContent = form.dataset.form === 'testdrive' ? 'Book Test Drive' : 'Request Info'; form.reset(); }, 2500);
-    });
   });
 
   wirePaymentCalculator(priceNum(t.price));
@@ -361,7 +344,7 @@ function paymentCalculatorHTML(price) {
         </div>
         <div class="pay-result">
           <span class="pay-result-label">Estimated payment</span>
-          <span class="pay-result-value" id="payAmount">—</span>
+          <span class="pay-result-value" id="payAmount">$0</span>
           <span class="pay-result-freq" id="payFreqLabel">bi-weekly</span>
         </div>
         <p class="pay-disclaimer">For illustration only. Taxes, fees and licence extra. OAC.</p>
@@ -442,14 +425,6 @@ function init() {
       document.getElementById(id).addEventListener('input', renderAll);
     });
   }
-
-  const contactForm = document.getElementById('contactForm');
-  if (contactForm) contactForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const btn = e.target.querySelector('button');
-    btn.textContent = '✓ Message sent';
-    setTimeout(() => { btn.textContent = 'Send Message'; e.target.reset(); }, 2500);
-  });
 
   loadTrucks();
 }

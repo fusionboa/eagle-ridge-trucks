@@ -279,6 +279,23 @@
 - Admin: JSZip loaded, modal shows Download/Upload images/Upload folder, download completes → "✓ Downloaded 13 images" ✅
 - `/api/image` proxy returns the image (200, image/jpeg, CORS `*`) ✅
 
+## v0.4.0 — Rebrand to dangm.ca + cars & trucks + phone contact (Aug 19, 2026)
+
+**Jaden:** rename to **dangm.ca**, show **cars and trucks** (not just trucks), contact is by **calling 605-735-1396**, and remove all the " — " em-dashes ("really AI-like and unprofessional").
+
+### Changes
+- **Rebrand** (all pages): "Eagle Ridge Trucks" → **dangm.ca**; logo mark `ER` → `DG`; nav CTA "View Trucks" → "View Inventory"; titles/meta/keywords updated.
+- **Cars & trucks wording:** "trucks" → "vehicles"/"cars & trucks" across hero, stats ("Vehicles in stock"), flagship section, about, and the empty state ("No vehicles match your search").
+- **Contact = phone:** removed the home contact form + the VDP "Book a Test Drive"/"Request More Info" forms. Replaced with a prominent **"Call 605-735-1396"** (`tel:` link) on the home contact section and the VDP actions/contact section.
+- **Em-dashes removed:**
+  - `main.js` — new `cleanText()` strips `—`/`–` (→ comma) from the AI description; payment result placeholder `—` → `$0`.
+  - `worker/index.js` — AI prompt now says "Do NOT use em-dashes or dashes" + post-processes the output to strip them anyway.
+  - Static copy rewritten without em-dashes.
+
+### Verified (headless Chrome)
+- VDP: title renders, "Call 605-735-1396" present, no "Book a Test Drive"/"Request More Info", no em-dash, 0 page errors ✅
+- Home: dangm present, no "Eagle Ridge", no em-dash, phone present ✅
+
 ## v0.3.4 — Fix bulk image upload (KV storage instead of D1) (Aug 19, 2026)
 
 **Jaden:** bulk image upload (folder + multiple files) fails with `Cross-Origin Request Blocked … 500` on `/api/admin/truck/:id`.
