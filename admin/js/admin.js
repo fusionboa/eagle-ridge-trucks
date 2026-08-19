@@ -299,7 +299,8 @@ function openImagesModal(id) {
         </div>`).join('')}
     </div>
     <div class="modal-actions">
-      <button class="btn btn-primary" id="downloadImgsBtn">⬇ Download all (${imgs.length})</button>
+      <button class="btn btn-primary" id="copyImgsBtn">📋 Copy all (${imgs.length})</button>
+      <button class="btn btn-ghost" id="downloadImgsBtn">⬇ Download all</button>
       <button class="btn btn-ghost" id="uploadImgsBtn">⬆ Upload images</button>
       <button class="btn btn-ghost" id="uploadFolderBtn">📁 Upload folder</button>
       <button class="btn btn-ghost" data-close>Close</button>
@@ -346,6 +347,42 @@ function openImagesModal(id) {
     }
   });
 
+  // Copy all → put every image on the clipboard so you can paste straight into Gemini etc.
+  document.getElementById('copyImgsBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('copyImgsBtn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ Copying…';
+    try {
+      if (!navigator.clipboard || !window.ClipboardItem) throw new Error('Clipboard image copy not supported');
+      const items = [];
+      let ok = 0;
+      for (let i = 0; i < imgs.length; i++) {
+        const proxyUrl = `${API_BASE}/api/image?url=${encodeURIComponent(imgs[i])}`;
+        const res = await fetch(proxyUrl);
+        if (!res.ok) continue;
+        const pngBlob = await toPngBlob(await res.blob());
+        items.push(new ClipboardItem({ 'image/png': pngBlob }));
+        ok++;
+      }
+      if (!ok) throw new Error('no images fetched');
+      await navigator.clipboard.write(items);
+      btn.textContent = `✓ Copied ${ok} images`;
+      setTimeout(() => { btn.textContent = originalText; }, 3000);
+    } catch (e) {
+      // Fallback: copy the raw image URLs as text so nothing is lost.
+      try {
+        await navigator.clipboard.writeText(imgs.join('\n'));
+        btn.textContent = '✓ Copied URLs (image copy unsupported here)';
+      } catch (_) {
+        alert('Copy failed: ' + e.message);
+        btn.textContent = originalText;
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   // Upload: accepts either hand-picked files or an entire folder.
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
@@ -382,6 +419,24 @@ function fileToDataURL(file) {
     reader.onload = () => resolve(reader.result);
     reader.onerror = reject;
     reader.readAsDataURL(file);
+  });
+}
+
+// Convert any image blob to PNG — the only format ClipboardItem reliably supports.
+function toPngBlob(blob) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image load failed')); };
+    img.src = url;
   });
 }
 

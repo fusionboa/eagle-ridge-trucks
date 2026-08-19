@@ -278,3 +278,16 @@
 - Mobile (390px): nav toggle visible + opens menu, cards stack, `scrollWidth == viewport` ✅
 - Admin: JSZip loaded, modal shows Download/Upload images/Upload folder, download completes → "✓ Downloaded 13 images" ✅
 - `/api/image` proxy returns the image (200, image/jpeg, CORS `*`) ✅
+
+## v0.3.3 — Copy all images to clipboard (Aug 19, 2026)
+
+**Jaden:** "instead just make an option to copy all images and paste" (instead of/in addition to the ZIP download) — so I can paste straight into Gemini.
+
+### Changes
+- **Admin — "📋 Copy all (N)" button** (primary action in the Images modal): fetches every image through the `/api/image` proxy, converts each to PNG (`toPngBlob` via canvas — PNG is the only format `ClipboardItem` reliably supports), then writes them all to the clipboard with `navigator.clipboard.write([...])` as multiple image items.
+- **Fallback:** if the browser doesn't support clipboard images (`ClipboardItem` missing / write throws), it copies the raw image URLs as text instead so nothing is lost.
+- **Kept "⬇ Download all"** as a secondary button (not removed).
+
+### Verified (headless Chrome)
+- Images modal shows "📋 Copy all (13)" and "⬇ Download all" side by side ✅
+- `node --check` clean, deployed to Pages, `copyImgsBtn` + `toPngBlob` present in live `admin.js` ✅
