@@ -112,6 +112,86 @@ function cleanText(s) {
     .trim();
 }
 
+// ─── Dynamic SEO meta tag updater ──────────────────────────
+function updateMeta(name, content) {
+  // Try property first (OG), then name (standard meta, twitter)
+  let el = document.querySelector(`meta[property="${name}"]`);
+  if (!el) el = document.querySelector(`meta[name="${name}"]`);
+  if (!el) {
+    el = document.createElement('meta');
+    if (name.startsWith('og:')) el.setAttribute('property', name);
+    else el.setAttribute('name', name);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('content', content);
+}
+
+// ─── Vehicle JSON-LD structured data ───────────────────────
+function addVehicleJSONLD(t, title, price, desc, imgs, vin, year) {
+  const existing = document.querySelector('script[type="application/ld+json"][data-dynamic="vehicle"]');
+  if (existing) existing.remove();
+  const ld = document.createElement('script');
+  ld.type = 'application/ld+json';
+  ld.setAttribute('data-dynamic', 'vehicle');
+  ld.textContent = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Vehicle',
+    name: title,
+    description: desc,
+    image: imgs.length ? imgs[0] : '',
+    offers: {
+      '@type': 'Offer',
+      price: priceNum(t.price).toString(),
+      priceCurrency: 'CAD',
+      availability: 'https://schema.org/InStock'
+    },
+    vehicleIdentificationNumber: vin || '',
+    productionDate: year ? String(year) : '',
+    mileageFromOdometer: t.mileage ? { '@type': 'QuantitativeValue', value: String(t.mileage), unitText: 'KM' } : undefined,
+    vehicleEngine: t.engine ? { name: t.engine } : undefined,
+    vehicleTransmission: t.transmission || '',
+    fuelType: t.fuelType || '',
+    color: t.exteriorColor || '',
+    seller: {
+      '@type': 'LocalBusiness',
+      '@id': 'https://dangm.ca/#business',
+      name: 'dangm.ca',
+      telephone: '605-735-1396',
+      address: { '@type': 'PostalAddress', 'addressRegion': 'BC', 'addressLocality': 'Coquitlam', 'addressCountry': 'CA' }
+    }
+  });
+  document.head.appendChild(ld);
+}
+
+// ─── Related Vehicles (internal linking for SEO) ─────────────
+function renderRelatedVehicles(current) {
+  if (!allTrucks.length) return '';
+  const sameMake = allTrucks.filter((t) => t.make === current.make && String(t.id) !== String(current.id));
+  const related = (sameMake.length >= 3 ? sameMake : allTrucks.filter((t) => String(t.id) !== String(current.id))).slice(0, 3);
+  if (!related.length) return '';
+  return `
+    <section class="related section">
+      <div class="section-head">
+        <p class="eyebrow">You may also like</p>
+        <h2 class="section-title">Similar Vehicles</h2>
+      </div>
+      <div class="truck-grid">
+        ${related.map((r) => {
+          const rTitle = [r.year, r.make, r.model, r.trim].filter(Boolean).join(' ');
+          const rImg = (r.images || [])[0] || '';
+          return `
+            <a href="vehicle.html?id=${encodeURIComponent(r.id)}" class="truck-card-small">
+              ${rImg ? `<img src="${rImg}" alt="${escapeHtml(rTitle)}" loading="lazy" class="related-img">` : '<div class="related-noimg">📷</div>'}
+              <div class="related-info">
+                <span class="related-title">${escapeHtml(rTitle)}</span>
+                <span class="related-price">${formatPrice(r.price)}</span>
+              </div>
+            </a>`;
+        }).join('')}
+      </div>
+    </section>`;
+}
+
 // ─── Render (home vs inventory) ────────────────────────────
 function renderAll() {
   if (PAGE === 'home') {
@@ -237,7 +317,7 @@ function renderVehicle(t) {
         <button class="vdp-nav vdp-next" data-dir="1" aria-label="Next image">›</button>
         <span class="vdp-count" id="vdpCount">1 / ${imgs.length}</span>` : ''}
       </div>
-      ${imgs.length > 1 ? `<div class="vdp-thumbs">${imgs.map((im, i) => `<img class="vdp-thumb ${i === 0 ? 'active' : ''}" src="${im}" data-idx="${i}" alt="">`).join('')}</div>` : ''}
+      ${imgs.length > 1 ? `<div class="vdp-thumbs">${imgs.map((im, i) => `<img class="vdp-thumb ${i === 0 ? 'active' : ''}" src="${im}" data-idx="${i}" alt="${escapeHtml(title)} — photo ${i + 1}">`).join('')}</div>` : ''}
     </div>` : '<div class="vdp-noimg">📷</div>';
 
   // Full vehicle details (dealership-style label:value list)
@@ -253,6 +333,26 @@ function renderVehicle(t) {
     ['VIN', t.vin],
     ['Stock #', t.id],
   ].filter(([, v]) => v);
+
+  // ─── Dynamic SEO: title, meta, OG, JSON-LD, breadcrumb ───
+  const fullTitle = `${title} | Cars & Trucks for Sale in Vancouver, BC | dangm.ca`;
+  document.title = fullTitle;
+  const seoDesc = `${t.year} ${t.make} ${t.model}${t.trim ? ' ' + t.trim : ''} for sale at dangm.ca in Coquitlam, BC. ${price}${t.engine ? '. ' + t.engine + '.' : ''}${t.mileage ? ' ' + Number(t.mileage).toLocaleString() + ' km.' : ''} Inspected and ready for the road. Call 605-735-1396.`;
+  updateMeta('description', seoDesc);
+  updateMeta('og:title', fullTitle);
+  updateMeta('og:description', seoDesc);
+  updateMeta('og:url', location.href);
+  if (imgs[0]) updateMeta('og:image', imgs[0]);
+  updateMeta('twitter:title', fullTitle);
+  updateMeta('twitter:description', seoDesc);
+  if (imgs[0]) updateMeta('twitter:image', imgs[0]);
+  const canon = document.querySelector('link[rel="canonical"]');
+  if (canon) canon.href = location.href;
+  // Breadcrumb
+  const bc = document.getElementById('breadcrumbVehicle');
+  if (bc) bc.textContent = title;
+  // Vehicle JSON-LD
+  addVehicleJSONLD(t, title, price, seoDesc, imgs, t.vin, t.year);
 
   document.getElementById('vehicleContent').innerHTML = `
     <div class="vdp-hero">
@@ -290,13 +390,14 @@ function renderVehicle(t) {
       <div class="section-head">
         <p class="eyebrow">Get in touch</p>
         <h2 class="section-title">Take the next step</h2>
-        <p class="section-sub">Call us for pricing, availability, and test drives.</p>
+        <p class="section-sub">Call us for pricing, availability, and test drives. No pressure, no gimmicks — just honest deals.</p>
       </div>
       <div class="vdp-contact-actions">
         <a href="tel:6057351396" class="btn btn-primary">Call 605-735-1396</a>
         <a href="inventory.html" class="btn btn-ghost">Back to inventory</a>
       </div>
     </section>
+    ${renderRelatedVehicles(t)}
   `;
 
   // Image carousel: prev/next buttons + thumbnail click

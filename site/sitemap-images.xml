@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <!-- This sitemap lists ALL vehicle images for Google Image Search.
+       Generated dynamically by the Cloudflare Worker at /api/sitemap-images.
+       Deploy the worker: GET /api/sitemap-images returns this XML live. -->
+</urlset>
