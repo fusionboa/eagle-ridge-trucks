@@ -1,6 +1,0 @@
-# Cloudflare Pages _redirects — clean URLs
-/ /index.html 200
-/inventory /inventory.html 200
-/vehicle /vehicle.html 200
-/forum /forum.html 200
-/forum-post /forum-post.html 200

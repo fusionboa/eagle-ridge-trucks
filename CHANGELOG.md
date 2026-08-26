@@ -1,5 +1,21 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.6.0 — Curated consultant copy + redirect crash fix (Aug 26, 2026)
+
+**Jaden:** dad is a salesman/consultant at Eagle Ridge GM (not the owner) — change copy to "curated attention", fix the mobile top-bar overlap, and fix the inventory/forum crash (infinite redirect loop).
+
+### Changes
+- **Copy:** "an individual you can trust" → dad is now a **GM consultant** at Eagle Ridge GM; "curated attention, zero pressure", "1:1 — Personal consultant", "hand-picked from the dealership inventory"; removed all "owner" wording
+- **Redirect crash FIXED:** `_redirects` rewrite rules conflicted with Cloudflare Pages' auto-pretty-URL redirects (`/inventory` → `/inventory.html` → `/inventory` loop). **Deleted `_redirects`** — Pages serves `.html` → clean URLs natively without a loop. All 5 pages now return 200
+- **Mobile nav overlap FIXED:** subpage breadcrumbs were rendering under the fixed nav bar on mobile — added clear padding
+- **Cache:** `_headers` no-store tweak to fight the stuck homepage edge cache
+
+### Known issues
+- `eagle-ridge-trucks.pages.dev/` (homepage only) still serves an ancient frozen Cloudflare edge copy — will be gone once **dangm.ca** connects (fresh hostname)
+- Site files are deployed but this changelog entry + code changes get committed with v0.6.0
+
+---
+
 ## v0.5.0 — Geo-targeted + individual consultant tone (Aug 23, 2026)
 
 **Jaden:** remove all "Best GM consultant", "7-day warranty", placeholder/dealership-sounding content, and make the site geo-targeted to Coquitlam/Vancouver/Tri-Cities ONLY — not Halifax or anywhere else. Sound like an individual consultant (his dad), not a dealership. Remove financing options.

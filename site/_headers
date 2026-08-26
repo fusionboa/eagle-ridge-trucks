@@ -19,18 +19,18 @@
 /data/*
   Cache-Control: public, max-age=3600
 
-# HTML pages — shorter cache so content stays fresh
+# HTML pages — no edge caching so content stays fresh
 /
-  Cache-Control: public, max-age=300
+  Cache-Control: no-cache, no-store, must-revalidate
 
 /inventory
-  Cache-Control: public, max-age=300
+  Cache-Control: no-cache, no-store, must-revalidate
 
 /vehicle
-  Cache-Control: public, max-age=300
+  Cache-Control: no-cache, no-store, must-revalidate
 
 /forum
-  Cache-Control: public, max-age=600
+  Cache-Control: no-cache, no-store, must-revalidate
 
 # Compress everything
 /*

@@ -372,6 +372,11 @@ section { padding: 110px 24px; }
   text-align: center;
   overflow: hidden;
 }
+/* Subpage breadcrumbs sit under the fixed nav — push them clear of it */
+.page-hero .breadcrumbs { padding-top: 92px; }
+@media (max-width: 768px) {
+  .page-hero .breadcrumbs { padding-top: 84px; }
+}
 .page-hero-bg {
   position: absolute; inset: 0;
   background:
