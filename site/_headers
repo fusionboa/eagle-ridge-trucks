@@ -6,12 +6,14 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
 
-# Cache static assets aggressively
+# Static assets — short cache so deploys propagate fast (5 min).
+# Bump the ?v= version on js/css references when you change them to
+# force browsers to refetch immediately (cache-busting).
 /css/*
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=300
 
 /js/*
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=300
 
 /images/*
   Cache-Control: public, max-age=31536000, immutable

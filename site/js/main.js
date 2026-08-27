@@ -462,6 +462,12 @@ async function loadForum() {
       return;
     }
     el.innerHTML = posts.map((p) => forumCardHTML(p)).join('');
+    // Cards render AFTER initReveals() ran (async fetch), so the reveal
+    // observer never saw them — without this they'd sit at opacity:0
+    // (invisible). Same trick renderGrid uses for truck cards.
+    requestAnimationFrame(() => {
+      el.querySelectorAll('.forum-card').forEach((c) => c.classList.add('in-view'));
+    });
   } catch (e) {
     el.innerHTML = '<div class="empty">Could not load posts.</div>';
   }

@@ -1,5 +1,48 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.7.1 — Forum posts invisible + cache fix (Aug 26, 2026) 🔧
+
+**Bug:** forum posts existed in the DB and the API returned them, but the forum page showed nothing.
+
+### Root cause 1 — invisible cards
+- Forum cards use the `.reveal` CSS animation (opacity: 0 → 1) driven by an IntersectionObserver that runs at page load
+- Posts load **after** that (async fetch), so the observer never saw the cards → they stayed at `opacity: 0` (present in the DOM, invisible on screen)
+- **Fix:** `site/js/main.js` now adds `.in-view` to `.forum-card` elements after render — the same trick the truck grid already used
+
+### Root cause 2 — 1-year immutable cache stuck old JS
+- `_headers` cached `/js/*` and `/css/*` as `max-age=31536000, immutable` — every JS change was stuck in browsers + edge for a year (also explains the stuck homepage from earlier)
+- **Fix:** JS/CSS now `max-age=300` (5 min); images keep the long cache
+- **Cache-busting:** all 5 pages now load `js/main.js?v=2` and `css/styles.css?v=2` — bump the version on future JS/CSS changes to go live instantly
+- **Deployed:** verified in headless Chrome — dangm.ca/forum renders the "Hello" test post visibly
+
+---
+
+## v0.7.0 — dangm.ca DOMAIN LIVE (Aug 26, 2026) 🎉
+
+**Jaden:** bought dangm.ca on GoDaddy and connected it to Cloudflare Pages from the terminal (API token, no dashboard clicking).
+
+### What happened
+- **Zone:** dangm.ca added to Cloudflare (was already created, status pending → **active** at 15:40)
+- **Nameservers:** GoDaddy `ns63/ns64.domaincontrol.com` → Cloudflare `odin.ns.cloudflare.com` / `sima.ns.cloudflare.com` (registry confirmed the switch; public DNS caches expired ~30 min later)
+- **Pages custom domains added via API:** `dangm.ca` + `www.dangm.ca` attached to the `eagle-ridge-trucks` Pages project
+- **DNS records pre-created:** `A dangm.ca → 192.0.2.1` (proxied) + `CNAME www → eagle-ridge-trucks.pages.dev` (proxied)
+- **SSL:** Pages auto-forces Full — no config needed
+
+### Deploy workflow (unchanged, still fast)
+```bash
+cd ~/Desktop/eagle-ridge-trucks
+cp -r site/* pages-dist/
+npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch main
+```
+- Once dangm.ca is live it picks up every deploy instantly — no stale edge cache like the old pages.dev homepage had
+- Worker (API/admin) deploys separately: `cd worker && npx wrangler deploy`
+
+### Notes
+- Admin API token saved in the session; re-login via `npx wrangler login` if it expires
+- Canonical/JSON-LD/sitemap already pointed at https://dangm.ca — nothing to change
+
+---
+
 ## v0.6.0 — Curated consultant copy + redirect crash fix (Aug 26, 2026)
 
 **Jaden:** dad is a salesman/consultant at Eagle Ridge GM (not the owner) — change copy to "curated attention", fix the mobile top-bar overlap, and fix the inventory/forum crash (infinite redirect loop).
