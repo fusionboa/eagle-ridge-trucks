@@ -1,5 +1,18 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.8.3 — ✂️ Remove BG v3: junk-erasing cleanup pass + auto-crop (Sep 3, 2026)
+
+**Fix:** the AI kept floating junk alive (dealer banners, logos, text overlays) — the whole point of the button was to stop needing Gemini.
+
+### Cleanup pass (after every AI cutout)
+- **Connected-component analysis** on the alpha mask: flood-fills every opaque blob, keeps ONLY the largest (the car), **erases everything else** — banners, logos, text remnants go to white.
+- **Auto-crop** to the subject with 14px margin — kills dead space around the car (test image went 1200×1200 → **888×486** tight on the vehicle).
+- Result flattened onto solid white — corners verified `rgb(255,255,255)` in headless Chrome.
+- Console logs how many junk pixels were erased per image (`erased Npx of junk`).
+- `admin.js` → `?v=5`.
+
+Combined with v0.8.2 (white background, cover-only prompt for interiors, full-precision `isnet` model), the full pipeline is now: fetch → downscale 1536px → ISNet cutout → junk erase → tight crop → white flatten → upload to KV. No Gemini needed except for extreme edge cases.
+
 ## v0.8.2 — Remove BG v2: white background + smarter cutouts; breadcrumb overlap fix (Sep 3, 2026)
 
 **Fixes:** homepage "Home" breadcrumb overlapped the location line; Remove BG output had a black-looking background and wrecked interior shots.
