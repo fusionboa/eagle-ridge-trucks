@@ -1,5 +1,22 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.8.0 — ✂️ AI Background Removal in Admin (Sep 3, 2026)
+
+**Feature:** one-click background removal for listing images — no more copy-pasting every photo into Gemini by hand.
+
+### How it works
+- **"✂️ Remove BG (AI)"** button added to the truck **Images** modal (next to Upload folder).
+- Processes **every image on the truck** in one click: fetches each image through the CORS proxy → runs AI segmentation → uploads transparent PNGs to KV → saves them as the truck's `customImages`.
+- **Runs 100% in the browser** via the open-source `@imgly/background-removal` library (ISNet model, loaded from esm.sh + staticimgly CDN). **Zero API keys, zero cost, unlimited images.**
+- First click downloads an ~88MB model (one-time, browser caches it after). Button shows live progress (model %, image X/Y).
+- Images are auto-downscaled to max 1536px before inference (model works at 1024px internally — big speedup on slow devices, no visible quality loss).
+- **Measured in headless Chrome on a real dealer image:** 1200×1200 PNG with **81.4% of pixels made transparent** — clean car cutout. ✅
+
+### Notes
+- Works on any dealer URL or uploaded image — transparent results are new KV-hosted PNGs, originals stay in the feed untouched.
+- First attempt used Cloudflare Workers AI (`@cf/birefnet`) — that model doesn't exist in the catalog (the background-removal feature belongs to the separate **Cloudflare Images** product). Worker was reverted to v0.7.x state; no worker changes shipped.
+- Admin script now versioned (`admin.js?v=3`) — prevents the stale-cache bug recurring on the admin page.
+
 ## v0.7.1 — Forum posts invisible + cache fix (Aug 26, 2026) 🔧
 
 **Bug:** forum posts existed in the DB and the API returned them, but the forum page showed nothing.

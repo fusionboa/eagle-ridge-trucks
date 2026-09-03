@@ -339,6 +339,7 @@ function openImagesModal(id) {
       <button class="btn btn-ghost" id="downloadImgsBtn">⬇ Download ZIP</button>
       <button class="btn btn-ghost" id="uploadImgsBtn">⬆ Upload images</button>
       <button class="btn btn-ghost" id="uploadFolderBtn">📁 Upload folder</button>
+      <button class="btn btn-ghost" id="removeBgBtn" title="AI removes the background from every image → transparent PNGs">✂️ Remove BG (AI)</button>
       <button class="btn btn-ghost" data-close>Close</button>
     </div>
   `;
@@ -486,6 +487,69 @@ function openImagesModal(id) {
     }
   });
 
+  // ─── AI background removal (one click for every image) ───
+  // Runs an open-source segmentation model (@imgly/background-removal) in YOUR
+  // browser — free, no API keys, no server cost. Each result is a transparent
+  // PNG uploaded straight to KV through the existing upload pipeline.
+  document.getElementById('removeBgBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('removeBgBtn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    try {
+      btn.textContent = '⏳ Loading AI… (first run downloads an 88MB model)';
+      let removeBackground;
+      try {
+        const mod = await import('https://esm.sh/@imgly/background-removal@1.7.0');
+        removeBackground = mod.removeBackground;
+      } catch (e) {
+        console.error('AI library failed to load:', e);
+        alert('Could not load the AI model (network blocked?). Check your connection and try again.');
+        btn.textContent = originalText; btn.disabled = false; return;
+      }
+      const urls = [];
+      let fail = 0;
+      for (let i = 0; i < imgs.length; i++) {
+        btn.textContent = `✂️ ${i + 1}/${imgs.length}…`;
+        try {
+          const blob = await fetchImageBlob(imgs[i]);
+          if (!blob) { fail++; continue; }
+          const small = await downscaleBlob(blob, 1536); // model works at 1024px — smaller input = much faster
+          const outBlob = await removeBackground(small, {
+            output: { format: 'image/png', quality: 0.9 },
+            progress: (key, cur, tot) => {
+              if (key.startsWith('fetch:') && tot) btn.textContent = `⏳ model ${Math.round((cur / tot) * 100)}%`;
+            },
+          });
+          const up = await fetch(`${API_BASE}/api/admin/upload-image`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'image/png' }),
+            body: outBlob,
+          });
+          if (!up.ok) { fail++; continue; }
+          const upJson = await up.json().catch(() => ({}));
+          if (upJson.url) urls.push(upJson.url); else fail++;
+        } catch (e) {
+          console.error(`remove-bg #${i + 1} failed:`, e);
+          fail++;
+        }
+      }
+      if (!urls.length) {
+        alert('Remove BG failed on every image. Check the console for details.');
+        btn.textContent = originalText; btn.disabled = false; return;
+      }
+      if (await updateTruck(id, { customImages: urls })) {
+        await loadTrucks();
+        openImagesModal(id);
+        alert(`✂️ Done — ${urls.length} image(s) now have transparent backgrounds${fail ? ` (${fail} failed)` : ''}.`);
+      }
+    } catch (e) {
+      alert('Remove BG failed: ' + e.message);
+      btn.textContent = originalText;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   // Upload: accepts either hand-picked files or an entire folder.
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
@@ -528,6 +592,21 @@ function openImagesModal(id) {
   };
   fileInput.addEventListener('change', () => handleFiles(fileInput.files));
   folderInput.addEventListener('change', () => handleFiles(folderInput.files));
+}
+
+// Downscale an image blob so its longest edge is at most `max` px (keeps the
+// AI segmentation fast — the model runs at 1024px internally anyway).
+async function downscaleBlob(blob, max = 1536) {
+  try {
+    const bmp = await createImageBitmap(blob);
+    const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    if (scale >= 1) return blob;
+    const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(bmp, 0, 0, w, h);
+    return await new Promise((res) => c.toBlob((b) => res(b || blob), 'image/png'));
+  } catch (e) { return blob; }
 }
 
 // Fetch an image through the worker's CORS proxy and return its blob (null on failure).
