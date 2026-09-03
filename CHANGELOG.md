@@ -1,5 +1,21 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.8.2 — Remove BG v2: white background + smarter cutouts; breadcrumb overlap fix (Sep 3, 2026)
+
+**Fixes:** homepage "Home" breadcrumb overlapped the location line; Remove BG output had a black-looking background and wrecked interior shots.
+
+### Remove BG v2 (admin)
+- **White background instead of transparent** — cutouts are composited onto solid `#ffffff` (transparent PNGs picked up the site's dark theme and read as "black"). Verified: corner pixel = `rgb(255,255,255)`.
+- **Scope prompt** — "All images?" OK = every image, Cancel = **cover photo only** (recommended: the segmentation model treats cabin parts as background and mutilates interior shots).
+- **Full-precision `isnet` model** (of `isnet` / `isnet_fp16` / `isnet_quint8`) — highest quality available; fp16 default was sloppier on banners/edges.
+- Honest note: stubborn overlays (big dealer banner baked into the photo) sometimes survive — the model segments "foreground subject", not text. Those few images still go through Gemini by hand.
+- Model caches after first run — second inference measured at **32s** (was 54s cold).
+- `admin.js` + `admin.css` → `?v=4`.
+
+### Site
+- Homepage breadcrumb converted from inline `style="position:absolute;top:100px"` to a `.hero-crumbs` class: floats centered over the hero on desktop, **flows normally (no overlap) on phones**.
+- `styles.css` → `?v=4`.
+
 ## v0.8.1 — 📱 Full Mobile Support: Site + Admin (Sep 3, 2026)
 
 **Fix:** topbar overlap on phones + admin page fully usable on mobile.

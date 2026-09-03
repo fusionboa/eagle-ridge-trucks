@@ -374,6 +374,15 @@ section { padding: 110px 24px; }
 }
 /* Subpage breadcrumbs sit under the fixed nav — push them clear of it */
 .page-hero .breadcrumbs { padding-top: 92px; }
+/* Homepage breadcrumb floats over the hero (desktop) — themed to blend in */
+.hero-crumbs {
+  position: absolute;
+  top: 100px; left: 0; right: 0;
+  z-index: 2;
+  background: transparent;
+  border-bottom: none;
+  justify-content: center;
+}
 @media (max-width: 768px) {
   .page-hero .breadcrumbs { padding-top: 84px; }
   /* Phone: fixed nav is ~76px tall — push hero content clear so the topbar
@@ -381,6 +390,8 @@ section { padding: 110px 24px; }
   .hero { min-height: auto; padding: 110px 0 70px; }
   .hero-content { padding-top: 0; }
   .nav-inner { padding: 0 16px; }
+  /* The absolute breadcrumb would land on the location line — flow it instead */
+  .hero-crumbs { position: static; padding: 0 16px; margin-bottom: 6px; justify-content: center; }
 }
 .page-hero-bg {
   position: absolute; inset: 0;

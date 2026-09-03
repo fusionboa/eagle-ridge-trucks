@@ -339,7 +339,7 @@ function openImagesModal(id) {
       <button class="btn btn-ghost" id="downloadImgsBtn">⬇ Download ZIP</button>
       <button class="btn btn-ghost" id="uploadImgsBtn">⬆ Upload images</button>
       <button class="btn btn-ghost" id="uploadFolderBtn">📁 Upload folder</button>
-      <button class="btn btn-ghost" id="removeBgBtn" title="AI removes the background from every image → transparent PNGs">✂️ Remove BG (AI)</button>
+      <button class="btn btn-ghost" id="removeBgBtn" title="AI cuts the subject out onto a clean white background — asks before processing interiors">✂️ Remove BG (AI)</button>
       <button class="btn btn-ghost" data-close>Close</button>
     </div>
   `;
@@ -506,20 +506,29 @@ function openImagesModal(id) {
         alert('Could not load the AI model (network blocked?). Check your connection and try again.');
         btn.textContent = originalText; btn.disabled = false; return;
       }
+      // Scope choice: all images, or just the cover (interiors often get
+      // mutilated by segmentation — the model treats cabin parts as background).
+      const scopeAll = confirm('Remove BG on ALL images?\n\nOK = all images\nCancel = cover photo only (recommended if some shots are interiors)');
+      const targets = scopeAll ? imgs : [imgs[0]];
+
       const urls = [];
       let fail = 0;
-      for (let i = 0; i < imgs.length; i++) {
-        btn.textContent = `✂️ ${i + 1}/${imgs.length}…`;
+      for (let i = 0; i < targets.length; i++) {
+        btn.textContent = `✂️ ${i + 1}/${targets.length}…`;
         try {
-          const blob = await fetchImageBlob(imgs[i]);
+          const blob = await fetchImageBlob(targets[i]);
           if (!blob) { fail++; continue; }
           const small = await downscaleBlob(blob, 1536); // model works at 1024px — smaller input = much faster
-          const outBlob = await removeBackground(small, {
+          const cut = await removeBackground(small, {
+            model: 'isnet', // full-precision — highest quality of the 3 available (fp16/quint8 are faster but sloppier)
             output: { format: 'image/png', quality: 0.9 },
             progress: (key, cur, tot) => {
               if (key.startsWith('fetch:') && tot) btn.textContent = `⏳ model ${Math.round((cur / tot) * 100)}%`;
             },
           });
+          // Composite onto solid WHITE — transparent PNGs pick up the site's
+          // dark theme and read as "black background". White = clean listing look.
+          const outBlob = await compositeOnWhite(cut);
           const up = await fetch(`${API_BASE}/api/admin/upload-image`, {
             method: 'POST',
             headers: authHeaders({ 'Content-Type': 'image/png' }),
@@ -592,6 +601,18 @@ function openImagesModal(id) {
   };
   fileInput.addEventListener('change', () => handleFiles(fileInput.files));
   folderInput.addEventListener('change', () => handleFiles(folderInput.files));
+}
+
+// Flatten a transparent PNG onto solid white — no alpha in the final file.
+async function compositeOnWhite(pngBlob) {
+  const bmp = await createImageBitmap(pngBlob);
+  const c = document.createElement('canvas');
+  c.width = bmp.width; c.height = bmp.height;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(bmp, 0, 0);
+  return await new Promise((res) => c.toBlob((b) => res(b), 'image/png'));
 }
 
 // Downscale an image blob so its longest edge is at most `max` px (keeps the
