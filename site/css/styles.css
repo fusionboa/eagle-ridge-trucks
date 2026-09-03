@@ -376,6 +376,11 @@ section { padding: 110px 24px; }
 .page-hero .breadcrumbs { padding-top: 92px; }
 @media (max-width: 768px) {
   .page-hero .breadcrumbs { padding-top: 84px; }
+  /* Phone: fixed nav is ~76px tall — push hero content clear so the topbar
+     never overlaps the heading or buttons */
+  .hero { min-height: auto; padding: 110px 0 70px; }
+  .hero-content { padding-top: 0; }
+  .nav-inner { padding: 0 16px; }
 }
 .page-hero-bg {
   position: absolute; inset: 0;

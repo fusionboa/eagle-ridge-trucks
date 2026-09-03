@@ -254,3 +254,72 @@ body {
   .truck-row-actions { width: 100%; justify-content: flex-end; }
   .edit-form { grid-template-columns: 1fr; }
 }
+
+/* ═══════════════════════════════════════════════════
+   MOBILE — admin fully usable on a phone
+   ═══════════════════════════════════════════════════ */
+/* Touch devices have no hover — always show the per-image buttons */
+@media (hover: none) {
+  .img-copy, .img-cover-btn { opacity: 1; }
+}
+
+@media (max-width: 720px) {
+  /* Topbar: stack brand above the buttons, keep buttons on one tappable row */
+  .topbar { position: static; }
+  .topbar-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+  .brand { justify-content: center; }
+  .topbar-right {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .topbar-right .btn { width: 100%; text-align: center; padding: 10px 8px; }
+  .topbar-right .btn:last-child { grid-column: 1 / -1; }
+
+  /* Stats: 2×2 instead of four stretched cards */
+  .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .stat-card { padding: 14px; }
+  .stat-big { font-size: 22px; }
+
+  /* Tabs: horizontally scrollable strip instead of overflow-wrap chaos */
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    padding-bottom: 8px;
+    gap: 6px;
+  }
+  .tab { flex: 0 0 auto; padding: 8px 14px; }
+
+  .admin-body { padding: 20px 12px 60px; }
+
+  /* Truck rows: image + title, actions full-width beneath */
+  .truck-row { gap: 10px; padding: 12px; }
+  .truck-row-img { width: 72px; height: 52px; }
+  .truck-row-title { font-size: 14px; }
+  .truck-row-actions { width: 100%; justify-content: stretch; display: grid; grid-template-columns: repeat(3, 1fr); }
+  .truck-row-actions .btn { width: 100%; text-align: center; padding: 9px 4px; font-size: 12px; }
+
+  /* Modal: near-fullscreen sheet with safe-area padding */
+  .modal-content {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    left: 0; top: 0;
+    transform: none;
+    border-radius: 0;
+  }
+  .modal-body { padding: 16px 14px 24px; }
+  .modal-actions { flex-wrap: wrap; justify-content: stretch; }
+  .modal-actions .btn { flex: 1 1 46%; text-align: center; }
+
+  /* Image grid: bigger tap targets, 2 per row */
+  .img-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .img-copy, .img-cover-btn { padding: 8px 10px; font-size: 12px; }
+}

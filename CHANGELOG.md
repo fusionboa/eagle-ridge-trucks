@@ -1,5 +1,25 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.8.1 — 📱 Full Mobile Support: Site + Admin (Sep 3, 2026)
+
+**Fix:** topbar overlap on phones + admin page fully usable on mobile.
+
+### Site (dangm.ca)
+- Phone hero no longer hides under the fixed nav — hero gets `110px` top padding, verified in a 390×844 viewport (nav = 79px, hero content starts at 110px).
+- `styles.css` cache-busted to `?v=3` (it had no version param — same stale-cache trap as the old admin JS).
+
+### Admin (dangm.ca/admin) — now a real mobile layout
+- **Topbar:** stacks vertically (brand centered above a 2×2 button grid) — no more overflow/overlap.
+- **Tabs:** horizontally scrollable strip (Listed / Unlisted / All / Backups / Forum all reachable).
+- **Stats:** 2×2 card grid instead of four stretched cards.
+- **Truck rows:** actions become a full-width 3-button grid under each row.
+- **Modals:** full-screen sheet on phones (100dvh), buttons stretch full-width.
+- **Image grid:** 2 per row with big tap targets; 📋 Copy + ⭐ Set cover buttons always visible on touch (hover doesn't exist on phones).
+- Safe-area/dvh handling for notched phones.
+- `admin.css` cache-busted to `?v=3`.
+
+**Verified:** headless Chrome at 390×844 — admin `overflowX: 0`, all buttons visible, tabs fit; homepage hero clears nav.
+
 ## v0.8.0 — ✂️ AI Background Removal in Admin (Sep 3, 2026)
 
 **Feature:** one-click background removal for listing images — no more copy-pasting every photo into Gemini by hand.
