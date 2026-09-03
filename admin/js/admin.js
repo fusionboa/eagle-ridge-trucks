@@ -339,7 +339,6 @@ function openImagesModal(id) {
       <button class="btn btn-ghost" id="downloadImgsBtn">⬇ Download ZIP</button>
       <button class="btn btn-ghost" id="uploadImgsBtn">⬆ Upload images</button>
       <button class="btn btn-ghost" id="uploadFolderBtn">📁 Upload folder</button>
-      <button class="btn btn-ghost" id="removeBgBtn" title="AI cuts the subject out onto a clean white background — asks before processing interiors">✂️ Remove BG (AI)</button>
       <button class="btn btn-ghost" data-close>Close</button>
     </div>
   `;
@@ -487,80 +486,6 @@ function openImagesModal(id) {
     }
   });
 
-  // ─── AI background removal (one click for every image) ───
-  // Runs an open-source segmentation model (@imgly/background-removal) in YOUR
-  // browser — free, no API keys, no server cost. Each result is a transparent
-  // PNG uploaded straight to KV through the existing upload pipeline.
-  document.getElementById('removeBgBtn').addEventListener('click', async () => {
-    const btn = document.getElementById('removeBgBtn');
-    const originalText = btn.textContent;
-    btn.disabled = true;
-    try {
-      btn.textContent = '⏳ Loading AI… (first run downloads an 88MB model)';
-      let removeBackground;
-      try {
-        const mod = await import('https://esm.sh/@imgly/background-removal@1.7.0');
-        removeBackground = mod.removeBackground;
-      } catch (e) {
-        console.error('AI library failed to load:', e);
-        alert('Could not load the AI model (network blocked?). Check your connection and try again.');
-        btn.textContent = originalText; btn.disabled = false; return;
-      }
-      // Scope choice: all images, or just the cover (interiors often get
-      // mutilated by segmentation — the model treats cabin parts as background).
-      const scopeAll = confirm('Remove BG on ALL images?\n\nOK = all images\nCancel = cover photo only (recommended if some shots are interiors)');
-      const targets = scopeAll ? imgs : [imgs[0]];
-
-      const urls = [];
-      let fail = 0;
-      for (let i = 0; i < targets.length; i++) {
-        btn.textContent = `✂️ ${i + 1}/${targets.length}…`;
-        try {
-          const blob = await fetchImageBlob(targets[i]);
-          if (!blob) { fail++; continue; }
-          const small = await downscaleBlob(blob, 1536); // model works at 1024px — smaller input = much faster
-          const cut = await removeBackground(small, {
-            model: 'isnet', // full-precision — highest quality of the 3 available (fp16/quint8 are faster but sloppier)
-            output: { format: 'image/png', quality: 0.9 },
-            progress: (key, cur, tot) => {
-              if (key.startsWith('fetch:') && tot) btn.textContent = `⏳ model ${Math.round((cur / tot) * 100)}%`;
-            },
-          });
-          // Cleanup pass: erase floating junk (banners/logos/text the model
-          // kept), keep only the main subject, crop tight, flatten onto WHITE
-          // (transparent PNGs pick up the site's dark theme and read as black).
-          const { blob: outBlob, erased } = await finalizeCutout(cut);
-          if (erased > 500) console.log(`remove-bg #${i + 1}: erased ${erased}px of junk (banner/logo remnants)`);
-          const up = await fetch(`${API_BASE}/api/admin/upload-image`, {
-            method: 'POST',
-            headers: authHeaders({ 'Content-Type': 'image/png' }),
-            body: outBlob,
-          });
-          if (!up.ok) { fail++; continue; }
-          const upJson = await up.json().catch(() => ({}));
-          if (upJson.url) urls.push(upJson.url); else fail++;
-        } catch (e) {
-          console.error(`remove-bg #${i + 1} failed:`, e);
-          fail++;
-        }
-      }
-      if (!urls.length) {
-        alert('Remove BG failed on every image. Check the console for details.');
-        btn.textContent = originalText; btn.disabled = false; return;
-      }
-      if (await updateTruck(id, { customImages: urls })) {
-        await loadTrucks();
-        openImagesModal(id);
-        alert(`✂️ Done — ${urls.length} image(s) now have transparent backgrounds${fail ? ` (${fail} failed)` : ''}.`);
-      }
-    } catch (e) {
-      alert('Remove BG failed: ' + e.message);
-      btn.textContent = originalText;
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
   // Upload: accepts either hand-picked files or an entire folder.
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
@@ -603,103 +528,6 @@ function openImagesModal(id) {
   };
   fileInput.addEventListener('change', () => handleFiles(fileInput.files));
   folderInput.addEventListener('change', () => handleFiles(folderInput.files));
-}
-
-// Flatten a transparent PNG onto solid white — no alpha in the final file.
-async function compositeOnWhite(pngBlob) {
-  const bmp = await createImageBitmap(pngBlob);
-  const c = document.createElement('canvas');
-  c.width = bmp.width; c.height = bmp.height;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, c.width, c.height);
-  ctx.drawImage(bmp, 0, 0);
-  return await new Promise((res) => c.toBlob((b) => res(b), 'image/png'));
-}
-
-// Post-cutout cleanup: the segmentation model often keeps floating junk alive
-// (dealer banners, logos, text overlays). Flood-fill the alpha mask, keep ONLY
-// the largest connected region (the car), erase everything else, then crop to
-// the subject with a small margin. Returns the final white-background PNG.
-async function finalizeCutout(cutBlob, pad = 14) {
-  const bmp = await createImageBitmap(cutBlob);
-  const w = bmp.width, h = bmp.height;
-  const c = document.createElement('canvas');
-  c.width = w; c.height = h;
-  const ctx = c.getContext('2d', { willReadFrequently: true });
-  ctx.drawImage(bmp, 0, 0);
-  const imgData = ctx.getImageData(0, 0, w, h);
-  const d = imgData.data;
-  const n = w * h;
-
-  // Binary mask of opaque pixels
-  const mask = new Uint8Array(n);
-  for (let i = 0; i < n; i++) mask[i] = d[i * 4 + 3] > 40 ? 1 : 0;
-
-  // Connected-component labeling (4-neighbour flood fill, iterative)
-  const label = new Int32Array(n);
-  const stack = new Int32Array(n);
-  let bestLabel = 0, bestSize = 0, cur = 0;
-  for (let start = 0; start < n; start++) {
-    if (!mask[start] || label[start]) continue;
-    cur++;
-    let sp = 0, size = 0;
-    stack[sp++] = start;
-    label[start] = cur;
-    while (sp > 0) {
-      const p = stack[--sp];
-      size++;
-      const x = p % w;
-      if (x > 0 && mask[p - 1] && !label[p - 1]) { label[p - 1] = cur; stack[sp++] = p - 1; }
-      if (x < w - 1 && mask[p + 1] && !label[p + 1]) { label[p + 1] = cur; stack[sp++] = p + 1; }
-      if (p >= w && mask[p - w] && !label[p - w]) { label[p - w] = cur; stack[sp++] = p - w; }
-      if (p < n - w && mask[p + w] && !label[p + w]) { label[p + w] = cur; stack[sp++] = p + w; }
-    }
-    if (size > bestSize) { bestSize = size; bestLabel = cur; }
-  }
-
-  // Erase every blob except the main subject; track its bounding box
-  let minX = w, minY = h, maxX = -1, maxY = -1, erased = 0;
-  for (let p = 0; p < n; p++) {
-    if (!mask[p]) continue;
-    if (label[p] !== bestLabel) { d[p * 4 + 3] = 0; erased++; continue; }
-    const x = p % w, y = (p / w) | 0;
-    if (x < minX) minX = x;
-    if (x > maxX) maxX = x;
-    if (y < minY) minY = y;
-    if (y > maxY) maxY = y;
-  }
-  if (maxX < 0) { // model returned nothing opaque — bail with the original
-    return { blob: await compositeOnWhite(cutBlob), erased: 0 };
-  }
-  ctx.putImageData(imgData, 0, 0);
-
-  // Crop to the subject with padding
-  const cx = Math.max(0, minX - pad), cy = Math.max(0, minY - pad);
-  const cw = Math.min(w, maxX + pad + 1) - cx, ch = Math.min(h, maxY + pad + 1) - cy;
-  const out = document.createElement('canvas');
-  out.width = cw; out.height = ch;
-  const octx = out.getContext('2d');
-  octx.fillStyle = '#ffffff';
-  octx.fillRect(0, 0, cw, ch);
-  octx.drawImage(c, cx, cy, cw, ch, 0, 0, cw, ch);
-  const blob = await new Promise((res) => out.toBlob((b) => res(b), 'image/png'));
-  return { blob, erased };
-}
-
-// Downscale an image blob so its longest edge is at most `max` px (keeps the
-// AI segmentation fast — the model runs at 1024px internally anyway).
-async function downscaleBlob(blob, max = 1536) {
-  try {
-    const bmp = await createImageBitmap(blob);
-    const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
-    if (scale >= 1) return blob;
-    const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
-    const c = document.createElement('canvas');
-    c.width = w; c.height = h;
-    c.getContext('2d').drawImage(bmp, 0, 0, w, h);
-    return await new Promise((res) => c.toBlob((b) => res(b || blob), 'image/png'));
-  } catch (e) { return blob; }
 }
 
 // Fetch an image through the worker's CORS proxy and return its blob (null on failure).

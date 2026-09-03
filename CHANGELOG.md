@@ -1,5 +1,20 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.9.0 — ↩️ Reverted AI background removal; kept all UI/layout work (Sep 3, 2026)
+
+**Decision:** the ✂️ Remove BG (AI) feature (v0.8.0–v0.8.3) is **reverted** — quality on real dealer photos wasn't good enough (interiors mutilated, banners sometimes survived) and Jaden needs listings live for Dan ASAP. The browser AI idea is parked in context.md if we ever revisit it.
+
+### Kept (all UI/layout work intact)
+- 📱 Full mobile support — admin topbar stack, scrollable tabs, fullscreen modals, touch-visible image buttons, site hero clearance (v0.8.1)
+- Homepage breadcrumb overlap fix — `.hero-crumbs` (v0.8.2)
+- Cover photo picker, 📋 Copy button, ZIP download, folder upload, forum, filters — everything else
+
+### Removed
+- ✂️ Remove BG (AI) button + client-side imgly pipeline (removeBackground, finalizeCutout, compositeOnWhite, downscaleBlob)
+- `admin.js` restored to the pre-v0.8.0 version (git: `9dca91a^`); cache-busted to `?v=6`
+
+**Image workflow = back to the original:** admin 💾 Save images → edit in Gemini by hand → 📁 Upload folder back.
+
 ## v0.8.3 — ✂️ Remove BG v3: junk-erasing cleanup pass + auto-crop (Sep 3, 2026)
 
 **Fix:** the AI kept floating junk alive (dealer banners, logos, text overlays) — the whole point of the button was to stop needing Gemini.
