@@ -339,6 +339,7 @@ function openImagesModal(id) {
       <button class="btn btn-ghost" id="downloadImgsBtn">⬇ Download ZIP</button>
       <button class="btn btn-ghost" id="uploadImgsBtn">⬆ Upload images</button>
       <button class="btn btn-ghost" id="uploadFolderBtn">📁 Upload folder</button>
+      <button class="btn btn-ghost" id="dragImgsBtn" draggable="true" title="DRAG this button into the Gemini window and drop it there — all images upload as real files">🚀 Drag to Gemini</button>
       <button class="btn btn-ghost" data-close>Close</button>
     </div>
   `;
@@ -369,6 +370,48 @@ function openImagesModal(id) {
       }
     });
   });
+
+  // 🚀 Drag-to-Gemini: browsers can't put files on the clipboard, but a DRAG
+  // can carry real files across windows. On pointerdown we pre-fetch every
+  // image (through the CORS proxy) as actual File objects; on dragstart they're
+  // attached to the drag — drop the button inside Gemini's prompt and ALL the
+  // images upload at once. The image FILES travel, never the links.
+  const dragBtn = document.getElementById('dragImgsBtn');
+  let dragFiles = null; // ready File objects
+  let dragPrefetching = false;
+  const prefetchDragFiles = async () => {
+    if (dragFiles || dragPrefetching) return;
+    dragPrefetching = true;
+    const original = dragBtn.textContent;
+    dragBtn.textContent = '⏳ Preparing…';
+    const files = [];
+    for (let i = 0; i < imgs.length; i++) {
+      dragBtn.textContent = `⏳ ${i + 1}/${imgs.length}…`;
+      try {
+        const blob = await fetchImageBlob(imgs[i]);
+        if (!blob) continue;
+        const png = await toPngBlob(blob);
+        files.push(new File([png], `${id}-${String(i + 1).padStart(2, '0')}.png`, { type: 'image/png' }));
+      } catch (e) { console.error('drag prefetch failed:', e); }
+    }
+    dragFiles = files;
+    dragPrefetching = false;
+    dragBtn.textContent = files.length ? `🚀 Drag ${files.length} images →` : original;
+  };
+  dragBtn.addEventListener('pointerdown', prefetchDragFiles); // starts preparing the moment you reach for it
+  dragBtn.addEventListener('keydown', prefetchDragFiles);
+  dragBtn.addEventListener('dragstart', (e) => {
+    if (!dragFiles || !dragFiles.length) {
+      e.preventDefault();
+      alert('Still preparing the images — give it a second, then drag again.');
+      return;
+    }
+    e.dataTransfer.effectAllowed = 'copy';
+    for (const f of dragFiles) e.dataTransfer.items.add(f); // real files, not links
+    e.dataTransfer.setData('text/plain', `${dragFiles.length} vehicle images`); // fallback if drop target ignores files
+    e.dataTransfer.setDragImage(dragBtn, 20, 20);
+  });
+  dragBtn.addEventListener('dragend', () => { dragFiles = null; dragBtn.textContent = '🚀 Drag to Gemini'; });
 
   // Set cover: the first image in customImages is the cover photo. Moving a
   // chosen image to the front changes the cover on the site + admin instantly.

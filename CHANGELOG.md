@@ -1,5 +1,14 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.9.1 — 🚀 Drag-to-Gemini button (Sep 3, 2026)
+
+**Feature:** get all of a truck's images into Gemini without downloading anything.
+
+- New **🚀 Drag to Gemini** button in the Images modal. Browsers can't put files on the clipboard (security), but a **drag can carry real files across windows**: the moment you reach for the button it pre-fetches every image (via the CORS proxy) as actual PNG File objects; drag the button into the Gemini window and drop — **all images upload as real files at once**. The image FILES travel, never the links.
+- Button shows preparation progress (`⏳ 3/20…` → `🚀 Drag 20 images →`), resets after each drop.
+- The per-image 📋 Copy button and 💾 Save images (folder write) remain as alternatives.
+- `admin.js` → `?v=7`.
+
 ## v0.9.0 — ↩️ Reverted AI background removal; kept all UI/layout work (Sep 3, 2026)
 
 **Decision:** the ✂️ Remove BG (AI) feature (v0.8.0–v0.8.3) is **reverted** — quality on real dealer photos wasn't good enough (interiors mutilated, banners sometimes survived) and Jaden needs listings live for Dan ASAP. The browser AI idea is parked in context.md if we ever revisit it.
