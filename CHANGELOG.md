@@ -1,5 +1,13 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.10.2 — 🐛 Stock search fix + dad's game plan (Sep 3, 2026)
+
+**Bug fix:** `/api/admin/stock-images` returned "query required" / 0 results when called with `?q=` — the worker only read `?query=`. Now accepts both (`q` and `query`). Verified live: 29 licensed results for "2024 GMC Sierra 1500".
+
+**Plan (per dad):** lean on the stock finder for listing images NOW; dad asks dealership IT tomorrow (Sep 4) about a raw unwatermarked outbound inventory feed. When IT delivers: swap `FEED_URL` → every listing instantly gets professional photos of the actual vehicles, zero image editing.
+
+---
+
 ## v0.10.0 — 📷 Stock photo finder for listings (Sep 3, 2026)
 
 **Feature:** clean listing photos without touching an editor — search free-licensed stock photos of the exact vehicle and attach them to the listing in two clicks.

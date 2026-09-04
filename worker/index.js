@@ -494,7 +494,8 @@ async function handle(request, env) {
     // many more sites). Only commercial-safe licenses pass the filter
     // (BY, BY-SA, CC0, PDM) — NC/ND variants are dropped automatically.
     if (path === '/api/admin/stock-images' && request.method === 'GET') {
-      const q = (new URL(request.url).searchParams.get('query') || '').trim();
+      const url_ = new URL(request.url);
+      const q = (url_.searchParams.get('query') || url_.searchParams.get('q') || '').trim();
       if (!q) return json({ error: 'query required' }, 400);
       const SAFE = /\b(cc\s?by(-sa)?(\s?[\d.]+)?|cc0|public domain|pdm)\b/i;
       try {
