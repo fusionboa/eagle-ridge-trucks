@@ -12,6 +12,7 @@
 - No watermarks, no dealer banners, no Gemini round-trip. License string is shown so attribution (CC BY*) can be added to the description if wanted.
 - Verified live: "2024 GMC Sierra Denali" → 24 results (CC BY-SA 4.0, CC BY 2.0, CC0…).
 - Worker endpoint + `admin.js/admin.css` → `?v=8`.
+- **v0.10.1:** second source added — **Openverse** (aggregates Flickr CC + many more sites) queried in parallel with Commons, results deduped, **commercial-safe licenses only** (CC BY / BY-SA / CC0 / public domain) — NC/ND variants auto-dropped. Same search now returns 28+ results. Source shown per photo (`commons` / `flickr`…). Note: Chevrolet/GMC/Buick's own press photos are copyrighted (media-site only) — not legally usable; Imagin.studio is the paid option for exact factory-style renders. `admin.js` → `?v=10`.
 
 ### Tested alternatives (dead ends, for the record)
 - Imagin.studio demo key: dead (same placeholder PNG for every car).
