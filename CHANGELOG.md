@@ -1,5 +1,22 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.10.0 — 📷 Stock photo finder for listings (Sep 3, 2026)
+
+**Feature:** clean listing photos without touching an editor — search free-licensed stock photos of the exact vehicle and attach them to the listing in two clicks.
+
+### How it works
+- New **📷 Find stock photos** button in the Images modal.
+- Query pre-filled from **year / make / model / trim**, optional **+ exterior color** checkbox.
+- Searches **Wikimedia Commons** through the worker (`/api/admin/stock-images`) — returns up to 24 photos ≥900px with **license badges** (CC BY / CC BY-SA / CC0 / public domain), resolution, and author.
+- Pick any → **➕ Append selected** or **✅ Replace all images** → photos are downloaded server-side-proxied and **uploaded to KV as the listing's own images** (never hotlinked).
+- No watermarks, no dealer banners, no Gemini round-trip. License string is shown so attribution (CC BY*) can be added to the description if wanted.
+- Verified live: "2024 GMC Sierra Denali" → 24 results (CC BY-SA 4.0, CC BY 2.0, CC0…).
+- Worker endpoint + `admin.js/admin.css` → `?v=8`.
+
+### Tested alternatives (dead ends, for the record)
+- Imagin.studio demo key: dead (same placeholder PNG for every car).
+- CarImagery SOAP API: works but image host returns a 24×24 GIF placeholder.
+
 ## v0.9.1 — 🚀 Drag-to-Gemini button (Sep 3, 2026)
 
 **Feature:** get all of a truck's images into Gemini without downloading anything.

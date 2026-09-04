@@ -248,6 +248,30 @@ body {
 .img-cell:hover .img-cover-btn { opacity: 1; }
 .img-cover-btn:hover { background: var(--accent); color: #0b0e11; }
 
+/* ─── Stock photo picker ──────────────────────────────────── */
+.stock-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+.stock-cell {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.stock-cell:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(201, 162, 75, 0.35); }
+.stock-cell input { margin: 8px; align-self: flex-start; }
+.stock-cell img { width: 100%; height: 120px; object-fit: cover; display: block; margin-top: -32px; }
+.stock-meta { padding: 8px 10px 10px; }
+.stock-title { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stock-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
 /* ─── Responsive ──────────────────────────────────────────── */
 @media (max-width: 720px) {
   .truck-row { flex-wrap: wrap; }

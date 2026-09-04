@@ -488,6 +488,46 @@ async function handle(request, env) {
       }
     }
 
+    // Admin: search free stock car photos (Wikimedia Commons) for a vehicle.
+    // ?query=2024 GMC Sierra 1500 Denali → [{title, url, thumb, pageUrl, license}]
+    // Commons images are free-licensed (mostly CC BY / CC BY-SA / public domain) —
+    // the license string is returned so the admin can pick appropriately.
+    if (path === '/api/admin/stock-images' && request.method === 'GET') {
+      const q = (new URL(request.url).searchParams.get('query') || '').trim();
+      if (!q) return json({ error: 'query required' }, 400);
+      try {
+        const api = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*'
+          + '&generator=search&gsrsearch=' + encodeURIComponent(q)
+          + '&gsrlimit=24&gsrnamespace=6&prop=imageinfo'
+          + '&iiprop=url|size|mime|extmetadata&iiurlwidth=1400';
+        const resp = await fetch(api, { headers: { 'User-Agent': 'dangm.ca admin (stock photo picker; contact: jadenmichalmarwaha@gmail.com)' } });
+        if (!resp.ok) return json({ error: 'commons search failed: ' + resp.status }, 502);
+        const data = await resp.json();
+        const results = [];
+        for (const p of Object.values(data.query?.pages || {})) {
+          const ii = p.imageinfo && p.imageinfo[0];
+          if (!ii) continue;
+          if (ii.width < 900) continue; // too small for a listing
+          const meta = ii.extmetadata || {};
+          const license = (meta.LicenseShortName && meta.LicenseShortName.value) || '';
+          const artist = ((meta.Artist && meta.Artist.value) || '').replace(/<[^>]*>/g, '').trim().slice(0, 60);
+          results.push({
+            title: (p.title || '').replace(/^File:/, ''),
+            url: ii.url,
+            thumb: ii.thumburl || ii.url,
+            pageUrl: ii.descriptionurl || '',
+            license,
+            artist,
+            w: ii.width, h: ii.height,
+          });
+        }
+        results.sort((a, b) => b.w * b.h - a.w * a.h);
+        return json({ results });
+      } catch (e) {
+        return json({ error: 'stock search failed: ' + (e && e.message ? e.message : String(e)) }, 500);
+      }
+    }
+
     // Admin: update a truck
     if (path.startsWith('/api/admin/truck/') && request.method === 'POST') {
       const id = decodeURIComponent(path.slice('/api/admin/truck/'.length));

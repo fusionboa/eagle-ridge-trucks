@@ -340,6 +340,7 @@ function openImagesModal(id) {
       <button class="btn btn-ghost" id="uploadImgsBtn">⬆ Upload images</button>
       <button class="btn btn-ghost" id="uploadFolderBtn">📁 Upload folder</button>
       <button class="btn btn-ghost" id="dragImgsBtn" draggable="true" title="DRAG this button into the Gemini window and drop it there — all images upload as real files">🚀 Drag to Gemini</button>
+      <button class="btn btn-ghost" id="stockBtn" title="Search free stock photos of this exact vehicle — no watermarks, no dealer banners">📷 Find stock photos</button>
       <button class="btn btn-ghost" data-close>Close</button>
     </div>
   `;
@@ -529,6 +530,12 @@ function openImagesModal(id) {
     }
   });
 
+  // ─── 📷 Stock photo finder (Wikimedia Commons via the worker) ───
+  // Searches free-licensed photos of this exact vehicle (year/make/model/trim/
+  // color), shows candidates with license badges, and uploads picks to KV —
+  // clean photos with no watermarks or dealer banners.
+  document.getElementById('stockBtn').addEventListener('click', () => openStockPicker(id, imgs));
+
   // Upload: accepts either hand-picked files or an entire folder.
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
@@ -601,6 +608,117 @@ function toPngBlob(blob) {
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image load failed')); };
     img.src = url;
   });
+}
+
+// ─── 📷 Stock photo picker (Wikimedia Commons via worker) ───
+// Searches free-licensed photos of the vehicle, shows candidates with license
+// badges, uploads picks to KV and attaches them to the listing.
+function openStockPicker(id, currentImgs) {
+  const truck = allTrucks.find((t) => t.id === id);
+  if (!truck) return;
+  const modal = document.getElementById('editModal');
+  const body = document.getElementById('editBody');
+  const vehicle = [truck.year, truck.make, truck.model, truck.trim].filter(Boolean).join(' ');
+
+  body.innerHTML = `
+    <h2>📷 Stock photos — ${vehicle || id}</h2>
+    <p class="hint">Free-licensed photos (Wikimedia Commons) — no watermarks, no dealer banners. CC "BY" licenses appreciate attribution; add it to the listing description if you want to be extra safe.</p>
+    <div class="edit-form">
+      <label class="field field-full">
+        <span>Search query (edit freely — year, make, model, trim, color)</span>
+        <input type="text" id="stockQuery" value="${escapeHtml(vehicle)}">
+      </label>
+      <label class="field field-full" style="flex-direction:row;align-items:center;gap:10px">
+        <input type="checkbox" id="stockColor" style="width:auto">
+        <span style="text-transform:none;letter-spacing:0">Include exterior color in the search (${escapeHtml(truck.exteriorColor || 'n/a')})</span>
+      </label>
+    </div>
+    <div class="modal-actions" style="justify-content:flex-start">
+      <button class="btn btn-primary" id="stockSearchBtn">🔍 Search</button>
+      <button class="btn btn-ghost" id="stockBackBtn">← Back to images</button>
+    </div>
+    <div id="stockResults"><div class="empty">Type a query and hit Search.</div></div>
+  `;
+  modal.classList.add('open');
+
+  document.getElementById('stockBackBtn').addEventListener('click', () => openImagesModal(id));
+
+  const runSearch = async () => {
+    const q = document.getElementById('stockQuery').value.trim();
+    if (!q) return;
+    const useColor = document.getElementById('stockColor').checked && truck.exteriorColor;
+    const query = useColor ? `${q} ${truck.exteriorColor}` : q;
+    const box = document.getElementById('stockResults');
+    box.innerHTML = '<div class="loading">Searching…</div>';
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/stock-images?query=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if (!res.ok || !data.results) throw new Error(data.error || 'search failed');
+      if (!data.results.length) { box.innerHTML = '<div class="empty">No results — try removing the trim or color.</div>'; return; }
+      box.innerHTML = `
+        <div class="stock-grid">
+          ${data.results.map((r, i) => `
+            <label class="stock-cell">
+              <input type="checkbox" class="stock-pick" data-idx="${i}" style="width:auto">
+              <img src="${r.thumb}" alt="" loading="lazy">
+              <div class="stock-meta">
+                <div class="stock-title">${escapeHtml(r.title.slice(0, 48))}</div>
+                <div class="stock-sub">${r.w}×${r.h} · ${escapeHtml(r.license || 'see file page')}${r.artist ? ' · ' + escapeHtml(r.artist) : ''}</div>
+              </div>
+            </label>`).join('')}
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="stockAppendBtn">➕ Append selected</button>
+          <button class="btn btn-primary" id="stockReplaceBtn">✅ Replace all images</button>
+        </div>
+        <input type="hidden" id="stockData">
+      `;
+      box.querySelector('#stockData').value = JSON.stringify(data.results);
+
+      const picked = () => {
+        const results = JSON.parse(box.querySelector('#stockData').value);
+        return [...box.querySelectorAll('.stock-pick:checked')].map((el) => results[Number(el.dataset.idx)]);
+      };
+      const apply = async (replace) => {
+        const picks = picked();
+        if (!picks.length) { alert('Select at least one photo.'); return; }
+        const btn = replace ? document.getElementById('stockReplaceBtn') : document.getElementById('stockAppendBtn');
+        btn.disabled = true;
+        const urls = [];
+        for (let i = 0; i < picks.length; i++) {
+          btn.textContent = `⬆ Uploading ${i + 1}/${picks.length}…`;
+          try {
+            const blob = await fetchImageBlob(picks[i].url);
+            if (!blob) continue;
+            const ext = extOf(picks[i].url);
+            const up = await fetch(`${API_BASE}/api/admin/upload-image`, {
+              method: 'POST',
+              headers: authHeaders({ 'Content-Type': ext === 'png' ? 'image/png' : 'image/jpeg' }),
+              body: blob,
+            });
+            if (!up.ok) continue;
+            const upJson = await up.json().catch(() => ({}));
+            if (upJson.url) urls.push(upJson.url);
+          } catch (e) { console.error('stock upload failed:', e); }
+        }
+        if (!urls.length) { alert('Upload failed for every photo.'); btn.disabled = false; return; }
+        const finalList = replace ? urls : [...(currentImgs && currentImgs.length ? currentImgs : []), ...urls];
+        if (await updateTruck(id, { customImages: finalList })) {
+          await loadTrucks();
+          openImagesModal(id);
+          alert(`📷 ${urls.length} stock photo(s) added to the listing.`);
+        } else {
+          btn.disabled = false;
+        }
+      };
+      box.querySelector('#stockAppendBtn').addEventListener('click', () => apply(false));
+      box.querySelector('#stockReplaceBtn').addEventListener('click', () => apply(true));
+    } catch (e) {
+      box.innerHTML = `<div class="error">${escapeHtml(e.message)}</div>`;
+    }
+  };
+  document.getElementById('stockSearchBtn').addEventListener('click', runSearch);
+  document.getElementById('stockQuery').addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); });
 }
 
 // ─── Helpers ────────────────────────────────────────────────
