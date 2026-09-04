@@ -1,5 +1,12 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.10.3 — 📞 Phone number fix + deploy branch fix (Sep 4, 2026)
+
+- **Phone number corrected everywhere: 605 → 604-735-1396** (had a typo since launch). Fixed in: index.html (schema.org + FAQ + contact), main.js (JSON-LD, SEO descriptions, all Call buttons), inventory/vehicle/forum/forum-post metas, context.md. `tel:` links fixed too (`tel:6047351396`).
+- **ROOT CAUSE of all the 'deploy not going live' mysteries found:** local repo branch is `master`, but Cloudflare Pages production only serves deploys from **`main`** — plain `wrangler pages deploy` was landing deploys on Preview. **Fix: always deploy with `--branch=main`.** Verified live on dangm.ca after.
+- Asset versions bumped to `?v=4`.
+- Rejected idea (for the record): scraping Go North Surrey GM's listing photos — they're a competitor dealership's licensed photos; stripping filenames/proxying them would land on dad at work. The eDealer feed photos (13–20 per truck, all 406 listed) are already the professional shots needed.
+
 ## v0.10.2 — 🐛 Stock search fix + dad's game plan (Sep 3, 2026)
 
 **Bug fix:** `/api/admin/stock-images` returned "query required" / 0 results when called with `?q=` — the worker only read `?query=`. Now accepts both (`q` and `query`). Verified live: 29 licensed results for "2024 GMC Sierra 1500".
