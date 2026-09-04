@@ -622,7 +622,7 @@ function openStockPicker(id, currentImgs) {
 
   body.innerHTML = `
     <h2>📷 Stock photos — ${vehicle || id}</h2>
-    <p class="hint">Free-licensed photos (Wikimedia Commons) — no watermarks, no dealer banners. CC "BY" licenses appreciate attribution; add it to the listing description if you want to be extra safe.</p>
+    <p class="hint">Free-licensed photos from Wikimedia Commons + Openverse (Flickr CC &amp; more) — no watermarks, no dealer banners. Commercial-safe licenses only (CC BY / BY-SA / CC0 / public domain). Attribution appreciated — add it to the listing description if you want to be extra safe.</p>
     <div class="edit-form">
       <label class="field field-full">
         <span>Search query (edit freely — year, make, model, trim, color)</span>
@@ -663,7 +663,7 @@ function openStockPicker(id, currentImgs) {
               <img src="${r.thumb}" alt="" loading="lazy">
               <div class="stock-meta">
                 <div class="stock-title">${escapeHtml(r.title.slice(0, 48))}</div>
-                <div class="stock-sub">${r.w}×${r.h} · ${escapeHtml(r.license || 'see file page')}${r.artist ? ' · ' + escapeHtml(r.artist) : ''}</div>
+                <div class="stock-sub">${escapeHtml(r.source || '')} · ${r.w}×${r.h} · ${escapeHtml(r.license || 'see file page')}${r.artist ? ' · ' + escapeHtml(r.artist) : ''}</div>
               </div>
             </label>`).join('')}
         </div>

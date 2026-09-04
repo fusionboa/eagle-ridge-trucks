@@ -488,41 +488,88 @@ async function handle(request, env) {
       }
     }
 
-    // Admin: search free stock car photos (Wikimedia Commons) for a vehicle.
-    // ?query=2024 GMC Sierra 1500 Denali → [{title, url, thumb, pageUrl, license}]
-    // Commons images are free-licensed (mostly CC BY / CC BY-SA / public domain) —
-    // the license string is returned so the admin can pick appropriately.
+    // Admin: search free stock car photos for a vehicle.
+    // ?query=2024 GMC Sierra 1500 Denali → [{title, url, thumb, pageUrl, license, artist, w, h, source}]
+    // Sources: Wikimedia Commons + Openverse (which aggregates Flickr CC and
+    // many more sites). Only commercial-safe licenses pass the filter
+    // (BY, BY-SA, CC0, PDM) — NC/ND variants are dropped automatically.
     if (path === '/api/admin/stock-images' && request.method === 'GET') {
       const q = (new URL(request.url).searchParams.get('query') || '').trim();
       if (!q) return json({ error: 'query required' }, 400);
+      const SAFE = /\b(cc\s?by(-sa)?(\s?[\d.]+)?|cc0|public domain|pdm)\b/i;
       try {
-        const api = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*'
+        const commonsApi = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*'
           + '&generator=search&gsrsearch=' + encodeURIComponent(q)
           + '&gsrlimit=24&gsrnamespace=6&prop=imageinfo'
           + '&iiprop=url|size|mime|extmetadata&iiurlwidth=1400';
-        const resp = await fetch(api, { headers: { 'User-Agent': 'dangm.ca admin (stock photo picker; contact: jadenmichalmarwaha@gmail.com)' } });
-        if (!resp.ok) return json({ error: 'commons search failed: ' + resp.status }, 502);
-        const data = await resp.json();
+        const openverseApi = 'https://api.openverse.org/v1/images/?q=' + encodeURIComponent(q)
+          + '&page_size=20&filter_dead=false';
+        const [commonsResp, openverseResp] = await Promise.allSettled([
+          fetch(commonsApi, { headers: { 'User-Agent': 'dangm.ca admin (stock photo picker; contact: jadenmichalmarwaha@gmail.com)' } }),
+          fetch(openverseApi, { headers: { 'User-Agent': 'dangm.ca admin (stock photo picker)' } }),
+        ]);
+
         const results = [];
-        for (const p of Object.values(data.query?.pages || {})) {
-          const ii = p.imageinfo && p.imageinfo[0];
-          if (!ii) continue;
-          if (ii.width < 900) continue; // too small for a listing
-          const meta = ii.extmetadata || {};
-          const license = (meta.LicenseShortName && meta.LicenseShortName.value) || '';
-          const artist = ((meta.Artist && meta.Artist.value) || '').replace(/<[^>]*>/g, '').trim().slice(0, 60);
-          results.push({
-            title: (p.title || '').replace(/^File:/, ''),
-            url: ii.url,
-            thumb: ii.thumburl || ii.url,
-            pageUrl: ii.descriptionurl || '',
-            license,
-            artist,
-            w: ii.width, h: ii.height,
-          });
+        const seen = new Set();
+        const push = (r) => {
+          if (!r || !r.url || seen.has(r.url)) return;
+          seen.add(r.url);
+          results.push(r);
+        };
+
+        // Source 1: Wikimedia Commons
+        if (commonsResp.status === 'fulfilled' && commonsResp.value.ok) {
+          try {
+            const data = await commonsResp.value.json();
+            for (const p of Object.values(data.query?.pages || {})) {
+              const ii = p.imageinfo && p.imageinfo[0];
+              if (!ii || ii.width < 900) continue;
+              const meta = ii.extmetadata || {};
+              const license = (meta.LicenseShortName && meta.LicenseShortName.value) || '';
+              if (license && !SAFE.test(license)) continue;
+              const artist = ((meta.Artist && meta.Artist.value) || '').replace(/<[^>]*>/g, '').trim().slice(0, 60);
+              push({
+                title: (p.title || '').replace(/^File:/, ''),
+                url: ii.url,
+                thumb: ii.thumburl || ii.url,
+                pageUrl: ii.descriptionurl || '',
+                license: license || 'see file page',
+                artist,
+                w: ii.width, h: ii.height,
+                source: 'commons',
+              });
+            }
+          } catch (e) { console.error('commons parse failed:', e.message); }
         }
-        results.sort((a, b) => b.w * b.h - a.w * a.h);
-        return json({ results });
+
+        // Source 2: Openverse (Flickr CC + more) — commercial-safe licenses only
+        if (openverseResp.status === 'fulfilled' && openverseResp.value.ok) {
+          try {
+            const data = await openverseResp.value.json();
+            for (const r of (data.results || [])) {
+              const license = String(r.license || '').toUpperCase();
+              const licenseName = license === 'CC0' || license === 'PDM' ? license.toUpperCase()
+                : 'CC ' + license.replace(/^by/, 'BY ').toUpperCase();
+              const full = (license + ' ' + (r.license_version || '')).trim();
+              // license like "by", "by-sa" (+version). NC/ND never reach here via filter below.
+              if (!/^(by|by-sa|cc0|pdm)(\s|$)/i.test(license + ' ')) continue;
+              if ((r.width || 0) < 900) continue;
+              push({
+                title: String(r.title || 'photo').slice(0, 80),
+                url: r.url,
+                thumb: r.thumbnail || r.url,
+                pageUrl: r.foreign_landing_url || '',
+                license: licenseName.trim(),
+                artist: String(r.creator || '').slice(0, 60),
+                w: r.width || 0, h: r.height || 0,
+                source: r.source || 'openverse',
+              });
+            }
+          } catch (e) { console.error('openverse parse failed:', e.message); }
+        }
+
+        results.sort((a, b) => (b.w * b.h) - (a.w * a.h));
+        return json({ results: results.slice(0, 36) });
       } catch (e) {
         return json({ error: 'stock search failed: ' + (e && e.message ? e.message : String(e)) }, 500);
       }
