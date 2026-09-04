@@ -156,7 +156,7 @@ function addVehicleJSONLD(t, title, price, desc, imgs, vin, year) {
       '@type': 'LocalBusiness',
       '@id': 'https://dangm.ca/#business',
       name: 'dangm.ca',
-      telephone: '605-735-1396',
+      telephone: '604-735-1396',
       address: { '@type': 'PostalAddress', 'addressRegion': 'BC', 'addressLocality': 'Coquitlam', 'addressCountry': 'CA' }
     }
   });
@@ -337,7 +337,7 @@ function renderVehicle(t) {
   // ─── Dynamic SEO: title, meta, OG, JSON-LD, breadcrumb ───
   const fullTitle = `${title} | Cars & Trucks for Sale in Vancouver, BC | dangm.ca`;
   document.title = fullTitle;
-  const seoDesc = `${t.year} ${t.make} ${t.model}${t.trim ? ' ' + t.trim : ''} for sale at dangm.ca in Coquitlam, BC. ${price}${t.engine ? '. ' + t.engine + '.' : ''}${t.mileage ? ' ' + Number(t.mileage).toLocaleString() + ' km.' : ''} Inspected and ready for the road. Call 605-735-1396.`;
+  const seoDesc = `${t.year} ${t.make} ${t.model}${t.trim ? ' ' + t.trim : ''} for sale at dangm.ca in Coquitlam, BC. ${price}${t.engine ? '. ' + t.engine + '.' : ''}${t.mileage ? ' ' + Number(t.mileage).toLocaleString() + ' km.' : ''} Inspected and ready for the road. Call 604-735-1396.`;
   updateMeta('description', seoDesc);
   updateMeta('og:title', fullTitle);
   updateMeta('og:description', seoDesc);
@@ -371,7 +371,7 @@ function renderVehicle(t) {
           </dl>
         </div>
         <div class="vdp-actions">
-          <a href="tel:6057351396" class="btn btn-primary">Call 605-735-1396</a>
+          <a href="tel:6047351396" class="btn btn-primary">Call 604-735-1396</a>
         </div>
       </div>
     </div>
@@ -393,7 +393,7 @@ function renderVehicle(t) {
         <p class="section-sub">Call us for pricing, availability, and test drives. No pressure, no gimmicks — just honest deals.</p>
       </div>
       <div class="vdp-contact-actions">
-        <a href="tel:6057351396" class="btn btn-primary">Call 605-735-1396</a>
+        <a href="tel:6047351396" class="btn btn-primary">Call 604-735-1396</a>
         <a href="inventory.html" class="btn btn-ghost">Back to inventory</a>
       </div>
     </section>
@@ -516,7 +516,7 @@ async function loadForumPost() {
         <div class="forum-post-body">${formatPostBody(p.body)}</div>
         <div class="forum-post-cta">
           <a href="inventory.html" class="btn btn-primary">Browse Inventory</a>
-          <a href="tel:6057351396" class="btn btn-ghost">Call 605-735-1396</a>
+          <a href="tel:6047351396" class="btn btn-ghost">Call 604-735-1396</a>
         </div>
       </div>`;
   } catch (e) {
