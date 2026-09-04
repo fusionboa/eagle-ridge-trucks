@@ -651,7 +651,7 @@ function openStockPicker(id, currentImgs) {
     const box = document.getElementById('stockResults');
     box.innerHTML = '<div class="loading">Searching…</div>';
     try {
-      const res = await fetch(`${API_BASE}/api/admin/stock-images?query=${encodeURIComponent(query)}`);
+      const res = await fetch(`${API_BASE}/api/admin/stock-images?query=${encodeURIComponent(query)}`, { headers: authHeaders() });
       const data = await res.json();
       if (!res.ok || !data.results) throw new Error(data.error || 'search failed');
       if (!data.results.length) { box.innerHTML = '<div class="empty">No results — try removing the trim or color.</div>'; return; }
