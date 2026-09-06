@@ -6,6 +6,9 @@
 
 // API_BASE is the worker ROOT (no trailing /api) — every fetch below appends its own /api path.
 const API_BASE = (window.ADMIN_CONFIG?.apiBase || '').replace(/\/+$/, '');
+window.API_BASE = API_BASE;
+window.authHeaders = authHeaders;
+window.loadTrucks = loadTrucks;
 let allTrucks = [];
 let allBackups = [];
 let forumPosts = [];
@@ -217,6 +220,7 @@ function renderList() {
         <button class="btn btn-sm ${t.listed ? 'btn-ghost' : 'btn-primary'}" data-action="toggle">${t.listed ? 'Unlist' : 'List'}</button>
         <button class="btn btn-sm btn-ghost" data-action="edit">Edit</button>
         <button class="btn btn-sm btn-ghost" data-action="images">Images</button>
+        <button class="btn btn-sm btn-ghost" data-action="ai-clean" title="Remove background + dealership branding from every photo of this truck (~$0.04/image, already-clean ones are skipped free)">✨ AI-Clean</button>
       </div>
     </div>
   `).join('');
@@ -341,6 +345,7 @@ function openImagesModal(id) {
       <button class="btn btn-ghost" id="uploadFolderBtn">📁 Upload folder</button>
       <button class="btn btn-ghost" id="dragImgsBtn" draggable="true" title="DRAG this button into the Gemini window and drop it there — all images upload as real files">🚀 Drag to Gemini</button>
       <button class="btn btn-ghost" id="stockBtn" title="Search free stock photos of this exact vehicle — no watermarks, no dealer banners">📷 Find stock photos</button>
+      <button class="btn btn-ghost" id="resetImgsBtn" title="Undo ALL image changes on this truck — back to the original feed photos (free, no AI involved)">↩ Reset to feed photos</button>
       <button class="btn btn-ghost" data-close>Close</button>
     </div>
   `;
@@ -535,6 +540,15 @@ function openImagesModal(id) {
   // color), shows candidates with license badges, and uploads picks to KV —
   // clean photos with no watermarks or dealer banners.
   document.getElementById('stockBtn').addEventListener('click', () => openStockPicker(id, imgs));
+  document.getElementById('resetImgsBtn').addEventListener('click', async () => {
+    if (!confirm('Reset ALL images for this truck to the original feed photos?\n\nThis undoes AI-cleaning and any uploads (the KV copies stay in storage, nothing is deleted). Free — no AI involved.')) return;
+    const res = await fetch(`${API_BASE}/api/admin/reset-images`, {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ truckId: id }),
+    });
+    if (res.ok) { closeModal(); loadTrucks(); } else alert('Reset failed: ' + (await res.text()).slice(0, 140));
+  });
 
   // Upload: accepts either hand-picked files or an entire folder.
   const fileInput = document.createElement('input');

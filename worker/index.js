@@ -107,6 +107,50 @@ async function ensureForumTable(env) {
   await env.D1.exec('CREATE TABLE IF NOT EXISTS forum_posts (id TEXT PRIMARY KEY, title TEXT NOT NULL, body TEXT, image TEXT, created_at TEXT, updated_at TEXT);');
 }
 
+// ─── Gemini image cleanup (shared by /api/admin/gemini-one) ─────────────
+const GEMINI_CLEAN_PROMPT = [
+  'Edit this vehicle photo:',
+  '1. Remove the background completely and replace it with a clean, uniform,',
+  '   light neutral studio backdrop (soft light gray, subtle floor shadow).',
+  '2. Remove ALL dealership branding: logos, watermarks, text overlays,',
+  '   license-plate frames, windshield stickers/banners, corner badges.',
+  '3. Keep the vehicle itself pixel-perfect — same angle, same color,',
+  '   same wheels, nothing redrawn, nothing added.',
+  '4. Do not crop the vehicle; keep it fully in frame with a small margin.',
+  'Output only the edited image.',
+].join('\n');
+
+// Discover an image-capable Gemini model once per isolate; cache in globalThis
+async function getGeminiImageModel(env) {
+  const g = globalThis;
+  if (g.__geminiImageModel) return g.__geminiImageModel;
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${env.GEMINI_API_KEY}`);
+  if (!r.ok) throw new Error(`model list failed (HTTP ${r.status})`);
+  const data = await r.json();
+  const names = (data.models || []).map((m) => m.name.replace(/^models\//, ''));
+  const pick = names.find((n) => /image/.test(n) && /flash/.test(n)) || names.find((n) => /image/.test(n));
+  if (!pick) throw new Error('no image-capable Gemini model available for this key');
+  g.__geminiImageModel = pick;
+  return pick;
+}
+
+function bufToB64(buf) {
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  const CH = 0x8000;
+  for (let i = 0; i < bytes.length; i += CH) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
+  }
+  return btoa(bin);
+}
+
+function b64ToBytes(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
 // ─── Feed parsing (CSV or JSON) ─────────────────────────────────────────────
 function parseCSVLine(line) {
   // Minimal CSV parser handling quoted fields
@@ -505,7 +549,107 @@ async function handle(request, env) {
     if (!user) return json({ error: 'Unauthorized' }, 401);
     if (!isAdmin(user, env)) return json({ error: 'Forbidden — not an admin email' }, 403);
 
-    // Admin: all trucks
+    // ─── Gemini AI-clean (per-image; the admin page loops) ───
+  // Admin: clean ONE truck image via Gemini image editing (remove background +
+  // all dealership branding, keep the vehicle pixel-perfect, studio backdrop).
+  //   • One request = one image ≈ $0.04 — the BROWSER loops images so every
+  //     request stays far inside worker time limits.
+  //   • IDEMPOTENT: if the truck's customImages slot for this index is already
+  //     a cleaned KV image, it returns {skipped:true} WITHOUT calling Gemini —
+  //     double-clicks and re-runs cost $0.
+  //   • On Gemini safety-block (no output image), returns {skipped:'blocked'}
+  //     — no output image means no image charge.
+  //   • Result is written straight into customImages[index]; customImages is
+  //     initialized from the feed list on first use, and the public site
+  //     prefers customImages — so cleaned photos go live immediately.
+  if (path === '/api/admin/gemini-one' && request.method === 'POST') {
+    try {
+      if (!env.GEMINI_API_KEY) return json({ error: 'GEMINI_API_KEY not configured on worker (wrangler secret put GEMINI_API_KEY)' }, 500);
+      const body = await request.json().catch(() => ({}));
+      const truckId = String(body.truckId || '');
+      const idx = Number.isInteger(body.index) ? body.index : -1;
+      const srcUrl = String(body.imageUrl || '');
+      if (!truckId || idx < 0 || !/^https?:\/\//.test(srcUrl)) return json({ error: 'truckId, index, imageUrl required' }, 400);
+
+      const row = await db.prepare('SELECT data FROM trucks WHERE id = ?').bind(truckId).first();
+      if (!row) return json({ error: 'truck not found' }, 404);
+      const d = JSON.parse(row.data);
+      const feed = Array.isArray(d.images) ? d.images : [];
+      if (!Array.isArray(d.customImages) || !d.customImages.length) d.customImages = feed.slice();
+      if (d.customImages[idx] && /\/images\/img-/.test(String(d.customImages[idx]))) {
+        return json({ ok: true, skipped: true, reason: 'already clean', url: d.customImages[idx] });
+      }
+
+      // Fetch the source image server-side (images.edealer.ca sends no CORS headers)
+      const imgResp = await fetch(srcUrl);
+      if (!imgResp.ok) return json({ error: `source fetch failed (HTTP ${imgResp.status})` }, 502);
+      const imgBuf = await imgResp.arrayBuffer();
+      if (!imgBuf.byteLength) return json({ error: 'source image empty' }, 502);
+      if (imgBuf.byteLength > 10 * 1024 * 1024) return json({ error: 'source image too large' }, 413);
+
+      // Pick an image-capable Gemini model (cached per isolate)
+      const model = await getGeminiImageModel(env);
+
+      const gResp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [
+              { inline_data: { mime_type: imgResp.headers.get('content-type') || 'image/jpeg', data: bufToB64(imgBuf) } },
+              { text: GEMINI_CLEAN_PROMPT },
+            ] }],
+          }),
+        }
+      );
+      if (gResp.status === 429 || gResp.status >= 500) return json({ error: `Gemini busy (HTTP ${gResp.status}) — retry shortly` }, 503);
+      const gData = await gResp.json().catch(() => ({}));
+      if (!gResp.ok) return json({ error: `Gemini HTTP ${gResp.status}: ${(gData.error && gData.error.message) || 'unknown'}` }, 502);
+      const parts = gData.candidates?.[0]?.content?.parts || [];
+      const imgPart = parts.find((p) => p.inline_data || p.inlineData);
+      if (!imgPart) {
+        const why = gData.candidates?.[0]?.finishReason || 'blocked or no image returned';
+        return json({ ok: true, skipped: true, reason: `no output image (${String(why).slice(0, 80)})` });
+      }
+      const inl = imgPart.inline_data || imgPart.inlineData;
+      const outMime = inl.mime_type || inl.mimeType || 'image/png';
+      const outExt = outMime.includes('jpeg') ? 'jpg' : outMime.includes('webp') ? 'webp' : 'png';
+      const outBytes = b64ToBytes(inl.data);
+      if (!outBytes.length) return json({ error: 'Gemini returned an empty image' }, 502);
+
+      const key = `img-${crypto.randomUUID()}.${outExt}`;
+      await env.IMAGES.put(key, outBytes, { metadata: { contentType: outMime } });
+      const origin = new URL(request.url).origin;
+      const url = `${origin}/images/${key}`;
+
+      d.customImages[idx] = url;
+      // Keep the array complete: fill any holes with original feed URLs
+      d.customImages = d.customImages.map((u, i) => u || feed[i] || '').filter(Boolean);
+      await db.prepare('UPDATE trucks SET data = ?, updated_at = ? WHERE id = ?')
+        .bind(JSON.stringify(d), new Date().toISOString(), truckId).run();
+      return json({ ok: true, url, index: idx });
+    } catch (e) {
+      return json({ error: 'gemini-one failed: ' + e.message }, 500);
+    }
+  }
+
+  // Admin: reset a truck's photos to the ORIGINAL feed set (free — data only,
+  // no Gemini involved). Wipes customImages; site falls back to feed images.
+  if (path === '/api/admin/reset-images' && request.method === 'POST') {
+    const body = await request.json().catch(() => ({}));
+    const truckId = String(body.truckId || '');
+    if (!truckId) return json({ error: 'truckId required' }, 400);
+    const row = await db.prepare('SELECT data FROM trucks WHERE id = ?').bind(truckId).first();
+    if (!row) return json({ error: 'truck not found' }, 404);
+    const d = JSON.parse(row.data);
+    delete d.customImages;
+    await db.prepare('UPDATE trucks SET data = ?, updated_at = ? WHERE id = ?')
+      .bind(JSON.stringify(d), new Date().toISOString(), truckId).run();
+    return json({ ok: true });
+  }
+
+  // Admin: all trucks
     if (path === '/api/admin/trucks' && request.method === 'GET') {
       const all = await db.prepare('SELECT id, data, updated_at FROM trucks').all();
       const trucks = (all.results || []).map((r) => ({ id: r.id, ...JSON.parse(r.data), updatedAt: r.updated_at }));

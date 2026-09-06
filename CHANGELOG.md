@@ -1,5 +1,27 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.12.0 — ✨ AI-Clean buttons in the admin panel (Sep 6, 2026)
+
+**Image reset first:** wiped all 6 trucks' leftover test `customImages` in prod D1 (`json_remove`) — all 410 trucks back on original feed photos. Verified 0 remaining.
+
+### New: one-image-per-request admin endpoint (worker, deployed)
+- `POST /api/admin/gemini-one` `{truckId, index, imageUrl}` — fetches that ONE feed image server-side (edealer URLs have no CORS), calls Gemini with the studio-clean prompt, stores the result in KV, writes it into `customImages[index]`, auto-initializing `customImages` from the feed list on first use.
+- **Money-waste-proofing (idempotent):** if the slot already holds a cleaned KV image (`/images/img-…`), it returns `{skipped:true}` WITHOUT calling Gemini — double-clicks/re-runs cost $0. Gemini safety-blocks (no output image) are free and reported as skipped. The admin loop only ever sends ORIGINAL feed URLs, never re-sends cleaned ones.
+- `POST /api/admin/reset-images` `{truckId}` — free reset to feed photos (deletes customImages; KV blobs stay).
+- Both behind the admin auth gate; `GEMINI_API_KEY` secret staged on the worker (placeholder until the real key lands).
+- Helpers: `getGeminiImageModel` (model discovery cached per isolate), `bufToB64`, `b64ToBytes`, shared `GEMINI_CLEAN_PROMPT`.
+
+### New: admin UI (`admin/js/ai-clean.js`, deployed)
+- **Per-truck ✨ AI-Clean button** on every truck row — confirm dialog shows image count + exact estimated cost, live progress bar with running $ spent, Stop button.
+- **"✨ AI-Clean all listed"** topbar Do-All button — loops every LISTED truck, per-truck progress, one job at a time (won't double-fire), refuses to run with 0 listed or 0 images to clean (no $ wasted on no-ops).
+- **↩ Reset to feed photos** button inside the Images modal (free, no AI).
+- Results appear on dangm.ca immediately (site prefers customImages); admin grid auto-refreshes when a job finishes.
+- Script needs the tab open while running (browser-side loop = each request stays inside worker limits; marathon runs still belong to the terminal batch).
+
+### Deploy
+- Worker redeployed (version 011d17b3); Pages redeployed with `--branch=main`; `admin.js?v=11` + new `ai-clean.js?v=1` live on dangm.ca (both 200). Verified: unauthenticated → 401 on both new endpoints.
+- Pending: real `GEMINI_API_KEY` (billing) → `wrangler secret put GEMINI_API_KEY` from `worker/` → test one truck in dev → buttons ready for dad.
+
 ## v0.11.0 — 🖼️ Gemini image-cleanup pipeline (Sep 6, 2026)
 
 **Goal:** every listing gets clean, professional photos — background + all Eagle Ridge/dealership branding removed — via Gemini image editing, fully automated with a hard budget cap.
