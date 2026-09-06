@@ -1,5 +1,28 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.11.0 — 🖼️ Gemini image-cleanup pipeline (Sep 6, 2026)
+
+**Goal:** every listing gets clean, professional photos — background + all Eagle Ridge/dealership branding removed — via Gemini image editing, fully automated with a hard budget cap.
+
+### New: `sync/gemini-clean.js` (batch cleaner)
+- Reads the FTP-downloaded images in `data/images/`, sends each to Gemini image editing with one fixed prompt: neutral studio backdrop, zero branding, vehicle untouched.
+- Uploads cleaned bytes to the worker's KV and writes them into the truck's `customImages` — **the site already prefers `customImages` over feed images**, so results go live instantly with zero frontend changes. Cleaned images keep original order; remaining feed URLs are appended so nothing disappears.
+- **Hard budget cap** (`--budget`, default $35 / `GEMINI_BUDGET_USD`): the script tracks its own spend ledger and refuses to cross the line — it stops cleanly mid-run and can resume later.
+- **Pay-once cache:** `data/gemini-state.json` records every processed image + cumulative spend; re-runs and re-syncs never re-pay for done work. Hopeless images (safety-blocked) are marked `SKIP` so they don't burn retries.
+- Modes: `--covers` (1 image per truck) or `--full` (all images); `--limit N`; `--dry-run` prints the plan + estimated cost and calls nothing. Auto-discovers the key's image-capable model, retries 429/5xx with backoff.
+- Requires `GEMINI_API_KEY` in `sync/.env` (billing setup pending).
+
+### New: worker bridge endpoints (`worker/index.js`, deployed)
+- `POST /api/bridge/image` — raw image bytes → KV (`X-Bridge-Token` auth, 8MB cap), returns the public `/images/...` URL.
+- `POST /api/bridge/images/:truckId` — sets that truck's `customImages` array in D1.
+- Verified live: bad token → 403, empty body → 400, unknown truck → 404, byte-identical KV roundtrip, customImages set + restored on a real truck (13781719).
+
+### Fixes / housekeeping
+- `sync/.env`: `WORKER_URL` was still the `YOUR_SUBDOMAIN` template placeholder — set to `https://eagle-ridge-trucks.fblister.workers.dev`.
+- **Rotated the deployed `BRIDGE_TOKEN` secret to match `sync/.env`** (they had drifted; the sync job would have failed on its next push). Secret must be put from `worker/` (where `wrangler.toml` lives), not `sync/`.
+- Cost math for the record: ~$0.04/image → all 383 covers ≈ $16, full 20-image sets for 10 priority trucks ≈ $8, **entire current lot (606 images) ≈ $24 — under the $35 cap**.
+- Known scope: only 32 trucks currently have local images (sync's `downloadImages` defaults OFF since the site uses feed URLs). Before the big run: enable image download so the other ~350 trucks' images land locally, then `--covers` for ~$16 total.
+
 ## v0.10.3 — 📞 Phone number fix + deploy branch fix (Sep 4, 2026)
 
 - **Phone number corrected everywhere: 605 → 604-735-1396** (had a typo since launch). Fixed in: index.html (schema.org + FAQ + contact), main.js (JSON-LD, SEO descriptions, all Call buttons), inventory/vehicle/forum/forum-post metas, context.md. `tel:` links fixed too (`tel:6047351396`).

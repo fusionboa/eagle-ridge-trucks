@@ -398,6 +398,48 @@ async function handle(request, env) {
       }
     }
 
+    // BRIDGE: upload a processed image straight to KV (used by the Gemini
+    // background-removal batch). Raw bytes in the body, token in the header.
+    if (path === '/api/bridge/image' && request.method === 'POST') {
+      const bridgeToken = request.headers.get('X-Bridge-Token') || '';
+      if (!env.BRIDGE_TOKEN || bridgeToken !== env.BRIDGE_TOKEN) {
+        return json({ error: 'Forbidden — bad bridge token' }, 403);
+      }
+      try {
+        const contentType = request.headers.get('Content-Type') || 'image/png';
+        const m = contentType.match(/image\/(jpeg|png|webp|gif)/i);
+        const ext = m ? (m[1].toLowerCase() === 'jpeg' ? 'jpg' : m[1].toLowerCase()) : 'png';
+        const key = `img-${crypto.randomUUID()}.${ext}`;
+        const body = await request.arrayBuffer();
+        if (!body.byteLength) return json({ error: 'empty body' }, 400);
+        if (body.byteLength > 8 * 1024 * 1024) return json({ error: 'image too large (8MB cap)' }, 413);
+        await env.IMAGES.put(key, body, { metadata: { contentType } });
+        const origin = new URL(request.url).origin;
+        return json({ url: `${origin}/images/${key}` });
+      } catch (e) {
+        return json({ error: 'Upload failed: ' + e.message }, 500);
+      }
+    }
+
+    // BRIDGE: set a truck's customImages list (cleaned image URLs in order).
+    // The public site already prefers customImages over feed images.
+    if (/^\/api\/bridge\/images\/[^/]+$/.test(path) && request.method === 'POST') {
+      const bridgeToken = request.headers.get('X-Bridge-Token') || '';
+      if (!env.BRIDGE_TOKEN || bridgeToken !== env.BRIDGE_TOKEN) {
+        return json({ error: 'Forbidden — bad bridge token' }, 403);
+      }
+      const truckId = decodeURIComponent(path.split('/').pop());
+      const body = await request.json().catch(() => ({}));
+      if (!Array.isArray(body.images)) return json({ error: 'images array required' }, 400);
+      const row = await db.prepare('SELECT data FROM trucks WHERE id = ?').bind(truckId).first();
+      if (!row) return json({ error: 'truck not found' }, 404);
+      const d = JSON.parse(row.data);
+      d.customImages = body.images.map(String).filter(Boolean).slice(0, 40);
+      await db.prepare('UPDATE trucks SET data = ?, updated_at = ? WHERE id = ?')
+        .bind(JSON.stringify(d), new Date().toISOString(), truckId).run();
+      return json({ ok: true, count: d.customImages.length });
+    }
+
     // BRIDGE: enrichment state (id → engine/aiDescription) so the sync job can
     // skip VIN-decoding / AI-description work it already did.
     if (path === '/api/bridge/state' && request.method === 'GET') {
