@@ -1,5 +1,16 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.12.1 — 🧼 Prompt simplified to Jaden's proven one (Sep 7, 2026)
+
+**Insight:** background removal alone wipes ALL dealership branding for free (logos/watermarks/banners live in the background) — and "remove watermark" wording risks Gemini refusing on policy. Simple beats clever, and it's what Jaden already proved works by hand.
+
+### Changed
+- `GEMINI_CLEAN_PROMPT` (worker) + `PROMPT` (batch) replaced with:
+  `Edit this vehicle photo: remove the background completely and make it pure white. Keep the vehicle itself exactly as it is — same angle, same color, same wheels, nothing redrawn, nothing added, fully in frame. Output only the edited image.`
+- Kept only the guards that matter: vehicle untouched (no AI redraw = no wrong wheels/color), no crop, image-only output. Zero branding/watermark language.
+- Backdrop switched from light gray to **pure white** (Jaden's manual flow).
+- Worker redeployed (version e9da8c82); batch script reads its prompt at runtime — no other deploy needed.
+
 ## v0.12.0 — ✨ AI-Clean buttons in the admin panel (Sep 6, 2026)
 
 **Image reset first:** wiped all 6 trucks' leftover test `customImages` in prod D1 (`json_remove`) — all 410 trucks back on original feed photos. Verified 0 remaining.

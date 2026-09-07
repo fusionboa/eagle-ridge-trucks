@@ -52,16 +52,13 @@ const CONFIG = {
 // Input side (~1-2k tokens incl. the photo) is ~$0.001 — folded into the 0.04.
 const COST_PER_IMAGE = 0.04;
 
-// The one prompt, per dad's flow: clean studio look, zero dealership branding.
+// The one prompt, Jaden-proven: remove background → pure white. SIMPLE beats
+// clever — background removal already wipes all dealership branding (it lives
+// in the background) and avoids Gemini refusing "remove watermark" wording.
 const PROMPT = [
-  'Edit this vehicle photo:',
-  '1. Remove the background completely and replace it with a clean, uniform,',
-  '   light neutral studio backdrop (soft light gray, subtle floor shadow).',
-  '2. Remove ALL dealership branding: logos, watermarks, text overlays,',
-  '   license-plate frames, windshield stickers/banners, corner badges.',
-  '3. Keep the vehicle itself pixel-perfect — same angle, same color,',
-  '   same wheels, nothing redrawn, nothing added.',
-  '4. Do not crop the vehicle; keep it fully in frame with a small margin.',
+  'Edit this vehicle photo: remove the background completely and make it pure white.',
+  'Keep the vehicle itself exactly as it is — same angle, same color, same wheels,',
+  'nothing redrawn, nothing added, fully in frame.',
   'Output only the edited image.',
 ].join('\n');
 
