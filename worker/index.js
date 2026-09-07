@@ -110,10 +110,13 @@ async function ensureForumTable(env) {
 // ─── Gemini image cleanup (shared by /api/admin/gemini-one) ─────────────
 // Per Jaden's proven flow: SIMPLE beats clever. Background removal alone wipes
 // all dealership branding/watermarks for free (it all lives in the background)
-// and avoids Gemini refusing "remove watermark" wording (policy trip). Only
-// guards kept: vehicle untouched (no AI redraw) + no crop + image-only output.
+// and avoids Gemini refusing "remove watermark" wording (policy trip). The
+// overlay line handles banners/stickers baked ON the car — generic "overlay"
+// wording, never the word "watermark". Only guards kept: vehicle untouched
+// (no AI redraw) + no crop + image-only output. Refusals = free skips.
 const GEMINI_CLEAN_PROMPT = [
   'Edit this vehicle photo: remove the background completely and make it pure white.',
+  'If there are any text banners, stickers, badges, or overlay graphics in the photo, remove those too.',
   'Keep the vehicle itself exactly as it is — same angle, same color, same wheels,',
   'nothing redrawn, nothing added, fully in frame.',
   'Output only the edited image.',

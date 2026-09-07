@@ -55,8 +55,10 @@ const COST_PER_IMAGE = 0.04;
 // The one prompt, Jaden-proven: remove background → pure white. SIMPLE beats
 // clever — background removal already wipes all dealership branding (it lives
 // in the background) and avoids Gemini refusing "remove watermark" wording.
+// Overlay line = banners/stickers baked ON the car; refusals are free skips.
 const PROMPT = [
   'Edit this vehicle photo: remove the background completely and make it pure white.',
+  'If there are any text banners, stickers, badges, or overlay graphics in the photo, remove those too.',
   'Keep the vehicle itself exactly as it is — same angle, same color, same wheels,',
   'nothing redrawn, nothing added, fully in frame.',
   'Output only the edited image.',

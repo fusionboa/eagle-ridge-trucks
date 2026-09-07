@@ -1,5 +1,14 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.12.2 — 🏷️ Overlay removal added to the prompt (Sep 7, 2026)
+
+**Jaden's addition:** some feed photos have text banners/stickers/badges baked ON the car itself — background removal can't touch those. Prompt now also asks for overlay removal.
+
+### Changed
+- Prompt (worker + batch) gains one line: `If there are any text banners, stickers, badges, or overlay graphics in the photo, remove those too.`
+- Deliberate wording: generic "overlay" language, NEVER the word "watermark" (policy trip → refusal). Refusals cost $0 anyway (no output image = no charge) and are logged as free skips.
+- Worker redeployed (version 5d9c9d71); batch reads prompt at runtime.
+
 ## v0.12.1 — 🧼 Prompt simplified to Jaden's proven one (Sep 7, 2026)
 
 **Insight:** background removal alone wipes ALL dealership branding for free (logos/watermarks/banners live in the background) — and "remove watermark" wording risks Gemini refusing on policy. Simple beats clever, and it's what Jaden already proved works by hand.
