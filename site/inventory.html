@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Full Inventory | Cars & Trucks for Sale in Vancouver, Coquitlam & Tri-Cities, BC | dangm.ca</title>
   <meta name="description" content="Browse the full dangm.ca inventory: new & used cars and trucks for sale in the Tri-Cities (Coquitlam, Port Coquitlam, Port Moody) and Greater Vancouver area. Search by make, model, price. GMC, Chevrolet, Buick. Call 604-735-1396.">
-  <meta name="keywords" content="cars for sale Tri-Cities, trucks Coquitlam, cars Port Coquitlam, trucks Port Moody, used cars Vancouver, car inventory, truck inventory, GMC inventory, Chevrolet inventory, dangm.ca">
+  <meta name="keywords" content="cars for sale Tri-Cities, trucks Coquitlam, cars Port Coquitlam, trucks Port Moody, used cars Vancouver, GM dealership near me, GMC dealership Vancouver, Chevrolet dealership Coquitlam, Buick dealership Tri-Cities, car financing all credit, bad credit car loans Vancouver, new to Canada car financing, easy auto financing BC, high approval rate car loans, best trade in value Vancouver, cars near me Tri-Cities, dangm.ca">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="geo.region" content="CA-BC">
   <meta name="geo.placename" content="Tri-Cities (Coquitlam, Port Coquitlam, Port Moody), Greater Vancouver, BC">
@@ -47,7 +47,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=4">
+  <link rel="stylesheet" href="css/styles.css?v=5">
 </head>
 <body class="page-inventory">
   <!-- Navigation -->
@@ -61,7 +61,7 @@
         <a href="index.html">Home</a>
         <a href="inventory.html" class="active">Inventory</a>
         <a href="forum.html">Forum</a>
-        <a href="index.html#about">About</a>
+        <a href="about.html">About</a>
         <a href="index.html#contact">Contact</a>
       </div>
       <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
@@ -93,11 +93,14 @@
   <section class="inventory" id="inventory">
     <div class="filters">
       <div class="filter-group">
-        <input type="text" id="searchInput" class="filter-search" placeholder="Search make, model, or trim...">
+        <input type="text" id="searchInput" class="filter-search" placeholder="Search make, model, trim, colour... (typos welcome)">
       </div>
       <div class="filter-group">
         <select id="makeFilter" class="filter-select">
           <option value="">All Makes</option>
+        </select>
+        <select id="typeFilter" class="filter-select">
+          <option value="">All Types</option>
         </select>
         <select id="sortFilter" class="filter-select">
           <option value="newest">Newest first</option>
@@ -106,6 +109,9 @@
         </select>
       </div>
     </div>
+
+    <!-- Quick-pick make chips (All / GMC / Chevrolet / ...) -->
+    <div class="make-chips" id="makeChips" aria-label="Filter by make"></div>
 
     <div class="truck-grid" id="truckGrid">
       <div class="loading">Loading inventory...</div>
@@ -128,6 +134,6 @@
     // Data source: the live Cloudflare Worker (falls back to local data/trucks.json if unreachable)
     window.SITE_CONFIG = { apiBase: 'https://eagle-ridge-trucks.fblister.workers.dev/api' };
   </script>
-  <script src="js/main.js?v=4"></script>
+  <script src="js/main.js?v=5"></script>
 </body>
 </html>

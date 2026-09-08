@@ -248,12 +248,16 @@ async function runSync(env, trucks) {
       await db.prepare('UPDATE trucks SET data = ?, updated_at = ? WHERE id = ?')
         .bind(JSON.stringify(merged), now, t.id).run();
     } else {
+      // NEW vehicle from the feed → goes live immediately (AUTO-POST mode:
+      // everything in the feed shows up in inventory without manual listing).
+      // Admin can still Unlist any vehicle from the admin panel.
+      t.listed = true;
       await db.prepare('INSERT INTO trucks (id, data, created_at, updated_at) VALUES (?, ?, ?, ?)')
         .bind(t.id, JSON.stringify(t), now, now).run();
     }
   }
 
-  // Remove trucks that disappeared from the feed — but NEVER lose published work:
+  // Remove trucks that disappeared from the feed (sold/deleted) — automatic:
   //   • unlisted (drafts)  → delete outright
   //   • listed (published) → copy into backups, then remove from live (flagged, restorable)
   const all = await db.prepare('SELECT id, data FROM trucks').all();

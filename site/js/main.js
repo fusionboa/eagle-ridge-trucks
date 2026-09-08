@@ -200,6 +200,7 @@ function renderAll() {
     return;
   }
   populateMakes();
+  populateTypes();
   const filtered = applyFilters(allTrucks);
   renderGrid(filtered);
 }
@@ -210,18 +211,128 @@ function populateMakes() {
   const makes = [...new Set(allTrucks.map((t) => t.make).filter(Boolean))].sort();
   select.innerHTML = '<option value="">All Makes</option>' +
     makes.map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+
+  // Vehicle type filter — friendly names for the body styles we carry
+  const typeSel = document.getElementById('typeFilter');
+  if (typeSel) {
+    const types = [...new Set(allTrucks.map((t) => t.bodyStyle).filter(Boolean))].sort();
+    typeSel.innerHTML = '<option value="">All Types</option>' +
+      types.map((tp) => `<option value="${escapeHtml(tp)}">${escapeHtml(prettyType(tp))}</option>`).join('');
+  }
+
+  // Quick-pick make chips above the grid (All / GMC / Chevrolet / ...)
+  const chips = document.getElementById('makeChips');
+  if (chips) {
+    chips.innerHTML = '<button class="chip chip-active" data-make="">All</button>' +
+      makes.map((m) => `<button class="chip" data-make="${escapeHtml(m)}">${escapeHtml(m)}</button>`).join('');
+    chips.querySelectorAll('.chip').forEach((c) => {
+      c.addEventListener('click', () => {
+        chips.querySelectorAll('.chip').forEach((x) => x.classList.remove('chip-active'));
+        c.classList.add('chip-active');
+        const sel = document.getElementById('makeFilter');
+        if (sel) sel.value = c.dataset.make;
+        renderAll();
+      });
+    });
+  }
+}
+
+// "Sport Utility Vehicle" → "SUV / Crossover", etc.
+function prettyType(t) {
+  const s = String(t).toLowerCase();
+  if (/suv|crossover|sport utility/.test(s)) return 'SUV / Crossover';
+  if (/pickup|truck/.test(s)) return 'Truck';
+  if (/sedan/.test(s)) return 'Sedan';
+  if (/hatchback/.test(s)) return 'Hatchback';
+  if (/wagon/.test(s)) return 'Wagon';
+  if (/van|minivan/.test(s)) return 'Van';
+  if (/coupe/.test(s)) return 'Coupe';
+  if (/convertible/.test(s)) return 'Convertible';
+  return t;
+}
+
+// ─── Smart fuzzy search ──────────────────────────────────────────
+// Goal: "sierra", "seira", "silverado", "silvrrado", "eqinox", " Terrain
+// Denalli" all find their trucks. Handles typos, wrong order, and extra
+// words. Every word the user typed must fuzzy-match SOME part of the
+// vehicle's searchable text (AND logic so more words = narrower results).
+
+// Damerau-Levenshtein distance: true edit distance incl. transpositions
+// ("seira" → "sierra" is one swap = distance 1). No deps, ~25 lines.
+function editDistance(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const d = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 1; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(
+        d[i - 1][j] + 1,       // deletion
+        d[i][j - 1] + 1,       // insertion
+        d[i - 1][j - 1] + cost // substitution
+      );
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1); // transposition
+      }
+    }
+  }
+  return d[m][n];
+}
+
+// Fuzzy token match: a short query word matches a haystack word if it's a
+// prefix, a substring (4+ chars, e.g. "silver" ⊂ "silverado"), or within a
+// typo budget that scales with word length (1 typo ≤4 chars, 2 ≤8, else 3).
+function fuzzyWord(q, word) {
+  if (!q) return true;
+  if (word.startsWith(q) || word.includes(q)) return true;
+  const budget = q.length <= 4 ? 1 : q.length <= 8 ? 2 : 3;
+  if (Math.abs(q.length - word.length) > budget) return false;
+  return editDistance(q, word) <= budget;
+}
+
+// Does ONE query token fuzzy-match anything in this vehicle's text?
+function tokenMatches(q, hayWords) {
+  for (const w of hayWords) {
+    if (fuzzyWord(q, w)) return true;
+  }
+  return false;
+}
+
+function searchHaystackWords(t) {
+  return `${t.year || ''} ${t.make || ''} ${t.model || ''} ${t.trim || ''} ${t.bodyStyle || ''} ${t.exteriorColor || ''} ${t.interiorColor || ''} ${t.engine || ''} ${t.fuelType || ''} ${t.transmission || ''} ${t.drivetrain || ''} ${t.condition || ''}`
+    .toLowerCase()
+    .split(/[^a-z0-9.]+/)
+    .filter(Boolean);
+}
+
+// Memoize haystacks per truck object (they're rebuilt on every keystroke)
+const hayCache = new WeakMap();
+function haystackFor(t) {
+  let w = hayCache.get(t);
+  if (!w) { w = searchHaystackWords(t); hayCache.set(t, w); }
+  return w;
 }
 
 function applyFilters(list) {
-  const q = (document.getElementById('searchInput').value || '').toLowerCase();
+  const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
   const make = document.getElementById('makeFilter').value;
+  const type = (document.getElementById('typeFilter') || {}).value || '';
   const sort = document.getElementById('sortFilter').value;
 
+  // Pre-split the query once (same tokenizer the haystacks use)
+  const qTokens = q.split(/[^a-z0-9.]+/).filter(Boolean);
+
   let out = list.filter((t) => {
-    const hay = `${t.year} ${t.make} ${t.model} ${t.trim} ${t.bodyStyle}`.toLowerCase();
-    const matchesQ = !q || hay.includes(q);
+    const matchesQ = !qTokens.length || (() => {
+      const hayWords = haystackFor(t);
+      // Every query word must fuzzy-match something in the vehicle text.
+      return qTokens.every((tok) => tokenMatches(tok, hayWords));
+    })();
     const matchesMake = !make || t.make === make;
-    return matchesQ && matchesMake;
+    const matchesType = !type || (t.bodyStyle || '').toLowerCase().includes(type.toLowerCase());
+    return matchesQ && matchesMake && matchesType;
   });
 
   if (sort === 'price-low') out.sort((a, b) => priceNum(a.price) - priceNum(b.price));
@@ -555,7 +666,7 @@ function init() {
   }
 
   if (PAGE === 'inventory') {
-    ['searchInput', 'makeFilter', 'sortFilter'].forEach((id) => {
+    ['searchInput', 'makeFilter', 'typeFilter', 'sortFilter'].forEach((id) => {
       document.getElementById(id).addEventListener('input', renderAll);
     });
   }

@@ -220,7 +220,6 @@ function renderList() {
         <button class="btn btn-sm ${t.listed ? 'btn-ghost' : 'btn-primary'}" data-action="toggle">${t.listed ? 'Unlist' : 'List'}</button>
         <button class="btn btn-sm btn-ghost" data-action="edit">Edit</button>
         <button class="btn btn-sm btn-ghost" data-action="images">Images</button>
-        <button class="btn btn-sm btn-ghost" data-action="ai-clean" title="Remove background + dealership branding from every photo of this truck (~$0.04/image, already-clean ones are skipped free)">✨ AI-Clean</button>
       </div>
     </div>
   `).join('');

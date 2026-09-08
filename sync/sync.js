@@ -188,7 +188,9 @@ function parseTrucks(csvText) {
       description: get('description', 'Description', 'Comments', 'Details', 'AdText'),
       images,
       // Admin-controlled fields (not from FTP)
-      listed: false,
+      // AUTO-POST mode: everything in the feed goes live immediately.
+      // Admin can still Unlist any vehicle from the admin panel.
+      listed: true,
       featured: false,
       customImages: [],
       updatedAt: new Date().toISOString(),

@@ -1,5 +1,39 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.13.0 — Auto-post everything + public filters + About page + brighter theme (Sep 8, 2026)
+
+### Auto-post mode (the big one)
+- **All 414 feed vehicles now go live automatically** — sync sets `listed: true` on every new truck (worker `runSync` + local `sync.js`)
+- Admin panel still has **List/Unlist/Edit** for full manual control
+- Removed-from-feed trucks still auto-archive: published → backups (restorable), drafts → deleted
+- Removed the Gemini/AI-Clean UI from the admin panel (endpoint stays in the worker, unused by default; feed photos shown as-is)
+- Verified live: `/api/trucks` returns **414 listed** after a full sync (80 stale vehicles dropped, 2 backed up)
+
+### Public inventory upgrades (site/inventory.html + main.js)
+- **Smart fuzzy search** — Damerau-Levenshtein typo tolerance ("seira" → Sierra, "silvrrado" → Silverado, "eqinox" → Equinox), prefix/substring matching, AND logic across words, memoized haystacks per keystroke
+- **Make filter** (dropdown) + **Vehicle type filter** (Truck / SUV / Sedan / Van / ... via `prettyType`)
+- **Quick-pick make chips** above the grid (All / GMC / Chevrolet / ...), synced with the make dropdown
+
+### New "Why dangm" service content (index.html)
+- New 5-card service strip: Personalized & Curated Service · High Approval Rate · All Credit Welcome · New-to-Canada Programs · Best Trade-In Values
+- Hero sub + about section + stats updated with the same financing/approval/trade-in messaging
+
+### Brighter theme, same luxury vibe (styles.css)
+- Palette lifted: surfaces `#202a34` range, brighter gold accent `#d9b25e`/`#f2d795`, lighter muted text — still dark, just airier
+- New `.service-grid`/`.service-card` styles + make chips + About-page styles
+
+### About Us page (site/about.html)
+- New `/about` page: SEO meta + breadcrumbs + JSON-LD, welcome copy, and a 🚧 placeholder block for the full story (to be filled in later)
+- Nav updated on ALL pages: About → `about.html` (was `index.html#about`)
+
+### SEO
+- Homepage keywords expanded: GM dealership near me, financing all credit, bad-credit car loans, new-to-Canada financing, high approval rate, best trade-in values
+- forum.html + vehicle.html keyword refresh; sitemap.xml now includes `/about`
+- Cache-bust to `?v=5` on CSS/JS everywhere
+
+### Deploy
+- Worker `5de014d1`, Pages `ba8b27b8` (--branch main), verified 200 on dangm.ca `/about` + `/inventory`
+
 ## v0.12.2 — 🏷️ Overlay removal added to the prompt (Sep 7, 2026)
 
 **Jaden's addition:** some feed photos have text banners/stickers/badges baked ON the car itself — background removal can't touch those. Prompt now also asks for overlay removal.
