@@ -200,9 +200,9 @@ function renderAll() {
     return;
   }
   populateMakes();
-  populateTypes();
   const filtered = applyFilters(allTrucks);
-  renderGrid(filtered);
+  renderGrid(filtered, viewMode === 'grid');
+  updateResultCount(filtered.length);
 }
 
 function populateMakes() {
@@ -349,10 +349,72 @@ function renderGrid(list, isFlagship) {
     grid.innerHTML = '<div class="empty">No vehicles match your search.</div>';
     return;
   }
-  grid.innerHTML = list.map((t, i) => cardHTML(t, i, isFlagship)).join('');
+  // Inventory grid view renders vertical cards (like the home flagship cards)
+  if (PAGE === 'inventory' && viewMode === 'grid') {
+    grid.classList.add('grid-view');
+    grid.innerHTML = list.map((t, i) => gridCardHTML(t, i)).join('');
+  } else {
+    grid.classList.remove('grid-view');
+    grid.innerHTML = list.map((t, i) => cardHTML(t, i, isFlagship)).join('');
+  }
   requestAnimationFrame(() => {
     grid.querySelectorAll('.truck-card').forEach((c) => c.classList.add('in-view'));
   });
+}
+
+// ─── Result count + view toggle (grid ⨯ list) ──────────────
+let viewMode = localStorage.getItem('dgView') || 'list'; // inventory layout preference
+
+function updateResultCount(n) {
+  const el = document.getElementById('resultCount');
+  if (el) el.textContent = `${n} vehicle${n === 1 ? '' : 's'} available`;
+  const wrap = document.getElementById('viewToggleWrap');
+  if (wrap) {
+    wrap.querySelectorAll('.view-btn').forEach((b) =>
+      b.classList.toggle('view-active', b.dataset.view === viewMode));
+  }
+}
+
+function initViewToggle() {
+  const wrap = document.getElementById('viewToggleWrap');
+  if (!wrap) return;
+  wrap.querySelectorAll('.view-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      viewMode = btn.dataset.view;
+      localStorage.setItem('dgView', viewMode);
+      renderAll();
+    });
+  });
+}
+
+// Rebuild the view toggle + result count active state (called once on boot)
+function updateViewToggleUI() {
+  const wrap = document.getElementById('viewToggleWrap');
+  if (!wrap) return;
+  wrap.querySelectorAll('.view-btn').forEach((b) =>
+    b.classList.toggle('view-active', b.dataset.view === viewMode));
+}
+
+// Vertical card variant for grid view on the inventory page
+function gridCardHTML(t, i) {
+  const img = t.images[0] || '';
+  const title = [t.year, t.make, t.model, t.trim].filter(Boolean).join(' ');
+  const price = formatPrice(t.price);
+  const href = `vehicle.html?id=${encodeURIComponent(t.id)}`;
+  return `
+    <a class="truck-card reveal" href="${href}" style="transition-delay:${Math.min(i * 0.04, 0.3)}s">
+      <div class="truck-card-img-wrap">
+        ${img ? `<img class="truck-card-img" src="${img}" alt="${escapeHtml(title)}" loading="lazy">` : '<div class="truck-card-img"></div>'}
+        ${t.bodyStyle ? `<span class="truck-badge">${escapeHtml(t.bodyStyle)}</span>` : ''}
+      </div>
+      <div class="truck-card-body">
+        <h3 class="truck-card-title">${escapeHtml(title)}</h3>
+        <p class="truck-card-sub">${escapeHtml(t.exteriorColor || '')}${t.exteriorColor && t.mileage ? ' · ' : ''}${t.mileage ? `${Number(t.mileage).toLocaleString()} km` : ''}</p>
+        <div class="truck-card-price">${escapeHtml(price)}</div>
+        ${tagsHTML(t)}
+        <span class="truck-card-cta">View Details →</span>
+      </div>
+    </a>`;
 }
 
 function cardHTML(t, i, isFlagship) {
@@ -667,8 +729,10 @@ function init() {
 
   if (PAGE === 'inventory') {
     ['searchInput', 'makeFilter', 'typeFilter', 'sortFilter'].forEach((id) => {
-      document.getElementById(id).addEventListener('input', renderAll);
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', renderAll);
     });
+    initViewToggle();
   }
 
   loadTrucks();

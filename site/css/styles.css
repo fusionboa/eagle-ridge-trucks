@@ -4,18 +4,18 @@
    ============================================================ */
 
 :root {
-  --bg: #10141a;
-  --bg-2: #151b22;
-  --bg-3: #1a212a;
-  --surface: #202a34;
-  --surface-2: #28323e;
-  --text: #f7f9fb;
-  --text-muted: #aeb9c4;
-  --accent: #d9b25e;      /* brighter gold */
-  --accent-2: #f2d795;
-  --border: rgba(255, 255, 255, 0.09);
+  --bg: #f7f8fa;
+  --bg-2: #eef1f5;
+  --bg-3: #e7ebf1;
+  --surface: #ffffff;
+  --surface-2: #f1f3f7;
+  --text: #10161d;
+  --text-muted: #5c6b7a;
+  --accent: #b8860b;      /* deep gold — readable on white */
+  --accent-2: #d4a017;
+  --border: rgba(16, 22, 29, 0.10);
   --radius: 14px;
-  --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  --shadow: 0 20px 60px rgba(16, 22, 29, 0.10);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -41,7 +41,7 @@ body {
 }
 .nav.scrolled {
   padding: 10px 0;
-  background: rgba(11, 14, 17, 0.85);
+  background: rgba(244, 246, 248, 0.88);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-bottom: 1px solid var(--border);
@@ -59,7 +59,7 @@ body {
   width: 40px; height: 40px;
   display: grid; place-items: center;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: #0b0e11;
+  color: #f4f6f8;
   font-weight: 800; font-size: 15px;
   border-radius: 10px;
   letter-spacing: 0.5px;
@@ -79,7 +79,7 @@ body {
   font-weight: 600;
   transition: all 0.3s var(--ease);
 }
-.nav-cta:hover { background: var(--accent); color: #0b0e11; }
+.nav-cta:hover { background: var(--accent); color: #f7f8fa; }
 .nav-toggle {
   display: none;
   background: var(--surface);
@@ -104,16 +104,16 @@ body {
 .hero-bg {
   position: absolute; inset: 0;
   background:
-    radial-gradient(ellipse at 70% 20%, rgba(201, 162, 75, 0.12), transparent 50%),
-    radial-gradient(ellipse at 20% 80%, rgba(201, 162, 75, 0.06), transparent 50%),
-    linear-gradient(180deg, #0b0e11 0%, #0e1217 100%);
+    radial-gradient(ellipse at 70% 20%, rgba(212, 160, 23, 0.16), transparent 50%),
+    radial-gradient(ellipse at 20% 80%, rgba(212, 160, 23, 0.08), transparent 50%),
+    linear-gradient(180deg, #f7f8fa 0%, #eef1f5 100%);
 }
 .hero-bg::after {
   content: '';
   position: absolute; inset: 0;
   background-image:
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    linear-gradient(rgba(16,22,29,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16,22,29,0.035) 1px, transparent 1px);
   background-size: 80px 80px;
   mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
 }
@@ -166,7 +166,7 @@ body {
 }
 .btn-primary {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: #0b0e11;
+  color: #f4f6f8;
   box-shadow: 0 10px 30px rgba(201, 162, 75, 0.25);
 }
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 40px rgba(201, 162, 75, 0.35); }
@@ -177,6 +177,7 @@ body {
 .stat-num { font-size: 28px; font-weight: 800; color: var(--text); }
 .stat-label { font-size: 12px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
 .hero-scroll {
+  display: none; /* overlapped the hero stats on short screens — cut for clarity */
   position: absolute;
   bottom: 40px; left: 50%;
   transform: translateX(-50%);
@@ -219,6 +220,37 @@ section { padding: 110px 24px; }
 .filter-search:focus, .filter-select:focus { border-color: var(--accent); }
 .filter-select option { background: var(--surface); }
 
+/* ─── View toggle (grid ⇄ list) + result count ─────────── */
+.view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.view-btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 42px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+.view-btn:hover { color: var(--text); }
+.view-btn.view-active { background: var(--accent); color: #f7f8fa; }
+.view-btn + .view-btn { border-left: 1px solid var(--border); }
+.result-count { color: var(--text-muted); font-size: 13.5px; margin: -28px 0 20px; }
+
+/* Grid layout for the inventory page when toggled */
+.truck-grid.grid-view {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+.truck-grid.grid-view .truck-card-list { display: block; }
+
 /* ─── Make quick-pick chips (inventory page) ─────────────── */
 .make-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 36px; }
 .chip {
@@ -233,7 +265,32 @@ section { padding: 110px 24px; }
   transition: all 0.25s var(--ease);
 }
 .chip:hover { border-color: var(--accent); color: var(--text); }
-.chip-active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; color: #10141a; }
+.chip-active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; color: #ffffff; }
+
+/* ─── Layout toggle (grid ⨯ list) + result count ─────────── */
+.view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.view-btn {
+  width: 42px; height: 42px;
+  display: grid; place-items: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.25s var(--ease);
+}
+.view-btn + .view-btn { border-left: 1px solid var(--border); }
+.view-btn:hover { color: var(--text); }
+.view-btn.view-active { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #ffffff; }
+.result-count { color: var(--text-muted); font-size: 13.5px; margin: -24px 0 28px; }
+
+/* Grid view: same vertical card layout as the home flagship grid */
+.truck-grid.grid-view { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
 
 /* ─── Service strip (financing / approvals / trade-ins) ──── */
 .service-grid {
@@ -451,14 +508,15 @@ section { padding: 110px 24px; }
   .hero { min-height: auto; padding: 110px 0 70px; }
   .hero-content { padding-top: 0; }
   .nav-inner { padding: 0 16px; }
-  /* The absolute breadcrumb would land on the location line — flow it instead */
-  .hero-crumbs { position: static; padding: 0 16px; margin-bottom: 6px; justify-content: center; }
+  /* The absolute breadcrumb lands next to the title on phones (the stray
+     "Home" tag) — it's SEO-only markup, so just hide it on small screens */
+  .hero-crumbs { display: none; }
 }
 .page-hero-bg {
   position: absolute; inset: 0;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(201, 162, 75, 0.14), transparent 55%),
-    linear-gradient(180deg, #0b0e11 0%, #0e1217 100%);
+    radial-gradient(ellipse at 50% 0%, rgba(212, 160, 23, 0.18), transparent 55%),
+    linear-gradient(180deg, #f7f8fa 0%, #eef1f5 100%);
 }
 .page-hero-content { position: relative; z-index: 2; max-width: 640px; margin: 0 auto; }
 .page-hero-title { font-size: clamp(40px, 6vw, 64px); font-weight: 800; letter-spacing: -1.5px; margin-bottom: 16px; }
@@ -592,7 +650,7 @@ section { padding: 110px 24px; }
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: rgba(11, 14, 17, 0.72);
+  background: rgba(18, 24, 31, 0.72);
   border: 1px solid var(--border);
   color: var(--text);
   font-size: 26px;
@@ -603,14 +661,14 @@ section { padding: 110px 24px; }
   z-index: 2;
   transition: all 0.3s;
 }
-.vdp-nav:hover { background: var(--accent); color: #0b0e11; border-color: var(--accent); }
+.vdp-nav:hover { background: var(--accent); color: #f7f8fa; border-color: var(--accent); }
 .vdp-prev { left: 14px; }
 .vdp-next { right: 14px; }
 .vdp-count {
   position: absolute;
   bottom: 14px;
   right: 14px;
-  background: rgba(11, 14, 17, 0.72);
+  background: rgba(18, 24, 31, 0.72);
   padding: 5px 12px;
   border-radius: 999px;
   font-size: 12px;

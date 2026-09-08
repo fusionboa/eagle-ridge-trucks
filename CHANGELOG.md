@@ -1,5 +1,51 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.13.1 — Inventory view toggle + light theme + mobile fixes (Sep 8, 2026)
+
+### BUG FIX: inventory stuck on "Loading inventory..."
+- **Root cause:** `renderAll()` called `populateTypes()` — a function that never existed. First keystroke/render threw ReferenceError and killed the render pipeline.
+- Fixed; full inventory flow smoke-tested (mock-DOM boot test passes).
+
+### Inventory page
+- **Icon layout toggle** (grid ⨯ list) — SVG icon buttons in the filter bar; choice saved to localStorage
+  - Grid view = vertical cards (same style as home flagships, `repeat(auto-fill, minmax(280px, 1fr))`)
+  - List view = the horizontal rows
+- **Result count** line ("414 vehicles available"), aria-live
+- Filter bar rearranged: search · make · type · sort · view-toggle
+
+### Light theme (near-white, keeps the gold luxury vibe)
+- Palette: bg `#f7f8fa`, surfaces `#ffffff`, text `#10161d`, muted `#5c6b7a`
+- Gold darkened for contrast on white: `#b8860b` / `#d4a017`
+- All dark literals swapped (hero gradients, nav glass, carousel arrows, grid lines, button text on gold)
+
+### Mobile fixes
+- Stray **"Home" tag** next to "Built to perform." — homepage breadcrumbs hidden on ≤768px (SEO markup stays in the HTML for crawlers)
+- **Scroll indicator overlapping** the GMC · Chevrolet · Buick stat — hero scroll widget removed
+
+### Home page order
+- Flagship Vehicles now FIRST after the hero, then the service strip (flagship → service → about → faq → contact)
+
+### Deploy
+- Pages `2408c738` (--branch main), cache-bust v=6, verified live on dangm.ca (toggle + count + light palette + section order all in production HTML/CSS)
+
+## v0.13.1 — Bright theme + inventory layout toggle + homepage fixes (Sep 8, 2026)
+
+### Fixes
+- **Inventory stuck on "Loading"** — `renderAll()` called a `populateTypes()` that never existed (ReferenceError killed the first render). Removed; make/type dropdowns populate via `populateMakes()`.
+- **Stray "Home" tag beside the hero title on phones** — the absolute-positioned SEO breadcrumb collided with the title on mobile; homepage breadcrumbs now hidden on small screens (markup stays for Google).
+- **Scroll indicator overlapped the GMC · Chevrolet · Buick stat** — the animated scroll arrow is removed entirely (it also covered the stats row on short screens).
+- **Flagships / service strip order restored** — "Our Flagship Vehicles" now sits directly after the hero, followed by the "Dangm Difference" service strip (a bad merge had eaten the flagship grid + duplicated headers).
+
+### New
+- **Grid ⇄ List toggle** on the inventory page (icon buttons, choice remembered in localStorage; grid = vertical cards like the home flagship grid).
+- **Result count** line ("414 vehicles available") under the filters, aria-live.
+
+### Look
+- **Near-white bright theme**: background `#f7f8fa`, pure-white cards, dark slate text, deep-gold accent (`#b8860b`/`#d4a017`) — same luxury vibe, bright and airy. All dark literals swapped (nav blur, hero gradients, VDP arrows, grid lines).
+
+### Deploy
+- Pages `2408c738` (--branch main), cache-bust `?v=6`, smoke-tested main.js boot in Node (no crash), verified live: inventory serves toggle + count, homepage 5 service cards, CSS v6 has view-btn/grid-view.
+
 ## v0.13.0 — Auto-post everything + public filters + About page + brighter theme (Sep 8, 2026)
 
 ### Auto-post mode (the big one)

@@ -115,7 +115,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=5">
+  <link rel="stylesheet" href="css/styles.css?v=6">
 </head>
 <body>
   <!-- Navigation -->
@@ -163,6 +163,23 @@
     <div class="hero-scroll"><span>Scroll</span><div class="scroll-line"></div></div>
   </header>
 
+  <!-- Flagship vehicles (most expensive, right after the hero) -->
+  <section class="inventory" id="flagship">
+    <div class="section-head">
+      <p class="eyebrow">THE FLAGSHIPS</p>
+      <h2 class="section-title">Our Flagship Vehicles</h2>
+      <p class="section-sub">The top of the line, with maximum power and presence.</p>
+    </div>
+
+    <div class="truck-grid flagship-grid" id="truckGrid">
+      <div class="loading">Loading inventory...</div>
+    </div>
+
+    <div class="flagship-more">
+      <a href="inventory.html" class="btn btn-ghost">Browse the full collection →</a>
+    </div>
+  </section>
+
   <!-- Service strip: financing, approvals, trade-ins -->
   <section class="service-strip" id="service">
     <div class="section-head">
@@ -196,23 +213,6 @@
         <h3>Best Trade-In Values</h3>
         <p>Bring your current vehicle and get top dollar toward your next one. Fair, fast, and transparent appraisals.</p>
       </div>
-    </div>
-  </section>
-
-  <!-- Flagship vehicles (most expensive) -->
-  <section class="inventory" id="flagship">
-    <div class="section-head">
-      <p class="eyebrow">THE FLAGSHIPS</p>
-      <h2 class="section-title">Our Flagship Vehicles</h2>
-      <p class="section-sub">The top of the line, with maximum power and presence.</p>
-    </div>
-
-    <div class="truck-grid flagship-grid" id="truckGrid">
-      <div class="loading">Loading inventory...</div>
-    </div>
-
-    <div class="flagship-more">
-      <a href="inventory.html" class="btn btn-ghost">Browse the full collection →</a>
     </div>
   </section>
 
@@ -306,6 +306,6 @@
     // Data source: the live Cloudflare Worker (falls back to local data/trucks.json if unreachable)
     window.SITE_CONFIG = { apiBase: 'https://eagle-ridge-trucks.fblister.workers.dev/api' };
   </script>
-  <script src="js/main.js?v=5"></script>
+  <script src="js/main.js?v=6"></script>
 </body>
 </html>
