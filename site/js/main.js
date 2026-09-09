@@ -205,26 +205,43 @@ function renderAll() {
   updateResultCount(filtered.length);
 }
 
+// ─── Makes: the GM family gets its own entries, everything else = Other ──
+const CORE_MAKES = ['Chevrolet', 'GMC', 'Buick', 'Cadillac'];
+const IS_CORVETTE = (t) => /corvette/i.test(`${t.make} ${t.model}`);
+
+function makeGroupOf(t) {
+  if (IS_CORVETTE(t)) return 'Corvette';
+  if (CORE_MAKES.includes(t.make)) return t.make;
+  return 'Other';
+}
+
 function populateMakes() {
   const select = document.getElementById('makeFilter');
   if (!select) return;
-  const makes = [...new Set(allTrucks.map((t) => t.make).filter(Boolean))].sort();
+  const otherNames = [...new Set(
+    allTrucks.filter((t) => makeGroupOf(t) === 'Other' && t.make).map((t) => t.make)
+  )].sort();
+  // Dropdown: All Makes / Chevrolet / GMC / Buick / Corvette / Other (Audi, BMW, …)
   select.innerHTML = '<option value="">All Makes</option>' +
-    makes.map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+    ['Chevrolet', 'GMC', 'Buick', 'Corvette', 'Other'].map((m) =>
+      `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('') +
+    otherNames.map((m) =>
+      `<option value="other:${escapeHtml(m)}">&nbsp;&nbsp;└ ${escapeHtml(m)}</option>`).join('');
 
   // Vehicle type filter — friendly names for the body styles we carry
   const typeSel = document.getElementById('typeFilter');
   if (typeSel) {
-    const types = [...new Set(allTrucks.map((t) => t.bodyStyle).filter(Boolean))].sort();
+    const types = [...new Set(allTrucks.map((t) => prettyType(t.bodyStyle)).filter(Boolean))].sort();
     typeSel.innerHTML = '<option value="">All Types</option>' +
-      types.map((tp) => `<option value="${escapeHtml(tp)}">${escapeHtml(prettyType(tp))}</option>`).join('');
+      types.map((tp) => `<option value="${escapeHtml(tp)}">${escapeHtml(tp)}</option>`).join('');
   }
 
-  // Quick-pick make chips above the grid (All / GMC / Chevrolet / ...)
+  // Quick-pick make chips above the grid (All / Chevrolet / GMC / Buick / Corvette / Other)
   const chips = document.getElementById('makeChips');
   if (chips) {
     chips.innerHTML = '<button class="chip chip-active" data-make="">All</button>' +
-      makes.map((m) => `<button class="chip" data-make="${escapeHtml(m)}">${escapeHtml(m)}</button>`).join('');
+      ['Chevrolet', 'GMC', 'Buick', 'Corvette', 'Other'].map((m) =>
+        `<button class="chip" data-make="${escapeHtml(m)}">${escapeHtml(m)}</button>`).join('');
     chips.querySelectorAll('.chip').forEach((c) => {
       c.addEventListener('click', () => {
         chips.querySelectorAll('.chip').forEach((x) => x.classList.remove('chip-active'));
@@ -235,6 +252,51 @@ function populateMakes() {
       });
     });
   }
+
+  populatePriceRanges();
+}
+
+// ─── Price range sidebar (Amazon-style) ────────────────────
+function priceBuckets(trucks) {
+  const prices = trucks.map((t) => priceNum(t.price)).filter((n) => n > 0).sort((a, b) => a - b);
+  if (!prices.length) return [];
+  const edges = [0, 25000, 50000, 75000, 100000, 150000, Infinity];
+  const buckets = [];
+  for (let i = 0; i < edges.length - 1; i++) {
+    const lo = edges[i], hi = edges[i + 1];
+    const count = prices.filter((p) => p >= lo && p < hi).length;
+    if (!count) continue;
+    buckets.push({
+      lo, hi,
+      label: hi === Infinity ? `$${fmtK(lo)}+` : `$${fmtK(lo)} – $${fmtK(hi)}`,
+      count,
+    });
+  }
+  return buckets;
+}
+function fmtK(n) { return n >= 1000 ? `${Math.round(n / 1000)}k` : String(n); }
+
+let activePrice = null; // {lo, hi} or null
+
+function populatePriceRanges() {
+  const list = document.getElementById('priceRanges');
+  if (!list) return;
+  const buckets = priceBuckets(allTrucks);
+  list.innerHTML = buckets.map((b) => `
+    <button class="price-range ${activePrice && activePrice.lo === b.lo ? 'price-active' : ''}" data-lo="${b.lo}" data-hi="${b.hi === Infinity ? 'inf' : b.hi}">
+      <span>${escapeHtml(b.label)}</span><span class="price-count">${b.count}</span>
+    </button>`).join('');
+  list.querySelectorAll('.price-range').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const lo = Number(btn.dataset.lo);
+      const hi = btn.dataset.hi === 'inf' ? Infinity : Number(btn.dataset.hi);
+      // Click again = clear
+      activePrice = activePrice && activePrice.lo === lo ? null : { lo, hi };
+      list.querySelectorAll('.price-range').forEach((x) => x.classList.remove('price-active'));
+      if (activePrice) btn.classList.add('price-active');
+      renderAll();
+    });
+  });
 }
 
 // "Sport Utility Vehicle" → "SUV / Crossover", etc.
@@ -317,9 +379,21 @@ function haystackFor(t) {
 
 function applyFilters(list) {
   const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
-  const make = document.getElementById('makeFilter').value;
+  const makeRaw = (document.getElementById('makeFilter') || {}).value || '';
   const type = (document.getElementById('typeFilter') || {}).value || '';
-  const sort = document.getElementById('sortFilter').value;
+  const sort = document.getElementById('sortFilter')?.value || 'price-high';
+
+  // Make groups: "Other" catches every non-GM brand; "other:Audi" targets one
+  let matchesMake = true;
+  if (makeRaw.startsWith('other:')) {
+    matchesMake = (t) => t.make === makeRaw.slice(6);
+  } else if (makeRaw === 'Other') {
+    matchesMake = (t) => makeGroupOf(t) === 'Other';
+  } else if (makeRaw === 'Corvette') {
+    matchesMake = IS_CORVETTE;
+  } else if (makeRaw) {
+    matchesMake = (t) => makeGroupOf(t) === makeRaw;
+  }
 
   // Pre-split the query once (same tokenizer the haystacks use)
   const qTokens = q.split(/[^a-z0-9.]+/).filter(Boolean);
@@ -330,14 +404,16 @@ function applyFilters(list) {
       // Every query word must fuzzy-match something in the vehicle text.
       return qTokens.every((tok) => tokenMatches(tok, hayWords));
     })();
-    const matchesMake = !make || t.make === make;
-    const matchesType = !type || (t.bodyStyle || '').toLowerCase().includes(type.toLowerCase());
-    return matchesQ && matchesMake && matchesType;
+    const inMake = typeof matchesMake === 'function' ? matchesMake(t) : true;
+    // Type groups: compare on the normalized friendly name
+    const inType = !type || prettyType(t.bodyStyle) === type;
+    const p = priceNum(t.price);
+    const inPrice = !activePrice || (p >= activePrice.lo && p < activePrice.hi);
+    return matchesQ && inMake && inType && inPrice;
   });
 
   if (sort === 'price-low') out.sort((a, b) => priceNum(a.price) - priceNum(b.price));
-  else if (sort === 'price-high') out.sort((a, b) => priceNum(b.price) - priceNum(a.price));
-  else out.sort((a, b) => String(b.year).localeCompare(String(a.year)));
+  else out.sort((a, b) => priceNum(b.price) - priceNum(a.price)); // default: price high → low
 
   return out;
 }
@@ -373,6 +449,9 @@ function updateResultCount(n) {
     wrap.querySelectorAll('.view-btn').forEach((b) =>
       b.classList.toggle('view-active', b.dataset.view === viewMode));
   }
+  // Show/hide the clear-price button
+  const clear = document.getElementById('priceClear');
+  if (clear) clear.style.display = activePrice ? 'inline-block' : 'none';
 }
 
 function initViewToggle() {
@@ -581,7 +660,13 @@ function renderVehicle(t) {
     document.getElementById('vdpMain').src = imgs[cur];
     const count = document.getElementById('vdpCount');
     if (count) count.textContent = `${cur + 1} / ${imgs.length}`;
-    document.querySelectorAll('.vdp-thumb').forEach((x, idx) => x.classList.toggle('active', idx === cur));
+    const thumbEls = document.querySelectorAll('.vdp-thumb');
+    thumbEls.forEach((x, idx) => x.classList.toggle('active', idx === cur));
+    // Auto-scroll the thumbnail strip so the active thumb is always visible
+    const active = thumbEls[cur];
+    if (active && active.scrollIntoView) {
+      active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
   };
   document.querySelectorAll('.vdp-thumb').forEach((thumb) => {
     thumb.addEventListener('click', () => showImage(parseInt(thumb.dataset.idx, 10)));
@@ -733,6 +818,13 @@ function init() {
       if (el) el.addEventListener('input', renderAll);
     });
     initViewToggle();
+    const clear = document.getElementById('priceClear');
+    if (clear) clear.addEventListener('click', () => {
+      activePrice = null;
+      document.querySelectorAll('.price-range').forEach((x) => x.classList.remove('price-active'));
+      clear.style.display = 'none';
+      renderAll();
+    });
   }
 
   loadTrucks();

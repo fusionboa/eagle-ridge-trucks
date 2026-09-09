@@ -292,6 +292,80 @@ section { padding: 110px 24px; }
 /* Grid view: same vertical card layout as the home flagship grid */
 .truck-grid.grid-view { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
 
+/* ─── Inventory split layout: sidebar + main (Amazon-style) ── */
+.inventory-split {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+.inventory-split .inventory { max-width: none; }
+.inv-sidebar {
+  position: sticky;
+  top: 100px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 20px;
+}
+.sidebar-title {
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  font-weight: 700;
+}
+.price-ranges { display: flex; flex-direction: column; gap: 6px; }
+.price-range {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+.price-range:hover { background: var(--surface-2); }
+.price-range.price-active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+}
+.price-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg-2);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+.price-range.price-active .price-count { background: rgba(255,255,255,0.25); color: #fff; }
+.price-clear {
+  margin-top: 14px;
+  width: 100%;
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.price-clear:hover { border-color: var(--accent); color: var(--accent); }
+@media (max-width: 900px) {
+  .inventory-split { grid-template-columns: 1fr; }
+  .inv-sidebar { position: static; }
+  .price-ranges { flex-direction: row; flex-wrap: wrap; }
+  .price-range { width: auto; }
+}
+
 /* ─── Service strip (financing / approvals / trade-ins) ──── */
 .service-grid {
   max-width: 1240px;
@@ -688,6 +762,8 @@ section { padding: 110px 24px; }
   transition: opacity 0.3s, border-color 0.3s;
 }
 .vdp-thumb.active, .vdp-thumb:hover { opacity: 1; border-color: var(--accent); }
+/* Keep the active thumbnail visible: auto-scroll its container */
+.vdp-thumb.active { scroll-margin: 0 8px; }
 .vdp-specs {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -837,16 +913,10 @@ section { padding: 110px 24px; }
    SEO — Breadcrumbs
    ═══════════════════════════════════════════════════ */
 .breadcrumbs {
-  list-style: none;
-  display: flex;
-  gap: 8px;
-  padding: 12px 32px;
-  margin: 0;
-  background: var(--bg-2);
-  border-bottom: 1px solid var(--border);
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  flex-wrap: wrap;
+  /* Visual breadcrumb bar removed — it collided with the fixed navbar
+     (the "Home / Inventory / ..." strip sat on top of it). The structured
+     data (JSON-LD BreadcrumbList) remains for SEO. */
+  display: none;
 }
 .breadcrumbs li { display: flex; align-items: center; gap: 8px; }
 .breadcrumbs li::after { content: '/'; color: var(--text-muted); }

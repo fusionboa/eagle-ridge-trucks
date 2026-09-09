@@ -1,5 +1,45 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.13.2 — Sidebar price filters + grouped makes + VDP gallery polish (Sep 8, 2026)
+
+### Inventory page
+- **Amazon-style price sidebar** — sticky left panel with price-range buckets ($0–25k / $25–50k / $50–75k / $75–100k / $100–150k / $150k+) built from live inventory, each with a count badge; click to filter, click again to clear, plus an explicit ✕ Clear button; stacks horizontally on mobile
+- **Make dropdown restructured** — All Makes / **Chevrolet / GMC / Buick / Corvette** / **Other** (with indented per-brand sub-entries: └ Audi, └ BMW, …). "Other" = every non-GM brand in one tap; Corvette detected via model name regardless of make
+- **Make chips match the dropdown** (All / Chevrolet / GMC / Buick / Corvette / Other)
+- **Type filter fixed** — options are now the normalized friendly names (SUV / Crossover, Truck, Sedan, …) and filtering compares normalized-to-normalized, so it actually matches (before, feed values like "Sport Utility Vehicle" never equaled the pretty label)
+- **Default sort = Price: high to low**
+
+### Vehicle detail page (VDP)
+- **Thumbnail strip auto-scrolls** — the active thumbnail smoothly scrolls into view (inline: center) on every prev/next/click
+- Active thumbnail highlighted (gold border, full opacity) — CSS scroll-margin added
+
+### Overlap fixes (screenshots confirmed)
+- **Breadcrumb bar killed** — the "Home / Inventory / <title>" strip was rendering on top of the fixed navbar on every subpage. `.breadcrumbs { display: none }` globally; JSON-LD BreadcrumbList kept for SEO. Visible `<ol>` removed from all page heroes
+- **Homepage** — breadcrumb `<ol>` deleted from the hero markup entirely; **Home added to the nav links** (was missing since the About-page change)
+
+### Deploy
+- Pages `b824f8f2` (--branch main), cache-bust v=7, verified live (sidebar + priceRanges + v7 assets in production, hero-crumbs gone)
+- Filter logic unit-verified in a DOM-simulated VM: buckets, Corvette/Other groups, type matching, price ranges, default sort
+
+## v0.13.2 — Filter overhaul: make groups, price sidebar, VDP thumb auto-scroll, overlap fixes (Sep 8, 2026)
+
+### Filters (inventory)
+- **Make dropdown + chips regrouped**: All / Chevrolet / GMC / Buick / Corvette / Other — "Other" catches every non-GM brand, indented sub-options (└ Audi, └ BMW…) target one brand; Corvette detected by model name even under Chevrolet
+- **Types fixed**: filter compares on the normalized friendly name (`prettyType`), so "SUV / Crossover" etc. actually matches (was substring-matching raw feed values — never worked)
+- **Default sort: price high → low** (dropdown + logic)
+- **Amazon-style price sidebar** (sticky, left): $25k–50k / $50k–75k / … buckets with live counts from real inventory, click-again to clear, ✕ Clear button; stacks horizontally on mobile
+
+### Vehicle page (VDP)
+- **Thumbnail strip auto-scrolls** to keep the active thumb centered (`scrollIntoView`, smooth) + active thumb highlighted
+
+### Overlap fixes
+- **Breadcrumb bar removed** site-wide — the "Home / Inventory / …" strip was rendering ON TOP of the fixed navbar (v0.13.0's padding fix wasn't enough). JSON-LD BreadcrumbList stays for SEO
+- Homepage hero: HTML breadcrumbs deleted (Home is now in the nav bar, as asked); nav on home gained the Home link
+
+### Deploy
+- Pages `b824f8f2` (--branch main), cache-bust v=7, verified live (sidebar + price ranges in prod HTML, crumbs gone, Home in nav)
+- Filter logic unit-smoke-tested in a VM sandbox: groups, types, price buckets, default sort all pass
+
 ## v0.13.1 — Inventory view toggle + light theme + mobile fixes (Sep 8, 2026)
 
 ### BUG FIX: inventory stuck on "Loading inventory..."

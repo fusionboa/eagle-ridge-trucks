@@ -47,7 +47,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=6">
+  <link rel="stylesheet" href="css/styles.css?v=7">
 </head>
 <body class="page-inventory">
   <!-- Navigation -->
@@ -71,16 +71,6 @@
 
   <!-- Page hero -->
   <header class="page-hero" id="top">
-    <ol class="breadcrumbs" aria-label="Breadcrumbs" itemscope itemtype="https://schema.org/BreadcrumbList">
-      <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
-        <a href="/" itemprop="item"><span itemprop="name">Home</span></a>
-        <meta itemprop="position" content="1">
-      </li>
-      <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
-        <a href="/inventory" itemprop="item"><span itemprop="name">Inventory</span></a>
-        <meta itemprop="position" content="2">
-      </li>
-    </ol>
     <div class="page-hero-bg"></div>
     <div class="page-hero-content">
       <p class="hero-eyebrow reveal visible">VANCOUVER · COQUITLAM · TRI-CITIES, BC</p>
@@ -89,42 +79,51 @@
     </div>
   </header>
 
-  <!-- Inventory -->
-  <section class="inventory" id="inventory">
-    <!-- Result count + layout toggle (grid ⇄ list) + filters -->
-    <div class="filters">
-      <div class="filter-group">
-        <input type="text" id="searchInput" class="filter-search" placeholder="Search make, model, trim, colour... (typos welcome)">
-      </div>
-      <div class="filter-group">
-        <select id="makeFilter" class="filter-select" aria-label="Filter by make">
-          <option value="">All Makes</option>
-        </select>
-        <select id="typeFilter" class="filter-select" aria-label="Filter by vehicle type">
-          <option value="">All Types</option>
-        </select>
-        <select id="sortFilter" class="filter-select" aria-label="Sort">
-          <option value="newest">Newest first</option>
-          <option value="price-low">Price: low to high</option>
-          <option value="price-high">Price: high to low</option>
-        </select>
-        <div class="view-toggle" id="viewToggleWrap" role="group" aria-label="Layout">
-          <button class="view-btn" data-view="grid" title="Grid view" aria-label="Grid view">
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor"><rect x="0" y="0" width="6.5" height="6.5" rx="1.5"/><rect x="8.5" y="0" width="6.5" height="6.5" rx="1.5"/><rect x="0" y="8.5" width="6.5" height="6.5" rx="1.5"/><rect x="8.5" y="8.5" width="6.5" height="6.5" rx="1.5"/></svg>
-          </button>
-          <button class="view-btn" data-view="list" title="List view" aria-label="List view">
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor"><rect x="0" y="0" width="15" height="3" rx="1.5"/><rect x="0" y="6" width="15" height="3" rx="1.5"/><rect x="0" y="12" width="15" height="3" rx="1.5"/></svg>
-          </button>
+  <!-- Inventory: sidebar (price ranges) + main column -->
+  <section class="inventory inventory-split" id="inventory">
+    <!-- Sidebar: Amazon-style price range filters -->
+    <aside class="inv-sidebar" id="invSidebar" aria-label="Price filter">
+      <h3 class="sidebar-title">Filter by price</h3>
+      <div class="price-ranges" id="priceRanges"></div>
+      <button class="price-clear" id="priceClear" style="display:none">✕ Clear price filter</button>
+    </aside>
+
+    <!-- Main column: filters + chips + grid -->
+    <div class="inv-main">
+      <div class="filters">
+        <div class="filter-group">
+          <input type="text" id="searchInput" class="filter-search" placeholder="Search make, model, trim, colour... (typos welcome)">
+        </div>
+        <div class="filter-group">
+          <select id="makeFilter" class="filter-select" aria-label="Filter by make">
+            <option value="">All Makes</option>
+          </select>
+          <select id="typeFilter" class="filter-select" aria-label="Filter by vehicle type">
+            <option value="">All Types</option>
+          </select>
+          <select id="sortFilter" class="filter-select" aria-label="Sort">
+            <option value="price-high" selected>Price: high to low</option>
+            <option value="price-low">Price: low to high</option>
+            <option value="newest">Newest first</option>
+          </select>
+          <div class="view-toggle" id="viewToggleWrap" role="group" aria-label="Layout">
+            <button class="view-btn" data-view="grid" title="Grid view" aria-label="Grid view">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor"><rect x="0" y="0" width="6.5" height="6.5" rx="1.5"/><rect x="8.5" y="0" width="6.5" height="6.5" rx="1.5"/><rect x="0" y="8.5" width="6.5" height="6.5" rx="1.5"/><rect x="8.5" y="8.5" width="6.5" height="6.5" rx="1.5"/></svg>
+            </button>
+            <button class="view-btn" data-view="list" title="List view" aria-label="List view">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor"><rect x="0" y="0" width="15" height="3" rx="1.5"/><rect x="0" y="6" width="15" height="3" rx="1.5"/><rect x="0" y="12" width="15" height="3" rx="1.5"/></svg>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-    <p class="result-count" id="resultCount" aria-live="polite"></p>
+      <p class="result-count" id="resultCount" aria-live="polite"></p>
 
-    <!-- Quick-pick make chips (All / GMC / Chevrolet / ...) -->
-    <div class="make-chips" id="makeChips" aria-label="Filter by make"></div>
+      <!-- Quick-pick make chips (All / Chevrolet / GMC / Buick / Corvette / Other) -->
+      <div class="make-chips" id="makeChips" aria-label="Filter by make"></div>
 
-    <div class="truck-grid" id="truckGrid">
-      <div class="loading">Loading inventory...</div>
+      <div class="truck-grid" id="truckGrid">
+        <div class="loading">Loading inventory...</div>
+      </div>
     </div>
   </section>
 
@@ -144,6 +143,6 @@
     // Data source: the live Cloudflare Worker (falls back to local data/trucks.json if unreachable)
     window.SITE_CONFIG = { apiBase: 'https://eagle-ridge-trucks.fblister.workers.dev/api' };
   </script>
-  <script src="js/main.js?v=6"></script>
+  <script src="js/main.js?v=7"></script>
 </body>
 </html>
