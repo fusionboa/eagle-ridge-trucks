@@ -1,5 +1,20 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.13.6 — Gemini logo installed site-wide (Sep 8, 2026)
+
+### New brand assets (from Jaden's Gemini generation — Downloads/dangmlogo.png)
+- Trimmed transparent edges, centered on a square canvas, exported at multiple sizes:
+  - `images/logo.png` (512×512) · `images/og-logo.png` (512×512, social previews)
+  - `images/favicon.png` (64×64) · `images/apple-touch-icon.png` (180×180, iPhone home-screen)
+- Original SVG DG monogram set kept as fallback (`logo.svg`, `favicon.svg`)
+
+### Wired in (all 6 pages)
+- **Tab logo replaced**: favicon.svg → favicon.png (the Gemini mark)
+- **apple-touch-icon** added — home-screen bookmark shows the logo on iOS
+- **og:image / twitter:image / JSON-LD image** → `og-logo.png` (link previews on WhatsApp/iMessage/Twitter now show the real logo)
+- Verified live: all 4 PNGs return 200 on dangm.ca
+- Deploy `9b0e4151`, cache-bust v=11
+
 ## v0.13.5 — dangm.ca logo (Sep 8, 2026)
 
 ### New brand assets (site/images/)
