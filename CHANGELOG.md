@@ -1,5 +1,20 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.13.7 — Nav logo swapped to the Gemini mark + real scroll-fix (Sep 8, 2026)
+
+### Nav logo (the "top logo has not changed" report)
+- The nav was still showing the CSS-drawn **DG tile** — the Gemini PNG was only the favicon/og image
+- Replaced `<span class="logo-mark">DG</span>` with `<img src="images/logo.png">` in nav + footer on ALL 6 pages (12 spots)
+- New `.logo-img` style: drops the gold tile background, subtle drop-shadow, keeps the 40px size + rounded corners
+
+### Scroll overlap (phone screenshot)
+- **Root cause found:** the earlier `display: none` fix was being overridden by a duplicate `display: flex` later in the SAME rule block — the property was never actually hidden
+- Removed the entire duplicate block; `.hero-scroll` is now truly `display: none`
+- The "Scroll" text + gold line no longer render on top of the GMC · Chevrolet · Buick stat
+
+### Deploy
+- Pages `83683881` (--branch main), cache-bust v=12, verified: `logo-mark logo-img` ×2 + logo.png ×5 in production HTML, fixed CSS live
+
 ## v0.13.6 — Gemini logo installed site-wide (Sep 8, 2026)
 
 ### New brand assets (from Jaden's Gemini generation — Downloads/dangmlogo.png)

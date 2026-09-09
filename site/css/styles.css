@@ -66,6 +66,13 @@ body {
 }
 .logo-text { font-weight: 700; letter-spacing: 2px; font-size: 14px; }
 .logo-text em { font-style: normal; color: var(--accent); }
+/* Real logo image (replaces the CSS DG tile) — clean on light nav */
+.logo-img {
+  background: none;          /* drop the gold tile background */
+  object-fit: contain;
+  border-radius: 10px;
+  filter: drop-shadow(0 1px 2px rgba(16, 22, 29, 0.12));
+}
 .nav-links { display: flex; gap: 32px; }
 .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.3s; }
 .nav-links a:hover { color: var(--text); }
@@ -178,12 +185,6 @@ body {
 .stat-label { font-size: 12px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
 .hero-scroll {
   display: none; /* overlapped the hero stats on short screens — cut for clarity */
-  position: absolute;
-  bottom: 40px; left: 50%;
-  transform: translateX(-50%);
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
-  color: var(--text-muted); font-size: 11px; letter-spacing: 2px;
-  z-index: 2;
 }
 .scroll-line { width: 1px; height: 40px; background: linear-gradient(var(--accent), transparent); animation: scrollPulse 2s infinite; }
 @keyframes scrollPulse { 0% { transform: scaleY(0); transform-origin: top; } 50% { transform: scaleY(1); } 100% { transform: scaleY(0); transform-origin: bottom; } }
