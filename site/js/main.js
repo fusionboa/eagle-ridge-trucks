@@ -215,6 +215,18 @@ function makeGroupOf(t) {
   return 'Other';
 }
 
+// Used detection: real odometer kilometres = used. New feed vehicles show
+// delivery km (≤100). Works even when the feed's condition column is junk
+// (this one only has GOOD/OTHER).
+function isUsed(t) {
+  const km = parseFloat(String(t.mileage || '').replace(/[^0-9.]/g, ''));
+  return !isNaN(km) && km > 100;
+}
+
+function conditionGroupOf(t) {
+  return isUsed(t) ? 'Used' : 'New';
+}
+
 function populateMakes() {
   const select = document.getElementById('makeFilter');
   if (!select) return;
@@ -234,6 +246,16 @@ function populateMakes() {
     const types = [...new Set(allTrucks.map((t) => prettyType(t.bodyStyle)).filter(Boolean))].sort();
     typeSel.innerHTML = '<option value="">All Types</option>' +
       types.map((tp) => `<option value="${escapeHtml(tp)}">${escapeHtml(tp)}</option>`).join('');
+  }
+
+  // Condition filter (New / Used) with live counts
+  const condSel = document.getElementById('conditionFilter');
+  if (condSel) {
+    const nUsed = allTrucks.filter(isUsed).length;
+    condSel.innerHTML =
+      '<option value="">New & Used</option>' +
+      `<option value="New">New (${allTrucks.length - nUsed})</option>` +
+      `<option value="Used">Used (${nUsed})</option>`;
   }
 
   // Quick-pick make chips above the grid (All / Chevrolet / GMC / Buick / Corvette / Other)
@@ -381,10 +403,11 @@ function applyFilters(list) {
   const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
   const makeRaw = (document.getElementById('makeFilter') || {}).value || '';
   const type = (document.getElementById('typeFilter') || {}).value || '';
+  const cond = (document.getElementById('conditionFilter') || {}).value || '';
   const sort = document.getElementById('sortFilter')?.value || 'price-high';
 
   // Make groups: "Other" catches every non-GM brand; "other:Audi" targets one
-  let matchesMake = true;
+  let matchesMake = null; // null = no make filter
   if (makeRaw.startsWith('other:')) {
     matchesMake = (t) => t.make === makeRaw.slice(6);
   } else if (makeRaw === 'Other') {
@@ -404,12 +427,13 @@ function applyFilters(list) {
       // Every query word must fuzzy-match something in the vehicle text.
       return qTokens.every((tok) => tokenMatches(tok, hayWords));
     })();
-    const inMake = typeof matchesMake === 'function' ? matchesMake(t) : true;
+    const inMake = matchesMake ? matchesMake(t) : true;
     // Type groups: compare on the normalized friendly name
     const inType = !type || prettyType(t.bodyStyle) === type;
+    const inCond = !cond || conditionGroupOf(t) === cond;
     const p = priceNum(t.price);
     const inPrice = !activePrice || (p >= activePrice.lo && p < activePrice.hi);
-    return matchesQ && inMake && inType && inPrice;
+    return matchesQ && inMake && inType && inCond && inPrice;
   });
 
   if (sort === 'price-low') out.sort((a, b) => priceNum(a.price) - priceNum(b.price));
@@ -813,7 +837,7 @@ function init() {
   }
 
   if (PAGE === 'inventory') {
-    ['searchInput', 'makeFilter', 'typeFilter', 'sortFilter'].forEach((id) => {
+    ['searchInput', 'makeFilter', 'typeFilter', 'conditionFilter', 'sortFilter'].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('input', renderAll);
     });

@@ -1,5 +1,16 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.13.3 — New/Used filter + verified chips & dropdown combo (Sep 8, 2026)
+
+### Inventory page
+- **New condition dropdown**: New & Used (default) / New (n) / Used (n) with live counts from the feed
+- Used detection = real odometer km (>100 km); new feed cars show delivery km (≤100). The feed's condition column only has GOOD/OTHER, so odometer is the reliable signal — 73 used / 341 new in the current 414
+- **Chips ⇄ dropdown fully synced & verified**: both drive the same make-group logic; combos work (e.g. Chevrolet + Used, Other + New, Corvette + price bucket, type + condition + price + search all stack)
+- Re-verified the whole filter matrix in the DOM-simulated VM: used-only, new-only, make+condition combos, clear-all
+
+### Deploy
+- Pages `909ca901` (--branch main), cache-bust v=8, `conditionFilter` verified in production HTML
+
 ## v0.13.2 — Sidebar price filters + grouped makes + VDP gallery polish (Sep 8, 2026)
 
 ### Inventory page
