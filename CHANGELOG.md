@@ -1,5 +1,22 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.13.5 — dangm.ca logo (Sep 8, 2026)
+
+### New brand assets (site/images/)
+- **`logo.svg`** — rounded-square tile in the site's gold gradient (`#d4a017` → `#b8860b`), white stylized **DG monogram** (two mirrored D's sharing the bar, reading DG from both sides) + underline bar echoing the nav logo
+- **`logo-dark.svg`** — dark ink variant for dark surfaces / social previews
+- **`favicon.svg`** — compact monogram-only tile for the browser tab
+
+### Wired in
+- Favicon on all 6 pages (`<link rel="icon" type="image/svg+xml">`)
+- og:image + twitter:image + JSON-LD image → `logo-dark.svg` (was pointing at og-*.jpg files that never existed)
+- Verified live: all three SVGs 200 on dangm.ca
+
+### Notes
+- Pure SVG = crisp at every size, ~1KB, zero requests beyond the first
+- The nav's existing DG mark (CSS-drawn) matches the logo's monogram style — one visual language
+- Deploy `85e5f15c`, cache-bust v=10
+
 ## v0.13.4 — THE filter fix: rebuild was wiping every selection (Sep 8, 2026)
 
 ### Root cause of "nothing changes with any of the filters"
