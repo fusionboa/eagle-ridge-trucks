@@ -199,7 +199,8 @@ function renderAll() {
     renderGrid(byPrice.slice(0, FLAGSHIP_COUNT), true);
     return;
   }
-  populateMakes();
+  buildFiltersOnce();   // build dropdowns/chips/price-list ONCE (rebuilding wipes selections!)
+  syncFilterUI();       // highlight chips/price rows from the CURRENT state every render
   const filtered = applyFilters(allTrucks);
   renderGrid(filtered, viewMode === 'grid');
   updateResultCount(filtered.length);
@@ -227,7 +228,38 @@ function conditionGroupOf(t) {
   return isUsed(t) ? 'Used' : 'New';
 }
 
-function populateMakes() {
+let filtersBuilt = false;
+
+function buildFiltersOnce() {
+  if (filtersBuilt) return;
+  filtersBuilt = true;
+  buildMakeDropdown();
+  buildTypeDropdown();
+  buildConditionDropdown();
+  buildMakeChips();
+  buildPriceRanges();
+}
+
+// Re-highlight chips + price rows from the current filter state (every render)
+function syncFilterUI() {
+  const sel = document.getElementById('makeFilter');
+  const current = sel ? sel.value : '';
+  const chips = document.getElementById('makeChips');
+  if (chips) {
+    chips.querySelectorAll('.chip').forEach((c) =>
+      c.classList.toggle('chip-active', c.dataset.make === current));
+  }
+  const list = document.getElementById('priceRanges');
+  if (list) {
+    list.querySelectorAll('.price-range').forEach((b) => {
+      const lo = Number(b.dataset.lo);
+      const hi = b.dataset.hi === 'inf' ? Infinity : Number(b.dataset.hi);
+      b.classList.toggle('price-active', !!activePrice && activePrice.lo === lo && activePrice.hi === hi);
+    });
+  }
+}
+
+function buildMakeDropdown() {
   const select = document.getElementById('makeFilter');
   if (!select) return;
   const otherNames = [...new Set(
@@ -239,43 +271,39 @@ function populateMakes() {
       `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('') +
     otherNames.map((m) =>
       `<option value="other:${escapeHtml(m)}">&nbsp;&nbsp;└ ${escapeHtml(m)}</option>`).join('');
+}
 
-  // Vehicle type filter — friendly names for the body styles we carry
+function buildTypeDropdown() {
   const typeSel = document.getElementById('typeFilter');
-  if (typeSel) {
-    const types = [...new Set(allTrucks.map((t) => prettyType(t.bodyStyle)).filter(Boolean))].sort();
-    typeSel.innerHTML = '<option value="">All Types</option>' +
-      types.map((tp) => `<option value="${escapeHtml(tp)}">${escapeHtml(tp)}</option>`).join('');
-  }
+  if (!typeSel) return;
+  const types = [...new Set(allTrucks.map((t) => prettyType(t.bodyStyle)).filter(Boolean))].sort();
+  typeSel.innerHTML = '<option value="">All Types</option>' +
+    types.map((tp) => `<option value="${escapeHtml(tp)}">${escapeHtml(tp)}</option>`).join('');
+}
 
-  // Condition filter (New / Used) with live counts
+function buildConditionDropdown() {
   const condSel = document.getElementById('conditionFilter');
-  if (condSel) {
-    const nUsed = allTrucks.filter(isUsed).length;
-    condSel.innerHTML =
-      '<option value="">New & Used</option>' +
-      `<option value="New">New (${allTrucks.length - nUsed})</option>` +
-      `<option value="Used">Used (${nUsed})</option>`;
-  }
+  if (!condSel) return;
+  const nUsed = allTrucks.filter(isUsed).length;
+  condSel.innerHTML =
+    '<option value="">New & Used</option>' +
+    `<option value="New">New (${allTrucks.length - nUsed})</option>` +
+    `<option value="Used">Used (${nUsed})</option>`;
+}
 
-  // Quick-pick make chips above the grid (All / Chevrolet / GMC / Buick / Corvette / Other)
+function buildMakeChips() {
   const chips = document.getElementById('makeChips');
-  if (chips) {
-    chips.innerHTML = '<button class="chip chip-active" data-make="">All</button>' +
-      ['Chevrolet', 'GMC', 'Buick', 'Corvette', 'Other'].map((m) =>
-        `<button class="chip" data-make="${escapeHtml(m)}">${escapeHtml(m)}</button>`).join('');
-    chips.querySelectorAll('.chip').forEach((c) => {
-      c.addEventListener('click', () => {
-        chips.querySelectorAll('.chip').forEach((x) => x.classList.remove('chip-active'));
-        c.classList.add('chip-active');
-        const sel = document.getElementById('makeFilter');
-        if (sel) sel.value = c.dataset.make;
-        renderAll();
-      });
+  if (!chips) return;
+  chips.innerHTML = '<button class="chip" data-make="">All</button>' +
+    ['Chevrolet', 'GMC', 'Buick', 'Corvette', 'Other'].map((m) =>
+      `<button class="chip" data-make="${escapeHtml(m)}">${escapeHtml(m)}</button>`).join('');
+  chips.querySelectorAll('.chip').forEach((c) => {
+    c.addEventListener('click', () => {
+      const sel = document.getElementById('makeFilter');
+      if (sel) sel.value = c.dataset.make;
+      renderAll();
     });
-  }
-
-  populatePriceRanges();
+  });
 }
 
 // ─── Price range sidebar (Amazon-style) ────────────────────
@@ -300,12 +328,12 @@ function fmtK(n) { return n >= 1000 ? `${Math.round(n / 1000)}k` : String(n); }
 
 let activePrice = null; // {lo, hi} or null
 
-function populatePriceRanges() {
+function buildPriceRanges() {
   const list = document.getElementById('priceRanges');
   if (!list) return;
   const buckets = priceBuckets(allTrucks);
   list.innerHTML = buckets.map((b) => `
-    <button class="price-range ${activePrice && activePrice.lo === b.lo ? 'price-active' : ''}" data-lo="${b.lo}" data-hi="${b.hi === Infinity ? 'inf' : b.hi}">
+    <button class="price-range" data-lo="${b.lo}" data-hi="${b.hi === Infinity ? 'inf' : b.hi}">
       <span>${escapeHtml(b.label)}</span><span class="price-count">${b.count}</span>
     </button>`).join('');
   list.querySelectorAll('.price-range').forEach((btn) => {
@@ -313,9 +341,7 @@ function populatePriceRanges() {
       const lo = Number(btn.dataset.lo);
       const hi = btn.dataset.hi === 'inf' ? Infinity : Number(btn.dataset.hi);
       // Click again = clear
-      activePrice = activePrice && activePrice.lo === lo ? null : { lo, hi };
-      list.querySelectorAll('.price-range').forEach((x) => x.classList.remove('price-active'));
-      if (activePrice) btn.classList.add('price-active');
+      activePrice = activePrice && activePrice.lo === lo && activePrice.hi === hi ? null : { lo, hi };
       renderAll();
     });
   });

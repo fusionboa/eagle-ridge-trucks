@@ -1,5 +1,24 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.13.4 — THE filter fix: rebuild was wiping every selection (Sep 8, 2026)
+
+### Root cause of "nothing changes with any of the filters"
+- `populateMakes()` ran on EVERY render and reset the make/type/condition dropdowns' `innerHTML` → **in a real browser that resets the selected value to blank** (my earlier VM tests used persistent fake elements, so they passed while the live site broke). It also re-created the chips with `All` hard-coded active → no highlight ever moved, and the value the chip just set got wiped on the re-render it triggered.
+
+### The fix (state/UI separation)
+- **`buildFiltersOnce()`** — dropdowns, chips, and price list are built exactly ONCE after data loads; selections live in the real DOM from then on
+- **`syncFilterUI()`** — every render re-highlights chips + price rows from the current state (`classList.toggle`, no rebuilding)
+- `buildPriceRanges` renamed + no longer stamps active state into HTML; highlight is synced
+- Click-again-to-clear on price now compares lo AND hi
+
+### Proof (persistent-element DOM simulation, like a real browser)
+- Click GMC chip → dropdown value `GMC`, grid filters to Terrain, value PERSISTS across re-renders
+- Chip highlight moves to index 2 (GMC) ✅
+- Price bucket click → activePrice set, persists, filters ✅
+
+### Deploy
+- Pages `86c370ca` (--branch main), cache-bust v=9, `buildFiltersOnce`/`syncFilterUI` verified in production JS
+
 ## v0.13.3 — New/Used filter + verified chips & dropdown combo (Sep 8, 2026)
 
 ### Inventory page
