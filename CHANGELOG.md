@@ -1,5 +1,29 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.14.0 — SEO: vehicle sitemap + breadcrumbs (Sep 10, 2026)
+
+### Vehicle sitemap — the big one
+- **New: `site/sitemap-vehicles.xml`** — all **414 listed VDPs** (`/vehicle.html?id=…`) now discoverable by Google
+  - Previously the 414 vehicle pages had NO crawl path in any sitemap — Google could only find them by luck
+- **New: `sync/build-sitemap.py`** — regenerates the vehicle sitemap from the live API before every deploy (`python3 sync/build-sitemap.py`)
+  - Falls back to `/tmp/trucks.json` if API is unreachable; filters to `listed !== false`
+- robots.txt now lists **3 sitemaps**: main + vehicles + images; verified live
+- Cloudflare auto-injects AI-bot blocks (CCBot/ClaudeBot/Bytespider/etc `Disallow: /`) into robots.txt — Googlebot explicitly Allowed, SEO unaffected; AI scrapers can't mass-lift dad's inventory
+- sitemap.xml + sitemap-images.xml lastmod refreshed → 2026-09-10
+
+### Structured data
+- **inventory.html**: added BreadcrumbList JSON-LD (Home → Inventory); vehicle/about/forum already had one
+- Existing dynamic VDP SEO verified: per-vehicle `<title>`, meta description, OG/Twitter tags, canonical, Vehicle JSON-LD, breadcrumbs (all client-side in main.js)
+
+### Deploy
+- Pages deploy `88a74af7` → live on dangm.ca (verified sitemap-vehicles.xml + robots.txt serving)
+- **Reminder:** deploy flow = `python3 sync/build-sitemap.py` → copy `site/` → `pages-dist/` → `npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch main`
+
+### Still open (next SEO session)
+- Google Search Console: replace `YOUR_VERIFICATION_CODE` placeholder in index.html, submit sitemaps
+- Discounted pricing (feed shows MSRP before discounts) — pending dad/eagleridgegm.com scrape decision
+- About page content fill-in
+
 ## v0.13.7 — Nav logo swapped to the Gemini mark + real scroll-fix (Sep 8, 2026)
 
 ### Nav logo (the "top logo has not changed" report)

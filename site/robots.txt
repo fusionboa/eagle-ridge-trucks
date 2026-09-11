@@ -4,6 +4,8 @@ Disallow: /admin/
 Disallow: /api/
 
 Sitemap: https://dangm.ca/sitemap.xml
+Sitemap: https://dangm.ca/sitemap-vehicles.xml
+Sitemap: https://dangm.ca/sitemap-images.xml
 
 # Googlebot
 User-agent: Googlebot
