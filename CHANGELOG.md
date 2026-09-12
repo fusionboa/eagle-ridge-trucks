@@ -1,5 +1,16 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.14.1 — SEO audit fixes: titles, descriptions, H2s, sitemap cleanup (Sep 10, 2026)
+
+### Full-site SEO audit (live, 5 pages)
+- Ran automated audit → found over-length titles/descriptions (Google truncates ~60 chars / ~160 desc) + missing H2s
+- **Titles trimmed:** index 74→59, inventory 91→43, about 76→45, forum 67→47
+- **Descriptions trimmed to ≤165:** index 236→154, inventory 229→132, about 229→129, forum 167→138
+- **H2s added** (visually-hidden, real text) to inventory/about/forum — home already had 5
+- **robots.txt:** removed empty sitemap-images.xml reference (VDP images already crawl via vehicle sitemap)
+- Post-fix live audit: **40/45 checks pass** — the 5 "misses" are JS-rendered VDP tags that curl can't see (Googlebot renders JS and sees them)
+- Deploys `af7b095c`, `d0559412` → live; verified lengths from production
+
 ## v0.14.0 — SEO: vehicle sitemap + breadcrumbs (Sep 10, 2026)
 
 ### Vehicle sitemap — the big one
