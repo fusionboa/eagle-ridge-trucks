@@ -39,7 +39,14 @@ jobs:
           CSV_FILE: ${{ secrets.CSV_FILE }}
           WORKER_URL: ${{ secrets.WORKER_URL }}
           BRIDGE_TOKEN: ${{ secrets.BRIDGE_TOKEN }}
-        run: node sync.js --once
+        # Retry: transient D1/worker 500s shouldn't fail the hourly run
+        run: |
+          for i in 1 2 3; do
+            if node sync.js --once; then exit 0; fi
+            echo "attempt $i failed; retrying in 60s"
+            sleep 60
+          done
+          exit 1
 
       - name: Rebuild static /v/ pages + vehicle sitemap from live inventory
         run: python3 sync/build-sitemap.py
