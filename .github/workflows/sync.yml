@@ -11,6 +11,11 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    env:
+      # Deploy step needs CLOUDFLARE_API_TOKEN; without it, sync + rebuild
+      # still run (live inventory keeps updating) and the deploy shows as
+      # "skipped" instead of painting every hourly run red.
+      DEPLOY_ENABLED: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && '1' || '0' }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -46,6 +51,7 @@ jobs:
           cp -r site/* pages-dist/
 
       - name: Deploy to Cloudflare Pages (production)
+        if: ${{ env.DEPLOY_ENABLED == '1' }}
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
