@@ -165,7 +165,7 @@ function addVehicleJSONLD(t, title, price, desc, imgs, vin, year) {
     seller: {
       '@type': 'LocalBusiness',
       '@id': 'https://dangm.ca/#business',
-      name: 'dangm.ca',
+      name: 'DanGM',
       telephone: '604-735-1396',
       address: { '@type': 'PostalAddress', 'addressRegion': 'BC', 'addressLocality': 'Coquitlam', 'addressCountry': 'CA' }
     }
@@ -543,7 +543,7 @@ function gridCardHTML(t, i) {
   return `
     <a class="truck-card reveal" href="${href}" style="transition-delay:${Math.min(i * 0.04, 0.3)}s">
       <div class="truck-card-img-wrap">
-        ${img ? `<img class="truck-card-img" src="${img}" alt="${escapeHtml(title)}" loading="lazy">` : '<div class="truck-card-img"></div>'}
+        ${img ? `<img class="truck-card-img" src="${img}" alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy">` : '<div class="truck-card-img"></div>'}
         ${t.bodyStyle ? `<span class="truck-badge">${escapeHtml(t.bodyStyle)}</span>` : ''}
       </div>
       <div class="truck-card-body">
@@ -567,7 +567,7 @@ function cardHTML(t, i, isFlagship) {
     return `
       <a class="truck-card reveal" href="${href}" style="transition-delay:${Math.min(i * 0.05, 0.4)}s">
         <div class="truck-card-img-wrap">
-          ${img ? `<img class="truck-card-img" src="${img}" alt="${escapeHtml(title)}" loading="lazy">` : '<div class="truck-card-img"></div>'}
+          ${img ? `<img class="truck-card-img" src="${img}" alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy">` : '<div class="truck-card-img"></div>'}
           ${t.bodyStyle ? `<span class="truck-badge">${escapeHtml(t.bodyStyle)}</span>` : ''}
         </div>
         <div class="truck-card-body">
@@ -584,7 +584,7 @@ function cardHTML(t, i, isFlagship) {
   return `
     <a class="truck-card truck-card-list reveal" href="${href}" style="transition-delay:${Math.min(i * 0.04, 0.3)}s">
       <div class="truck-card-img-wrap list-img">
-        ${img ? `<img class="truck-card-img" src="${img}" alt="${escapeHtml(title)}" loading="lazy">` : '<div class="truck-card-img"></div>'}
+        ${img ? `<img class="truck-card-img" src="${img}" alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy">` : '<div class="truck-card-img"></div>'}
         ${t.bodyStyle ? `<span class="truck-badge">${escapeHtml(t.bodyStyle)}</span>` : ''}
       </div>
       <div class="truck-card-body list-body">
@@ -624,7 +624,7 @@ function renderVehicle(t) {
   const gallery = imgs.length ? `
     <div class="vdp-gallery">
       <div class="vdp-main-wrap">
-        <img class="vdp-main" id="vdpMain" src="${imgs[0]}" alt="${escapeHtml(title)}">
+        <img class="vdp-main" id="vdpMain" src="${imgs[0]}" alt="${escapeHtml(title)} for sale in Coquitlam BC">
         ${imgs.length > 1 ? `<button class="vdp-nav vdp-prev" data-dir="-1" aria-label="Previous image">‹</button>
         <button class="vdp-nav vdp-next" data-dir="1" aria-label="Next image">›</button>
         <span class="vdp-count" id="vdpCount">1 / ${imgs.length}</span>` : ''}
@@ -867,7 +867,7 @@ function forumCardHTML(p) {
   const full = String(p.body || '');
   const body = full.replace(/\n/g, ' ').slice(0, 160);
   const img = p.image
-    ? `<div class="forum-card-img-wrap"><img class="forum-card-img" src="${p.image}" alt="${escapeHtml(title)}" loading="lazy"></div>`
+    ? `<div class="forum-card-img-wrap"><img class="forum-card-img" src="${p.image}" alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy"></div>`
     : '';
   return `
     <a class="forum-card reveal" href="forum-post.html?id=${encodeURIComponent(p.id)}">
@@ -928,6 +928,11 @@ function init() {
   initReveals();
   initLeadForm();
   document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Static pages (location landing pages, blog guides): nav + reveals + lead
+  // form only. Return before loadTrucks() so pages without a truck grid
+  // don't hit null-element crashes in renderAll/applyFilters.
+  if (PAGE === 'landing') return;
 
   if (PAGE === 'vehicle') {
     loadVehicle();

@@ -159,7 +159,7 @@ def vehicle_jsonld(t, page_url, title, desc, img):
         "seller": {
             "@type": "LocalBusiness",
             "@id": f"{BASE}/#business",
-            "name": "dangm.ca",
+            "name": "DanGM",
             "telephone": PHONE,
             "address": {
                 "@type": "PostalAddress",
@@ -266,6 +266,13 @@ PAGE_TMPL = """<!DOCTYPE html>
         <span class="logo-text">dangm<em>.ca</em></span>
       </div>
       <p>&copy; {year_now} dangm.ca. All rights reserved.</p>
+      <nav class="footer-links" style="display:flex;flex-wrap:wrap;gap:1.5rem;justify-content:center;margin-top:14px" aria-label="Footer">
+        <a href="{base_rel}inventory.html">Inventory</a>
+        <a href="{base_rel}locations/surrey/">Car Financing Surrey</a>
+        <a href="{base_rel}blog/">Car Buying Guides</a>
+        <a href="{base_rel}forum.html">Forum</a>
+        <a href="{base_rel}about.html">About</a>
+      </nav>
     </div>
   </footer>
 </body>
