@@ -218,7 +218,7 @@ PAGE_TMPL = """<!DOCTYPE html>
   <script type="application/ld+json">
   {breadcrumb_ld}
   </script>
-  <link rel="stylesheet" href="{base_rel}css/styles.css?v=14">
+  <link rel="stylesheet" href="{base_rel}css/styles.css?v=24">
 </head>
 <body class="page-vehicle">
   <nav class="nav scrolled">

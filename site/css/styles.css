@@ -1108,3 +1108,11 @@ section { padding: 110px 24px; }
 @media (max-width: 768px) {
   .related { padding: 40px 16px; }
 }
+
+/* ── Comparison tables (blog engine) ─────────────────────── */
+.tbl-wrap{overflow-x:auto;margin:20px 0}
+.cmp-table{width:100%;border-collapse:collapse;font-size:.95rem}
+.cmp-table th,.cmp-table td{padding:10px 14px;text-align:left}
+.cmp-table th{border-bottom:2px solid #d4a53f;background:rgba(0,0,0,.05)}
+.cmp-table td{border-bottom:1px solid rgba(0,0,0,.1)}
+.cmp-table tr:last-child td{border-bottom:0}

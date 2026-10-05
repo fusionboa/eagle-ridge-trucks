@@ -1,5 +1,12 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.16.2 — Blog engine + 10 "vs" comparison posts (Oct 5, 2026)
+
+- **blog-engine/build.py**: standalone generator (independent of the vehicle build) that renders `blog-engine/posts/*.py` content modules into static `/blog/<slug>/` pages with per-post Article + FAQPage + BreadcrumbList JSON-LD, canonicals, OG/Twitter cards; auto-refreshes blog index cards between POSTS markers and emits `sitemap-blog.xml`
+- **10 new long-tail posts** targeting "X vs Y" searches: Sierra vs Silverado 1500, 2025 Silverado vs Silverado LTD, Tahoe vs Yukon, Terrain vs Equinox, Yukon vs Yukon XL, Canyon vs Colorado, used vs new GM truck in BC, Denali vs AT4, Silverado vs F-150 (competitive), gas vs diesel in BC
+- Every post: 4-sentence hook, H2 sections with pros/cons lists, comparison tables, "verdict in one line", CTA block (call + apply), 4-question FAQ (matching FAQPage schema), internal links to related guides + inventory + #lead
+- **SEO hygiene**: cache-bust v24 sitewide (incl. the 5 original guides), `sitemap-blog.xml` (10 URLs) added to sitemap-index.xml + robots.txt, comparison-table CSS, zero em-dashes
+
 ## v0.16.0 — Local SEO engine: Surrey page, blog guides, DanGM schema, real address, auto-deploy fix (Oct 5, 2026)
 
 - **Local SEO sprint:** DanGM AutoDealer JSON-LD rebuilt (exact 11-city areaServed, slogan, phone), `/locations/surrey/` landing page with embedded lead form + FAQ/Service schema, `/blog/` index + 5 long-tail guides (new-to-Canada, negative-equity trade-ins, GMC after bankruptcy, zero-pressure consulting, temporary residents) with Article schema and 4-sentence hooks, 7 geo SVG banners with 5 exact hardcoded alt strings, footer links ("Car Financing Surrey", "Car Buying Guides") sitewide incl. generated VDPs, sitemap +7 URLs, `_headers` no-cache for new routes
