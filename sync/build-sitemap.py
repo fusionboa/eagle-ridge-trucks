@@ -163,8 +163,10 @@ def vehicle_jsonld(t, page_url, title, desc, img):
             "telephone": PHONE,
             "address": {
                 "@type": "PostalAddress",
+                "streetAddress": "2595 Barnet Hwy",
                 "addressRegion": "BC",
                 "addressLocality": "Coquitlam",
+                "postalCode": "V3E 1K9",
                 "addressCountry": "CA",
             },
         },

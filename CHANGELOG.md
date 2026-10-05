@@ -1,5 +1,12 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.16.0 — Local SEO engine: Surrey page, blog guides, DanGM schema, real address, auto-deploy fix (Oct 5, 2026)
+
+- **Local SEO sprint:** DanGM AutoDealer JSON-LD rebuilt (exact 11-city areaServed, slogan, phone), `/locations/surrey/` landing page with embedded lead form + FAQ/Service schema, `/blog/` index + 5 long-tail guides (new-to-Canada, negative-equity trade-ins, GMC after bankruptcy, zero-pressure consulting, temporary residents) with Article schema and 4-sentence hooks, 7 geo SVG banners with 5 exact hardcoded alt strings, footer links ("Car Financing Surrey", "Car Buying Guides") sitewide incl. generated VDPs, sitemap +7 URLs, `_headers` no-cache for new routes
+- **main.js:** new `landing` page mode (nav/reveals/lead-form only, no truck-grid crash), geo-targeted card alts, cache-bust v23
+- **Address wired:** 2595 Barnet Hwy, Coquitlam, BC V3E 1K9 (inside Eagle Ridge GM) into AutoDealer + VDP seller schemas and the homepage contact block
+- **Auto-update root cause found:** hourly sync was running the OLD sync-only workflow on origin/master — the deploy step only existed in 16 unpushed local commits. Fix: push + add CLOUDFLARE_ACCOUNT_ID/CLOUDFLARE_API_TOKEN secrets so sync → rebuild → deploy runs end-to-end hourly
+
 ## v0.15.8 — Image-background hero scrapped; clean light hero restored (Oct 4, 2026)
 
 - **User: "scrap the image background idea and remove it, revert to how it was before, keep the text the same."**

@@ -167,7 +167,7 @@ function addVehicleJSONLD(t, title, price, desc, imgs, vin, year) {
       '@id': 'https://dangm.ca/#business',
       name: 'DanGM',
       telephone: '604-735-1396',
-      address: { '@type': 'PostalAddress', 'addressRegion': 'BC', 'addressLocality': 'Coquitlam', 'addressCountry': 'CA' }
+      address: { '@type': 'PostalAddress', streetAddress: '2595 Barnet Hwy', 'addressRegion': 'BC', 'addressLocality': 'Coquitlam', postalCode: 'V3E 1K9', 'addressCountry': 'CA' }
     }
   });
   document.head.appendChild(ld);
