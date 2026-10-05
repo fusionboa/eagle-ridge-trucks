@@ -383,6 +383,7 @@ async function sync() {
     );
 
     // 8. Push to the Cloudflare Worker (the public site reads from here)
+    let pushFailed = false;
     if (CONFIG.workerUrl && CONFIG.bridgeToken) {
       try {
         console.log(`   ☁️ Pushing ${trucks.length} trucks to worker...`);
@@ -397,12 +398,14 @@ async function sync() {
         if (!pushRes.ok) {
           const err = await pushRes.json().catch(() => ({}));
           console.warn(`   ⚠️ Worker push failed (${pushRes.status}): ${err.error || 'unknown'}`);
+          pushFailed = true;
         } else {
           const res = await pushRes.json();
           console.log(`   ✅ Worker updated (${res.count} trucks${res.removed ? `, ${res.removed} removed` : ''}${res.backedUp ? `, ${res.backedUp} backed up` : ''})`);
         }
       } catch (e) {
         console.warn(`   ⚠️ Worker unreachable: ${e.message}`);
+        pushFailed = true;
       }
 
       // AI descriptions — generated in the worker via Workers AI (free, no key).
@@ -425,14 +428,18 @@ async function sync() {
     console.log(`   ✅ Sync complete in ${((Date.now() - started) / 1000).toFixed(1)}s — ${trucks.length} trucks`);
   } catch (e) {
     console.error(`   ❌ Sync failed: ${e.message}`);
+    return false;
   }
+  return !pushFailed;
 }
 
 // ─── Run ────────────────────────────────────────────────────────────────────
 const isOnce = process.argv.includes('--once');
 
-sync().then(() => {
-  if (isOnce) process.exit(0);
+sync().then((ok) => {
+  // Exit non-zero when the push failed so CI runs go RED instead of
+  // silently shipping a stale site (the 403 drift hid for weeks).
+  if (isOnce) process.exit(ok === false ? 1 : 0);
   console.log(`\n   ⏰ Auto-sync every ${CONFIG.syncInterval / 60000} minutes. Ctrl+C to stop.`);
   setInterval(sync, CONFIG.syncInterval);
 });
