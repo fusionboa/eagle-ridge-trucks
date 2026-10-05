@@ -112,6 +112,16 @@ function cleanText(s) {
     .trim();
 }
 
+// Static VDP path for a vehicle — MUST match sync/build-sitemap.py slugify():
+// base = year make model trim (lowercased, non-alnum → dash), then "-stock-<id>".
+// Cards link here so Googlebot can crawl into every VDP without the sitemap.
+function vdpHref(t) {
+  const base = [t.year, t.make, t.model, t.trim].map((v) => String(v || '').trim()).join(' ').trim();
+  const stock = String(t.id || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const name = base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'vehicle';
+  return `v/${name}-stock-${stock}/`;
+}
+
 // ─── Dynamic SEO meta tag updater ──────────────────────────
 function updateMeta(name, content) {
   // Try property first (OG), then name (standard meta, twitter)
@@ -180,7 +190,7 @@ function renderRelatedVehicles(current) {
           const rTitle = [r.year, r.make, r.model, r.trim].filter(Boolean).join(' ');
           const rImg = (r.images || [])[0] || '';
           return `
-            <a href="vehicle.html?id=${encodeURIComponent(r.id)}" class="truck-card-small">
+            <a href="${vdpHref(r)}" class="truck-card-small">
               ${rImg ? `<img src="${rImg}" alt="${escapeHtml(rTitle)}" loading="lazy" class="related-img">` : '<div class="related-noimg">📷</div>'}
               <div class="related-info">
                 <span class="related-title">${escapeHtml(rTitle)}</span>
@@ -529,7 +539,7 @@ function gridCardHTML(t, i) {
   const img = t.images[0] || '';
   const title = [t.year, t.make, t.model, t.trim].filter(Boolean).join(' ');
   const price = formatPrice(t.price);
-  const href = `vehicle.html?id=${encodeURIComponent(t.id)}`;
+  const href = vdpHref(t);
   return `
     <a class="truck-card reveal" href="${href}" style="transition-delay:${Math.min(i * 0.04, 0.3)}s">
       <div class="truck-card-img-wrap">
@@ -550,7 +560,7 @@ function cardHTML(t, i, isFlagship) {
   const img = t.images[0] || '';
   const title = [t.year, t.make, t.model, t.trim].filter(Boolean).join(' ');
   const price = formatPrice(t.price);
-  const href = `vehicle.html?id=${encodeURIComponent(t.id)}`;
+  const href = vdpHref(t);
 
   if (isFlagship) {
     // Home page — vertical flagship card
@@ -643,13 +653,17 @@ function renderVehicle(t) {
   updateMeta('description', seoDesc);
   updateMeta('og:title', fullTitle);
   updateMeta('og:description', seoDesc);
-  updateMeta('og:url', location.href);
   if (imgs[0]) updateMeta('og:image', imgs[0]);
   updateMeta('twitter:title', fullTitle);
   updateMeta('twitter:description', seoDesc);
   if (imgs[0]) updateMeta('twitter:image', imgs[0]);
   const canon = document.querySelector('link[rel="canonical"]');
-  if (canon) canon.href = location.href;
+  // Canonical/og:url = the CLEAN static /v/ page (vdpHref matches build-sitemap.py).
+  // vehicle.html?id=X is the interactive variant; raw location.href would leak
+  // tracking params (fbclid/utm_*) into canonicals and split ranking signals.
+  const vdpUrl = `https://dangm.ca/${vdpHref(t)}`;
+  if (canon) canon.href = vdpUrl;
+  updateMeta('og:url', vdpUrl);
   // Breadcrumb
   const bc = document.getElementById('breadcrumbVehicle');
   if (bc) bc.textContent = title;
@@ -754,7 +768,74 @@ function initReveals() {
 
 function updateStatCount() {
   const el = document.getElementById('statCount');
-  if (el) el.textContent = allTrucks.length;
+  if (!el) return;
+  if (allTrucks.length > 0) {
+    // API resolved: override the static premium fallback with the live count
+    el.textContent = allTrucks.length;
+  } else {
+    // API failed/timed out: never drop to "0" (Googlebot indexes the initial
+    // DOM). Keep the static fallback and point the label at live inventory.
+    el.textContent = '400+';
+    const label = el.parentElement && el.parentElement.querySelector('.stat-label');
+    if (label) label.textContent = 'Browse Live Inventory';
+  }
+}
+
+// ─── Lead capture form ────────────────────────────────────
+function initLeadForm() {
+  const form = document.getElementById('leadForm');
+  if (!form) return;
+  const err = document.getElementById('leadError');
+  const btn = document.getElementById('leadSubmit');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = form.elements;
+    const data = {
+      name: (f.name.value || '').trim(),
+      phone: (f.phone.value || '').trim(),
+      email: (f.email.value || '').trim(),
+      interest: f.interest.value || '',
+      website: f.website.value || '', // honeypot — must stay empty
+    };
+    const showErr = (msg) => {
+      err.textContent = msg;
+      err.hidden = false;
+    };
+    err.hidden = true;
+    if (!data.name || !data.phone || !data.interest) {
+      showErr('Please fill in your name, phone number, and how we can help.');
+      return;
+    }
+    if (data.email && !/^\S+@\S+\.\S+$/.test(data.email)) {
+      showErr('That email address does not look right — mind checking it?');
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    try {
+      const res = await fetch(`${API_BASE}/lead`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok || !out.ok) {
+        // Pass the server's specific message through (e.g. phone format) —
+        // anything else (network, 5xx) gets the friendly generic text.
+        throw Object.assign(new Error(out.error || 'GENERIC'), { friendly: !!out.error });
+      }
+      form.innerHTML = `
+        <div class="lead-thanks">
+          <h3>Got it, ${escapeHtml(data.name.split(' ')[0])} 🎉</h3>
+          <p>Dan will call you personally at ${escapeHtml(data.phone)} shortly.<br>Zero pressure — just real answers.</p>
+        </div>`;
+    } catch (ex) {
+      console.error('Lead submit failed', ex);
+      btn.disabled = false;
+      btn.textContent = 'Get Started with Dan';
+      showErr(ex.friendly ? ex.message : 'Something went wrong sending that. Try again, or call us at 604-735-1396.');
+    }
+  });
 }
 
 // ─── Forum (comparison posts) ─────────────────────────────
@@ -845,6 +926,7 @@ function formatPostBody(body) {
 function init() {
   initNav();
   initReveals();
+  initLeadForm();
   document.getElementById('year').textContent = new Date().getFullYear();
 
   if (PAGE === 'vehicle') {

@@ -35,3 +35,19 @@ jobs:
           WORKER_URL: ${{ secrets.WORKER_URL }}
           BRIDGE_TOKEN: ${{ secrets.BRIDGE_TOKEN }}
         run: node sync.js --once
+
+      - name: Rebuild static /v/ pages + vehicle sitemap from live inventory
+        run: python3 sync/build-sitemap.py
+
+      - name: Build pages-dist
+        run: |
+          rm -rf pages-dist
+          mkdir -p pages-dist
+          cp -r site/* pages-dist/
+
+      - name: Deploy to Cloudflare Pages (production)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy pages-dist --project-name=eagle-ridge-trucks --branch=main --commit-dirty=true

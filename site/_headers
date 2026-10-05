@@ -34,6 +34,7 @@
 /forum
   Cache-Control: no-cache, no-store, must-revalidate
 
-# Compress everything
-/*
-  Content-Encoding: br
+# NOTE: do NOT set Content-Encoding manually. Cloudflare encodes responses
+# (brotli/gzip) automatically per Accept-Encoding; a manual header can
+# contradict the actual body and browsers then fail to decode the CSS/JS
+# and render pages unstyled (seen on mobile).

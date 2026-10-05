@@ -1,5 +1,130 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.15.8 — Image-background hero scrapped; clean light hero restored (Oct 4, 2026)
+
+- **User: "scrap the image background idea and remove it, revert to how it was before, keep the text the same."**
+- Removed entirely: photo stage, crossfade imgs, scrims/fades, frosted `.hl` chips, and the flagship-curation JS (scoring + crossfade ~70 lines) — hero returns to the original light aurora + grid-pattern background
+- **Kept:** all new copy (badge, "Your Personal GM Consultant…" H1, sub, View Full Inventory / Apply for Financing CTAs, stats row), lead-capture section, counter fallback logic, mobile stacking rules
+- Cache-bust v22 (CSS + JS); verified live: 0 hero-stage/hl refs in served HTML+CSS+JS, aurora grid rule back, headline intact; headless renders confirm flat light hero with text on both desktop and phone
+
+## v0.15.7 — Phone hero right-sized (Oct 4, 2026)
+
+- **User: "images are too big on the phone."** Diagnosis: `object-fit: cover` zoom scales with hero height — a 92svh portrait hero forced ~4x zoom on 16:9 dealer photos
+- **Fix:** phone hero shortened to **72svh** (vh fallback), `object-position: center 55%` biases the crop to the truck's face on narrow screens; laptop fades/chips/photo-behind-text all kept (user: "make the fade and everything like laptop")
+- Verified on live 390×844 render: photo band ends at 73% of screen height, hero variance 100.9 (truck clearly visible), headline over photo (580 glyph samples); v21 cache-bust confirmed live
+
+## v0.15.6 — HOTFIX: manual Content-Encoding header removed (unstyled pages on mobile) (Oct 4, 2026)
+
+- **User report: phone rendered the site as plain unstyled text/images.** Server-side checks were all healthy (v20 live, CSS brace-balanced, 200s), and it wasn't cache staleness (old `?v=` assets still resolve — Pages keeps prior deploy assets)
+- **Root cause:** `site/_headers` shipped a manual `Content-Encoding: br` directive on `/*`. Cloudflare encodes responses itself per `Accept-Encoding`; a manual encoding header can contradict the actual body, and browsers on some network paths then fail to decode CSS/JS → unstyled render. Desktop Chrome hid it; the phone's path exposed it
+- **Fix:** directive deleted with a comment explaining why it must never come back. Verified live: `_headers` has 0 Content-Encoding lines, a no-`Accept-Encoding` request gets NO encoding header + correct `text/css` type, CSS decodes cleanly, all assets 200
+- Cache-busting `?v=` habit retained, but now harmless if a client holds stale HTML
+
+## v0.15.5 — Phone hero matches laptop: full-bleed photo behind text (Oct 4, 2026)
+
+- Removed the v0.15.1 mobile overrides (46vw photo card above text, chips off) — phones now inherit the laptop hero: **full-bleed flagship photo behind the text with frosted chips**, 92svh tall, content padded clear of the fixed nav (user request: "make it like the laptop")
+- Top/bottom white fades still mask the cover-crop at every width
+- Cache-bust v=20; verified on live 390×844 render: photo variance 51.2 behind the text zone, fades 0.3/0.0, headline glyphs fully rendered over chips
+
+## v0.15.4 — Phone hero un-broken: column layout, chips off on mobile (Oct 4, 2026)
+
+- **The bug (user screenshot):** desktop `.hero` is `display:flex` row; with the stage `position:relative` on phones, photo card + text became squeezed side-by-side flex items — truck in a skinny column, text crammed under the nav button
+- **Fix:** `.hero { flex-direction: column; align-items: stretch; }` at ≤768px — photo card on top (full width), text below on clean white
+- Frosted `.hl` chips **disabled on mobile** (background/padding/blur reset) — over the desktop photo they aid readability, stacked under it they were pill clutter on every headline line
+- Cache-bust v=19; verified on fresh 390×844 render of the live site: photo band variance 58.6 (full-width card), headline starts at x=24 (container edge), zero white pill runs in the text zone
+
+## v0.15.3 — Truck fully visible: chips instead of left scrim, top/bottom fades (Oct 4, 2026)
+
+- **Removed the left white scrim** that washed the truck out (user: "car is not visible") — text readability now comes from slim frosted `.hl` chips (78% white + 3px blur, box-decoration-break: clone for multi-line) behind just the eyebrow/headline/sub
+- **Crop covered by white fades instead of trimming:** solid #f7f8fa at top/bottom edges → clear by ~22%/78%, so `cover`'s top/bottom crop is masked and the photo melts into the site (user: "instead of cropping add fade at the top and bottom")
+- Top fade strengthened (solid to 5%, 88% at 11%) to fully hide the dealership-roof crop line
+- Badge/ghost-button fills raised to 92% white to hold up over photo
+- Fixed invalid CSS `rgba(184, 134, 0.35)` (missing blue channel) introduced mid-edit
+- Cache-bust v=17→v18; verified live: scrim 0 matches, fades/chips present, headless-Chrome pixel check: truck variance 109-112 across middle band, left-behind-text zone 111.8 (was ~flat with scrim), bottom fade 0.0
+
+## v0.15.2 — Full-bleed hero photo on desktop (Oct 4, 2026)
+
+- The flagship photo now **covers the entire hero background** on desktop/tablet (`.hero-stage` is inset:0 full-bleed, was a 62% right panel)
+- Readability comes from a **white scrim** instead of a panel edge: opaque white behind the headline (100%→94%→66% by 58% width), dissolving to clear on the right so the truck shows fully; top/bottom veils blend into nav and next section
+- `object-fit: cover` crops slightly off the top/bottom on wide screens (user-approved) — `object-position: center 58%` biases toward the truck body, never stretches
+- Badge + ghost button backgrounds bumped to 85% white so they hold up over the photo; phones keep the rounded photo-card layout from v0.15.1
+- Cache-bust v=16; verified live: scrim stops in served CSS, headless-Chrome pixel check shows full-width photo content with a light text zone
+
+## v0.15.1 — Hero goes light: photo card stage, device-perfect layout (Oct 4, 2026)
+
+### Match the site: white + gold everywhere (user feedback: hero felt like a different site)
+- Hero and lead section converted from dark (#0b0e13) to the **site's light theme** (#f7f8fa surfaces, gold accents, dark text) — one continuous brand
+- Photos now live in a dedicated `.hero-stage`: a **full-height right-side panel** on desktop whose left edge **dissolves into the white page** (no hard seam), with top/bottom veils blending into nav and next section
+- Text no longer sits on photos — the truck gets its own stage, the headline gets clean white: contrast is perfect at every viewport, no gradient dependency
+
+### Phones & tablets: the photo becomes a card
+- ≤768px: the stage turns into a **full-width rounded photo card above the headline** (46vw height, 210-300px) with a soft bottom fade — trucks never clip behind text, no letterboxing at any size
+- Hero content padding rebalanced under the fixed nav (96px stage offset); badge/title/sub tuned per breakpoint
+- **CTAs: "View Full Inventory" is now the first button** (user request) — gold primary, links to inventory.html; "Apply for Financing Approval" becomes the ghost secondary and smooth-scrolls to the lead form
+- Phone buttons go **full-width, thumb-sized** (16px padding), stat grid tightens, `.lead` fields at 16px font (kills iOS auto-zoom), warm light panel instead of dark
+- Hero `min-height: 100svh` (mobile URL-bar aware, `vh` fallback); `prefers-reduced-motion` disables the crossfade; error-retry guard skips failed CDN photos instead of stalling
+
+### Deploy
+- Cache-bust CSS v15 + JS v16, node --check OK
+
+## v0.15.0 — Luxury homepage redesign + lead capture pipeline (Oct 4, 2026)
+
+### Built for YouTube-ad traffic: form, hero, curation
+- **Lead capture section** right below the hero: dark-mode fields (name/phone/email/interest dropdown), gold focus glow, honeypot field, client + server validation, per-IP throttle (5/10min), success state swaps in "Dan will call you" — leads land in a new self-healing `leads` D1 table via `POST /api/lead`, viewable in the admin panel (`/api/admin/leads`, latest 500)
+- **New H1/H2:** "Your Personal GM Consultant in the Lower Mainland" + "Curated attention, zero-pressure car buying, and specialized financing options built around your unique credit history." Titles/OG/Twitter tags reordered to match (keyword-first)
+- **Trust badge** under the logo: "In Partnership with Eagle Ridge GM · Coquitlam, BC" (muted gold pill, glassy backdrop)
+- **Hero CTAs:** "Apply for Financing Approval" + "Check My Trade-In Value" — both smooth-scroll to the lead form; gold primary button gets a subtle border-glow on hover
+
+### Dark cinematic flagship hero
+- Full-bleed crossfading hero photos (two stacked `<img>`, 6s cycle, opacity-pair fade — no layout shift, no letterboxing: `object-fit: cover` always fills)
+- **Curation in JS:** flagship scoring — Denali Ultimate/HD → Corvette → Yukon → High Country → Denali → Sierra/Silverado, +10 for premium colorways (Onyx/Satin Steel/Graphite/…), +up-to-15 by price; top 5 trucks from live feed shown
+- 30-40% dark linear gradients (top/bottom + left edge) keep text razor-sharp over any vehicle photo; hero is now dark (#0b0e13) matching the premium atmosphere
+
+### SEO protection: the "0 Vehicles in stock" bug is dead
+- HTML no longer ships a hardcoded `0` (Google was indexing it as out-of-stock) — static fallback is **"400+"** (truthful: live count is 414; the brief's "500+" would overstate)
+- JS overrides with the exact live count only after the API payload resolves; on failure it degrades to "Browse Live Inventory" — never zero
+
+### Deploy
+- Cache-bust v=15, node --check OK on main.js + worker/index.js, deployed --branch main
+
+## v0.14.3 — Inventory cards → /v/ pages + hourly auto-deploy (Sep 24, 2026)
+
+### Crawl path: every card now links into the static VDPs
+- New `vdpHref()` helper in main.js — slug algorithm matches `build-sitemap.py` EXACTLY (verified against live API data: `2011 BMW 128 i` → `/v/2011-bmw-128-i-stock-15333905/`)
+- Inventory grid cards, list cards, home flagship cards + related-vehicle cards all link to `/v/<slug>/` (was `vehicle.html?id=`)
+- Googlebot now has a real HTML crawl path: sitemap → inventory → all 414 VDPs, no JS rendering needed
+- Buyers searching a specific year/make/model land on a fast static page with the full spec table; "Open interactive gallery" button on every /v/ page leads to the photo gallery experience
+- VDP canonical/og:url generation refactored to use `vdpHref` (single source of truth)
+
+### Hourly auto-deploy (the missing piece)
+- `sync.yml` now does the full loop every hour: FTP sync → D1 → **rebuild 414 /v/ pages + sitemap → deploy Pages (production)** via `cloudflare/wrangler-action@v3`
+- Requires 2 new repo secrets: `CLOUDFLARE_API_TOKEN` (Pages:Edit + D1:Edit) and `CLOUDFLARE_ACCOUNT_ID` — until then the deploy step fails gracefully and sync still works
+- Sold/removed vehicles now disappear from dangm.ca within ~1h, no manual deploys ever again
+
+### Deploy
+- Cache-bust v=14, node --check OK, 414 pages rebuilt, deployed --branch main
+
+## v0.14.2 — Static /v/ vehicle pages: the 414 VDPs are finally crawlable (Sep 24, 2026)
+
+### The structural gap, closed (SEO checklist item 13)
+- **Problem:** all 414 vehicle pages rendered client-side (`vehicle.html?id=X`); Googlebot saw "Loading vehicle..." and the sitemap only exposed `?id=` URLs with no content
+- **Fix: `sync/build-sitemap.py` now generates static `site/v/<year-make-model-trim-stock-ID>/index.html` for every listed vehicle** in the same pass as the sitemap (same command, same deploy flow)
+- Each page: full title + meta description + OG/Twitter tags + self-canonical + **Vehicle JSON-LD** (offers/price/mileage/VIN/seller) + BreadcrumbList JSON-LD + cover photo + spec table + call CTA + link to the interactive `vehicle.html?id=` gallery
+- **Sitemap now points at the static `/v/` URLs** (image tags kept); deploy flow unchanged: `python3 sync/build-sitemap.py` → copy `site/` → `wrangler pages deploy --branch main`
+- `site/v/` is gitignored (generated, rebuilt per deploy from live API); slugs include stock # so they never collide
+- **JS canonical fix:** `main.js` set the VDP canonical to raw `location.href` — tracking params (`fbclid`/`utm_*`) leaked into canonicals and split signals. Now builds the clean `/v/<slug>/` URL (same slug algorithm as the Python builder) and uses it for canonical + og:url
+- Title/desc quality on generated pages: titles capped ~58-65 chars (trim dropped on overflow), engine strings shortened to the part before `(`, em/en dashes stripped (house `cleanText` rule), descriptions ≤ ~160
+
+### Other SEO checklist quick wins (same session)
+- Removed the leftover `google-site-verification` `YOUR_VERIFICATION_CODE` placeholder + comment from index.html (item 1; drop the real meta back in when GSC code is ready)
+- Titles reordered keyword-first (item 11): inventory "New & Used Cars & Trucks for Sale Coquitlam BC | dangm.ca", about "GM Consultant in Coquitlam & Vancouver BC | dangm.ca", vehicle fallback now geo'd
+- FAQPage + AutoDealer + ItemList + BreadcrumbList schema verified present site-wide; Vehicle JSON-LD verified on VDPs (items 7, 9)
+- Broken-link crawl: all internal page links + local assets resolve, 0 broken (item 5); H1 audit: exactly one per page (item 12)
+- AutoDealer address stays "Coquitlam, BC" until dad's street address lands (items 8/17 pending)
+
+### Deploy
+- Cache-bust `?v=12` → `?v=13` site-wide, `node --check` on main.js, 414 pages + sitemap rebuilt, Pages deploy `--branch main`
+
 ## v0.14.1 — SEO audit fixes: titles, descriptions, H2s, sitemap cleanup (Sep 10, 2026)
 
 ### Full-site SEO audit (live, 5 pages)
@@ -548,11 +673,11 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 - `.related` CSS — truck-card-small hover cards with gold accent border
 
 ### Remaining SEO (100/100 checklist)
-- [ ] Replace `YOUR_VERIFICATION_CODE` with real Google Search Console code
+- [x] GSC domain verified via Cloudflare DNS TXT record (done Sep ~10, before v0.14.2 — domain property needs no meta tag, which is why the placeholder could be deleted)
+- [x] Sitemap submitted to GSC (`sitemap-index.xml`) — picks up new /v/ URLs automatically on every Google fetch, no resubmit needed
 - [ ] Add Google Business Profile review widget
 - [ ] Build backlinks (guest posts, directories, social signals)
 - [ ] Run Lighthouse audit → target 90+ on all metrics
-- [ ] Submit sitemap to Google Search Console
 - [ ] Add blog/content section with keyword-targeted articles
 - [ ] Set up Google Analytics 4
 

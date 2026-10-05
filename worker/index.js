@@ -107,6 +107,12 @@ async function ensureForumTable(env) {
   await env.D1.exec('CREATE TABLE IF NOT EXISTS forum_posts (id TEXT PRIMARY KEY, title TEXT NOT NULL, body TEXT, image TEXT, created_at TEXT, updated_at TEXT);');
 }
 
+// ─── Leads schema (self-healing, same pattern as forum) ────────────────────
+// Homepage lead-capture form (YouTube ad traffic). No manual migration needed.
+async function ensureLeadsTable(env) {
+  await env.D1.exec('CREATE TABLE IF NOT EXISTS leads (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone TEXT NOT NULL, email TEXT, interest TEXT, ip TEXT, created_at TEXT NOT NULL);');
+}
+
 // ─── Gemini image cleanup (shared by /api/admin/gemini-one) ─────────────
 // Per Jaden's proven flow: SIMPLE beats clever. Background removal alone wipes
 // all dealership branding/watermarks for free (it all lives in the background)
@@ -365,6 +371,38 @@ async function handle(request, env) {
         return json({ trucks });
       } catch (e) {
         return json({ error: 'DB error: ' + e.message }, 500);
+      }
+    }
+
+    // PUBLIC: lead capture from the homepage form. Honeypot field `website`
+    // is visually hidden from humans — bots autocomplete it, so their submissions
+    // get a fake ok and are never stored.
+    if (path === '/api/lead' && request.method === 'POST') {
+      try {
+        await ensureLeadsTable(env);
+        const b = await request.json().catch(() => ({}));
+        if (b.website) return json({ ok: true });
+        const name = String(b.name || '').trim();
+        const phone = String(b.phone || '').replace(/[^\d+]/g, '');
+        const email = String(b.email || '').trim().toLowerCase();
+        const interest = String(b.interest || '').trim();
+        const INTERESTS = ['New to Canada Program', 'Rebuild My Credit', 'Trade-In Appraisals', 'General Vehicle Inquiry'];
+        if (name.length < 2 || name.length > 100) return json({ ok: false, error: 'Please enter your name' }, 400);
+        if (!/^\+?\d{10,15}$/.test(phone)) return json({ ok: false, error: 'Please enter a valid phone number' }, 400);
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ ok: false, error: 'Please enter a valid email' }, 400);
+        if (!INTERESTS.includes(interest)) return json({ ok: false, error: 'Please pick a topic' }, 400);
+        // Per-IP throttle: max 5 leads per IP per 10 minutes.
+        const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+        const recent = await db.prepare(
+          "SELECT COUNT(*) AS n FROM leads WHERE ip = ? AND created_at > datetime('now', '-10 minutes')"
+        ).bind(ip).first();
+        if (((recent && recent.n) || 0) >= 5) return json({ ok: false, error: 'Too many requests' }, 429);
+        await db.prepare(
+          "INSERT INTO leads (name, phone, email, interest, ip, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))"
+        ).bind(name, phone, email, interest, ip).run();
+        return json({ ok: true });
+      } catch (e) {
+        return json({ ok: false, error: 'Could not submit: ' + e.message }, 500);
       }
     }
 
@@ -660,6 +698,12 @@ async function handle(request, env) {
       const all = await db.prepare('SELECT id, data, updated_at FROM trucks').all();
       const trucks = (all.results || []).map((r) => ({ id: r.id, ...JSON.parse(r.data), updatedAt: r.updated_at }));
       return json({ trucks });
+    }
+
+    // Admin: homepage lead submissions (latest 500)
+    if (path === '/api/admin/leads' && request.method === 'GET') {
+      const rows = await db.prepare('SELECT id, name, phone, email, interest, created_at FROM leads ORDER BY created_at DESC, id DESC LIMIT 500').all();
+      return json({ leads: rows.results || [] });
     }
 
     // Admin: upload an image to KV (raw bytes in the body). Returns the URL to

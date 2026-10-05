@@ -10,6 +10,9 @@ node_modules/
 data/images/
 data/sync-meta.json
 
+# Generated static VDP pages (rebuilt by sync/build-sitemap.py before deploy)
+site/v/
+
 # Cloudflare
 .wrangler/
 # Pages build output (regenerated from site/ + admin/)
