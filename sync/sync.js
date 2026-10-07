@@ -312,6 +312,7 @@ async function downloadTruckImages(truck) {
 // ─── Main sync ──────────────────────────────────────────────────────────────
 async function sync() {
   const started = Date.now();
+  let pushFailed = false;
   console.log(`\n🔄 [${new Date().toISOString()}] Eagle Ridge Trucks — syncing...`);
 
   try {
@@ -383,7 +384,6 @@ async function sync() {
     );
 
     // 8. Push to the Cloudflare Worker (the public site reads from here)
-    let pushFailed = false;
     if (CONFIG.workerUrl && CONFIG.bridgeToken) {
       try {
         console.log(`   ☁️ Pushing ${trucks.length} trucks to worker...`);
