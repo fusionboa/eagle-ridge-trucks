@@ -54,6 +54,9 @@ jobs:
       - name: Rebuild static forum threads + forum sitemap from live posts
         run: python3 sync/build-forum.py
 
+      - name: Rebuild static city location pages + locations sitemap
+        run: python3 sync/build-locations.py
+
       - name: Build pages-dist
         run: |
           rm -rf pages-dist

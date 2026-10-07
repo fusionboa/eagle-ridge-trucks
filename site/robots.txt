@@ -7,6 +7,7 @@ Sitemap: https://dangm.ca/sitemap.xml
 Sitemap: https://dangm.ca/sitemap-vehicles.xml
 Sitemap: https://dangm.ca/sitemap-blog.xml
 Sitemap: https://dangm.ca/sitemap-forum.xml
+Sitemap: https://dangm.ca/sitemap-locations.xml
 
 # Googlebot
 User-agent: Googlebot

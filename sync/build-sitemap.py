@@ -282,6 +282,7 @@ PAGE_TMPL = """<!DOCTYPE html>
       <p>&copy; {year_now} dangm.ca. All rights reserved.</p>
       <nav class="footer-links" style="display:flex;flex-wrap:wrap;gap:1.5rem;justify-content:center;margin-top:14px" aria-label="Footer">
         <a href="{base_rel}inventory.html">Inventory</a>
+        <a href="{base_rel}locations/">Locations</a>
         <a href="{base_rel}locations/surrey/">Car Financing Surrey</a>
         <a href="{base_rel}blog/">Car Buying Guides</a>
         <a href="{base_rel}forum.html">Forum</a>

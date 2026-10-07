@@ -17,6 +17,9 @@ site/v/
 # Generated static forum threads + hub (rebuilt by sync/build-forum.py before deploy)
 site/forum/
 
+# Generated static city location pages (rebuilt by sync/build-locations.py before deploy)
+site/locations/
+
 # Cloudflare
 .wrangler/
 # Pages build output (regenerated from site/ + admin/)
