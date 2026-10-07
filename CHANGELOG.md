@@ -1,5 +1,15 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.17.0 — Hub-and-spoke SEO upgrade: dynamic VDP meta, standalone forum threads, AutoDealer schema, Surrey page (Oct 6, 2026)
+
+- **Vehicle pages (Step 1):** dynamic meta now follows the exact hyper-local algorithm in both the static /v/ generator (`sync/build-sitemap.py`) and the interactive renderer (`js/main.js`): title `"[Year] [Make] [Model] For Sale in Coquitlam, BC | Car Credit Approved | DanGM"`, description `"Looking for a [Year] [Make] [Model] in Coquitlam or the Lower Mainland? Zero-pressure car buying & specialist credit options. Call 604-735-1396 to apply."` Vehicle JSON-LD enriched with brand, model, vehicleConfiguration, bodyType, interior colour, url and an offer URL
+- **Forum threads rank independently (Step 2):** new `sync/build-forum.py` renders one static landing page per post at `/forum/<slug>/` with its own title (`[Thread] - Lower Mainland Auto Forum | DanGM`), description (first 150 chars of the post) and DiscussionForumPosting + BreadcrumbList JSON-LD, plus a static `/forum/` hub and `sitemap-forum.xml`. Forum list + legacy `?id=` links point at the static pages; wired into the hourly workflow
+- **Global AutoDealer JSON-LD (Step 4):** rebuilt with the requested geo, AdministrativeArea areaServed list, and parentOrganization Eagle Ridge GM. Postal code corrected to **V3E 1K9** (the submitted V3H 8C2 is Port Moody and conflicts with the real dealership NAP, confirmed against eagleridgegm.com/BBB/autotrader)
+- **Surrey page (Step 5):** added the New-to-Canada and Credit Rebuilding H2 modules and an aggressive CTA band with clickable phone and homepage-form links
+- **Forum seeding (Step 6):** three long-tail local threads inserted into D1 (newcomer playbook, negative-equity trade-in, credit rebuilding after bankruptcy), each with a 4-sentence hook
+- **Inter-linking + images (Step 7):** the 5 required geo alt tags placed across the homepage/inventory/Surrey layouts, Surrey footer link verified, keyword internal links added
+- **Engine scan (Step 3):** removed a duplicate BreadcrumbList in `inventory.html`, unified the css/js cache-bust to v25 across every page and generator, added the forum sitemap to `sitemap-index.xml` + `robots.txt`, added `/forum/*` no-cache headers, resolved the `/forum` vs `/forum/` canonical, and added `site/forum/` to `.gitignore`
+
 ## v0.16.3 — HOTFIX: hourly sync failing every run (pushFailed scope bug) (Oct 6, 2026)
 
 - **User report: "all auto inventory syncs failed in github, so many notifications."** Every hourly "Truck Feed Sync" run had been red for ~a day while the site itself stayed correct
