@@ -51,6 +51,9 @@ jobs:
       - name: Rebuild static /v/ pages + vehicle sitemap from live inventory
         run: python3 sync/build-sitemap.py
 
+      - name: Rebuild static forum threads + forum sitemap from live posts
+        run: python3 sync/build-forum.py
+
       - name: Build pages-dist
         run: |
           rm -rf pages-dist

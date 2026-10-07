@@ -96,22 +96,23 @@ def name_str(t):
     return clean_text(" ".join(str(t.get(k) or "").strip() for k in ("year", "make", "model", "trim")))
 
 
+def car_name(t):
+    """Year + Make + Model, no trim. Used verbatim in the SEO title/description
+    so every vehicle page matches the exact hyper-local algorithm:
+      title -> "[Year] [Make] [Model] For Sale in Coquitlam, BC | Car Credit Approved | DanGM"
+      desc  -> "Looking for a [Year] [Make] [Model] in Coquitlam or the Lower Mainland? ..."
+    """
+    return clean_text(" ".join(str(t.get(k) or "").strip() for k in ("year", "make", "model")))
+
+
 def title_str(t):
-    # Google truncates ~60 chars; the " for Sale in BC | dangm.ca" suffix is 27.
-    # Drop the trim when the full name would overflow.
-    name = name_str(t)
-    if len(name) + 27 > 65:
-        name = clean_text(" ".join(str(t.get(k) or "").strip() for k in ("year", "make", "model")))
-    return f"{name} for Sale in BC | dangm.ca"
+    return f"{car_name(t)} For Sale in Coquitlam, BC | Car Credit Approved | DanGM"
 
 
 def seo_text(t):
-    price = price_str(t)
-    km = f" {int(t['mileage']):,} km." if t.get("mileage") else ""
-    eng = f" {engine_short(t)}." if engine_short(t) else ""
     return (
-        f"{name_str(t)} for sale at dangm.ca in Coquitlam, BC. {price}{eng}{km} "
-        f"Inspected and ready for the road. Call {PHONE}."
+        f"Looking for a {car_name(t)} in Coquitlam or the Lower Mainland? "
+        f"Zero-pressure car buying & specialist credit options. Call {PHONE} to apply."
     )
 
 
@@ -139,15 +140,26 @@ def vehicle_jsonld(t, page_url, title, desc, img):
     )
     ld = {
         "@context": "https://schema.org",
+        # Vehicle is the schema.org Product/Car type Google uses for vehicle
+        # listings; it carries every dynamic attribute available in the feed.
         "@type": "Vehicle",
+        "@id": f"{page_url}#vehicle",
+        "url": page_url,
         "name": title.split(" | ")[0],
         "description": desc,
         "image": img or "",
+        "brand": {"@type": "Brand", "name": t.get("make") or ""},
+        "model": t.get("model") or "",
+        "vehicleConfiguration": t.get("trim") or "",
+        "bodyType": t.get("bodyStyle") or "",
+        "vehicleInteriorColor": t.get("interiorColor") or "",
         "offers": {
             "@type": "Offer",
             "price": str(price_num(t) or ""),
             "priceCurrency": "CAD",
             "availability": "https://schema.org/InStock",
+            "url": page_url,
+            "availableAtOrFrom": {"@type": "Place", "name": "Eagle Ridge GM, Coquitlam BC"},
         },
         "vehicleIdentificationNumber": t.get("vin") or "",
         "productionDate": str(t.get("year") or ""),
@@ -218,7 +230,7 @@ PAGE_TMPL = """<!DOCTYPE html>
   <script type="application/ld+json">
   {breadcrumb_ld}
   </script>
-  <link rel="stylesheet" href="{base_rel}css/styles.css?v=24">
+  <link rel="stylesheet" href="{base_rel}css/styles.css?v=25">
 </head>
 <body class="page-vehicle">
   <nav class="nav scrolled">

@@ -14,6 +14,9 @@ data/sync-meta.json
 # Generated static VDP pages (rebuilt by sync/build-sitemap.py before deploy)
 site/v/
 
+# Generated static forum threads + hub (rebuilt by sync/build-forum.py before deploy)
+site/forum/
+
 # Cloudflare
 .wrangler/
 # Pages build output (regenerated from site/ + admin/)

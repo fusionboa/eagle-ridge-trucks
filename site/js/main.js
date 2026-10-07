@@ -146,14 +146,22 @@ function addVehicleJSONLD(t, title, price, desc, imgs, vin, year) {
   ld.textContent = JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'Vehicle',
+    '@id': `https://dangm.ca/${vdpHref(t)}#vehicle`,
+    url: `https://dangm.ca/${vdpHref(t)}`,
     name: title,
     description: desc,
     image: imgs.length ? imgs[0] : '',
+    brand: { '@type': 'Brand', name: t.make || '' },
+    model: t.model || '',
+    vehicleConfiguration: t.trim || '',
+    bodyType: t.bodyStyle || '',
+    vehicleInteriorColor: t.interiorColor || '',
     offers: {
       '@type': 'Offer',
       price: priceNum(t.price).toString(),
       priceCurrency: 'CAD',
-      availability: 'https://schema.org/InStock'
+      availability: 'https://schema.org/InStock',
+      url: `https://dangm.ca/${vdpHref(t)}`
     },
     vehicleIdentificationNumber: vin || '',
     productionDate: year ? String(year) : '',
@@ -647,9 +655,14 @@ function renderVehicle(t) {
   ].filter(([, v]) => v);
 
   // ─── Dynamic SEO: title, meta, OG, JSON-LD, breadcrumb ───
-  const fullTitle = `${title} | Cars & Trucks for Sale in Vancouver, BC | dangm.ca`;
+  // Exact hyper-local algorithm (must match build-sitemap.py, which renders the
+  // static /v/ pages that Google actually ranks):
+  //   title -> "[Year] [Make] [Model] For Sale in Coquitlam, BC | Car Credit Approved | DanGM"
+  //   desc  -> "Looking for a [Year] [Make] [Model] in Coquitlam or the Lower Mainland? ..."
+  const carName = [t.year, t.make, t.model].filter(Boolean).join(' ');
+  const fullTitle = `${carName} For Sale in Coquitlam, BC | Car Credit Approved | DanGM`;
   document.title = fullTitle;
-  const seoDesc = `${t.year} ${t.make} ${t.model}${t.trim ? ' ' + t.trim : ''} for sale at dangm.ca in Coquitlam, BC. ${price}${t.engine ? '. ' + t.engine + '.' : ''}${t.mileage ? ' ' + Number(t.mileage).toLocaleString() + ' km.' : ''} Inspected and ready for the road. Call 604-735-1396.`;
+  const seoDesc = `Looking for a ${carName} in Coquitlam or the Lower Mainland? Zero-pressure car buying & specialist credit options. Call 604-735-1396 to apply.`;
   updateMeta('description', seoDesc);
   updateMeta('og:title', fullTitle);
   updateMeta('og:description', seoDesc);
@@ -862,15 +875,22 @@ async function loadForum() {
   }
 }
 
+// Static thread slug. MUST match slugify() in sync/build-forum.py so the forum
+// list links to the real /forum/<slug>/ landing pages that get sitemapped.
+function forumSlug(p) {
+  const raw = String((p && (p.id || p.title)) || 'post');
+  return raw.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'post';
+}
+
 function forumCardHTML(p) {
   const title = p.title || 'Untitled';
   const full = String(p.body || '');
   const body = full.replace(/\n/g, ' ').slice(0, 160);
   const img = p.image
-    ? `<div class="forum-card-img-wrap"><img class="forum-card-img" src="${p.image}" alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy"></div>`
+    ? `<div class="forum-card-img-wrap"><img class="forum-card-img" src="${p.image}" alt="${escapeHtml(title)} - Lower Mainland Auto Forum" loading="lazy"></div>`
     : '';
   return `
-    <a class="forum-card reveal" href="forum-post.html?id=${encodeURIComponent(p.id)}">
+    <a class="forum-card reveal" href="/forum/${forumSlug(p)}/">
       ${img}
       <div class="forum-card-body">
         <h2 class="forum-card-title">${escapeHtml(title)}</h2>
@@ -893,10 +913,22 @@ async function loadForumPost() {
     const data = await res.json();
     const p = data.post;
     if (!p) throw new Error('not found');
-    // SEO: put the comparison title + local intent into the page title.
-    document.title = `${p.title} near you | dangm.ca`;
-    const meta = document.querySelector('meta[name="description"]');
-    if (meta) meta.setAttribute('content', `${p.title} near you. Compare vehicles, specs, and pricing at dangm.ca in Vancouver and the Tri-Cities.`);
+    // SEO: each thread behaves as its own organic landing page. Legacy
+    // forum-post.html?id=X links consolidate onto the static /forum/<slug>/ page.
+    const slug = forumSlug(p);
+    const staticUrl = `https://dangm.ca/forum/${slug}/`;
+    const seoTitle = `${p.title} - Lower Mainland Auto Forum | DanGM`;
+    const seoBody = String(p.body || '').replace(/\s+/g, ' ').trim();
+    const seoDesc = seoBody
+      ? (seoBody.slice(0, 150) + (seoBody.length > 150 ? '…' : ''))
+      : `Join the discussion on '${p.title}'. Expert automotive insights, credit rebuilding, and financing tips for drivers in Metro Vancouver and the Tri-Cities.`;
+    document.title = seoTitle;
+    updateMeta('description', seoDesc);
+    updateMeta('og:title', seoTitle);
+    updateMeta('og:description', seoDesc);
+    updateMeta('og:url', staticUrl);
+    const canon = document.querySelector('link[rel="canonical"]');
+    if (canon) canon.href = staticUrl;
     el.innerHTML = `
       <div class="forum-post">
         <a href="forum.html" class="vdp-back">← Back to forum</a>

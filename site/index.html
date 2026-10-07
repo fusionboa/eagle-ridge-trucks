@@ -13,8 +13,8 @@
   <!-- Geo-targeting: Vancouver, Coquitlam, Tri-Cities, BC ONLY -->
   <meta name="geo.region" content="CA-BC">
   <meta name="geo.placename" content="Tri-Cities (Coquitlam, Port Coquitlam, Port Moody), Greater Vancouver, BC">
-  <meta name="geo.position" content="49.2838;-122.7931">
-  <meta name="ICBM" content="49.2838, -122.7931">
+  <meta name="geo.position" content="49.2872;-122.8131">
+  <meta name="ICBM" content="49.2872, -122.8131">
   <meta name="DC.title" content="dangm.ca | Cars & Trucks for Sale in Vancouver, Coquitlam & Tri-Cities, BC">
   <link rel="alternate" hreflang="en-CA" href="https://dangm.ca/">
   <link rel="alternate" hreflang="x-default" href="https://dangm.ca/">
@@ -41,14 +41,42 @@
     "name": "DanGM",
     "alternateName": "dangm.ca",
     "slogan": "In Partnership with Eagle Ridge GM",
+    "description": "Personal GM Consultant at Eagle Ridge GM providing curated car buying, specialized credit rebuilding, and New-to-Canada financing solutions.",
     "url": "https://dangm.ca",
     "telephone": "604-735-1396",
-    "description": "DanGM is a personal GM car consultant in Coquitlam, BC, in partnership with Eagle Ridge GM. Curated, zero-pressure car buying with specialized financing for bad credit, bankruptcy, and newcomers to Canada. Serving Surrey, Vancouver, Burnaby, the Tri-Cities, and the Lower Mainland. Call 604-735-1396.",
     "image": "https://dangm.ca/images/og-logo.png",
-    "address": { "@type": "PostalAddress", "streetAddress": "2595 Barnet Hwy", "addressLocality": "Coquitlam", "addressRegion": "BC", "postalCode": "V3E 1K9", "addressCountry": "CA" },
-    "areaServed": ["Coquitlam", "Tri-Cities", "Vancouver", "Burnaby", "Surrey", "Port Moody", "Port Coquitlam", "Richmond", "New Westminster", "Delta", "Langley"],
-    "openingHours": "Mo-Sa 09:00-18:00",
+    "logo": "https://dangm.ca/images/logo.png",
     "priceRange": "$$ - $$$$",
+    "currenciesAccepted": "CAD",
+    "paymentAccepted": "Cash, Credit Card, Debit, Bank Transfer",
+    "openingHours": "Mo-Sa 09:00-18:00",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "2595 Barnet Hwy",
+      "addressLocality": "Coquitlam",
+      "addressRegion": "BC",
+      "postalCode": "V3E 1K9",
+      "addressCountry": "CA"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": "49.2872",
+      "longitude": "-122.8131"
+    },
+    "areaServed": [
+      {"@type": "AdministrativeArea", "name": "Coquitlam"},
+      {"@type": "AdministrativeArea", "name": "Port Coquitlam"},
+      {"@type": "AdministrativeArea", "name": "Port Moody"},
+      {"@type": "AdministrativeArea", "name": "Surrey"},
+      {"@type": "AdministrativeArea", "name": "Burnaby"},
+      {"@type": "AdministrativeArea", "name": "Vancouver"},
+      {"@type": "AdministrativeArea", "name": "Tri-Cities"}
+    ],
+    "parentOrganization": {
+      "@type": "AutoDealer",
+      "name": "Eagle Ridge GM",
+      "url": "https://eagleridgegm.com"
+    },
     "sameAs": [],
     "hasMap": "https://maps.google.com/?q=2595+Barnet+Hwy,+Coquitlam,+BC+V3E+1K9"
   }
@@ -118,7 +146,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=24">
+  <link rel="stylesheet" href="css/styles.css?v=25">
 </head>
 <body>
   <!-- Navigation -->
@@ -131,7 +159,7 @@
       <div class="nav-links">
         <a href="index.html">Home</a>
         <a href="inventory.html">Inventory</a>
-        <a href="forum.html">Forum</a>
+        <a href="/forum/">Forum</a>
         <a href="about.html">About</a>
         <a href="#contact">Contact</a>
       </div>
@@ -334,6 +362,20 @@
     </div>
   </section>
 
+  <!-- Geo banner strip: one personal GM consultant for the whole Lower Mainland -->
+  <section class="inventory" id="serving" aria-label="Areas served across the Lower Mainland">
+    <div class="section-head">
+      <p class="eyebrow">SERVING THE LOWER MAINLAND</p>
+      <h2 class="section-title">Coquitlam, the Tri-Cities, and beyond</h2>
+      <p class="section-sub">One personal GM consultant for Coquitlam, Port Coquitlam, Port Moody, Burnaby, New Westminster, Surrey, and Vancouver.</p>
+    </div>
+    <div class="geo-strip" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;max-width:1100px;margin:0 auto">
+      <a href="about.html"><img src="images/banners/dan-gm-personal-car-consultant-coquitlam-bc.svg" alt="dan-gm-personal-car-consultant-coquitlam-bc" width="800" height="450" style="width:100%;height:auto;border-radius:16px" loading="lazy"></a>
+      <a href="blog/new-to-canada-car-loans/"><img src="images/banners/new-to-canada-car-loan-approval-vancouver.svg" alt="new-to-canada-car-loan-approval-vancouver" width="800" height="450" style="width:100%;height:auto;border-radius:16px" loading="lazy"></a>
+      <a href="locations/surrey/"><img src="images/banners/zero-pressure-used-car-buying-coquitlam.svg" alt="zero-pressure-used-car-buying-coquitlam" width="800" height="450" style="width:100%;height:auto;border-radius:16px" loading="lazy"></a>
+    </div>
+  </section>
+
   <footer class="footer">
     <div class="footer-inner">
       <div class="footer-brand">
@@ -345,7 +387,7 @@
         <a href="inventory.html">Inventory</a>
         <a href="locations/surrey/">Car Financing Surrey</a>
         <a href="blog/">Car Buying Guides</a>
-        <a href="forum.html">Forum</a>
+        <a href="/forum/">Forum</a>
         <a href="about.html">About</a>
       </nav>
     </div>
@@ -355,6 +397,6 @@
     // Data source: the live Cloudflare Worker (falls back to local data/trucks.json if unreachable)
     window.SITE_CONFIG = { apiBase: 'https://eagle-ridge-trucks.fblister.workers.dev/api' };
   </script>
-  <script src="js/main.js?v=23"></script>
+  <script src="js/main.js?v=25"></script>
 </body>
 </html>
