@@ -1,5 +1,12 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.16.3 — HOTFIX: hourly sync failing every run (pushFailed scope bug) (Oct 6, 2026)
+
+- **User report: "all auto inventory syncs failed in github, so many notifications."** Every hourly "Truck Feed Sync" run had been red for ~a day while the site itself stayed correct
+- **Root cause (my own regression from v-sync-hardening):** the fail-on-push-error change declared `let pushFailed` *inside* the `try` block but returned `!pushFailed` *after* the `catch`. At runtime that threw `ReferenceError: pushFailed is not defined` at the end of every sync, so the `--once` runner exited 1 even when the worker push succeeded (log showed `✅ Worker updated (411 trucks)` immediately before the crash)
+- **Fix:** declare `pushFailed` at `sync()` function scope (before the `try`), so a successful push exits 0 and a genuine push failure still exits 1. Verified locally: real token → exit 0; forced bad token → `⚠️ Worker push failed (403)` → exit 1
+- Confirmed pipeline green end-to-end (run 37555792029, 2m32s, single attempt, no retry needed) with static rebuild + Cloudflare Pages deploy; live `/api/trucks` returns 411
+
 ## v0.16.2 — Blog engine + 10 "vs" comparison posts (Oct 5, 2026)
 
 - **blog-engine/build.py**: standalone generator (independent of the vehicle build) that renders `blog-engine/posts/*.py` content modules into static `/blog/<slug>/` pages with per-post Article + FAQPage + BreadcrumbList JSON-LD, canonicals, OG/Twitter cards; auto-refreshes blog index cards between POSTS markers and emits `sitemap-blog.xml`
