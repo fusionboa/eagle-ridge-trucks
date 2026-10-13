@@ -12,17 +12,6 @@
     var thumbs = Array.prototype.slice.call(root.querySelectorAll('.vdp-thumb'));
     var count = root.querySelector('.vdp-count');
     var srcs = thumbs.map(function (t) { return t.getAttribute('data-full') || t.src; });
-    // originals from eDealer, used if a fast copy (images/photos/) is missing
-    var origs = thumbs.map(function (t, i) { return t.getAttribute('data-orig') || srcs[i]; });
-    main.addEventListener('error', function () {
-      var o = origs[cur] || main.getAttribute('data-orig');
-      if (o && main.src !== o) main.src = o;
-    });
-    thumbs.forEach(function (t, i) {
-      t.addEventListener('error', function () {
-        if (origs[i] && t.src !== origs[i] && t.src.indexOf('data:') !== 0) t.src = origs[i];
-      });
-    });
     if (!main || srcs.length < 2) return;
     var cur = 0;
     var warmed = {};

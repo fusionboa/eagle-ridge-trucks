@@ -34,7 +34,7 @@ PHONE = "604-735-1396"
 PHONE_HREF = "tel:6047351396"
 TODAY = datetime.date.today().isoformat()
 CSS_V = "25"
-JS_V = "26"
+JS_V = "25"
 
 
 def esc(s):

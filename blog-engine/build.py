@@ -172,7 +172,7 @@ def render_post(p):
     window.SITE_PAGE = 'landing';
     window.SITE_CONFIG = {{ apiBase: 'https://eagle-ridge-trucks.fblister.workers.dev/api' }};
   </script>
-  <script src="/js/main.js?v=26"></script>
+  <script src="/js/main.js?v=25"></script>
 </body>
 </html>
 '''

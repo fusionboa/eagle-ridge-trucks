@@ -55,29 +55,6 @@ jobs:
           done
           exit 1
 
-      # Fast photo copies (sync/build-photos.py): kept between runs, so only
-      # new arrivals are downloaded; the first ~8,000 spread over a few runs.
-      - name: Restore baked vehicle photos
-        uses: actions/cache/restore@v4
-        with:
-          path: site/images/photos
-          key: vehicle-photos-${{ github.run_id }}
-          restore-keys: vehicle-photos-
-
-      - name: Bake fast vehicle photos (cards + galleries)
-        continue-on-error: true
-        timeout-minutes: 10
-        run: |
-          python3 -m pip install --quiet --user --break-system-packages pillow || echo "pillow install failed; pages keep the original photos"
-          python3 sync/build-photos.py
-
-      - name: Save baked vehicle photos
-        if: always()
-        uses: actions/cache/save@v4
-        with:
-          path: site/images/photos
-          key: vehicle-photos-${{ github.run_id }}
-
       - name: Rebuild static /v/ pages + vehicle sitemap from live inventory
         run: python3 sync/build-sitemap.py
 

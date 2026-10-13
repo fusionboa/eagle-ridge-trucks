@@ -70,27 +70,6 @@ function resolveImage(img) {
   return `data/${img}`;
 }
 
-// Fast photo copies baked hourly by sync/build-photos.py: ~60 KB WebP at
-// /images/photos/<fnv1a32(url)>.webp instead of the 1-2 MB eDealer PNG.
-// Not baked yet (brand-new arrival)? The <img> falls back to the original.
-function photoKey(url) {
-  let h = 0x811c9dc5;
-  for (const b of new TextEncoder().encode(url)) {
-    h ^= b;
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h.toString(16).padStart(8, '0');
-}
-function fastPhoto(url) {
-  return /^https?:\/\//i.test(url || '') ? `/images/photos/${photoKey(url)}.webp` : url;
-}
-// <img> attributes: fast copy + automatic fallback to the original
-function photoAttrs(url) {
-  const fast = fastPhoto(url);
-  if (fast === url) return `src="${url}"`;
-  return `src="${fast}" data-orig="${url}" onerror="this.onerror=null;this.src=this.dataset.orig"`;
-}
-
 // Shared price helper ("34544 CAD" → 34544)
 function priceNum(p) {
   const n = parseFloat(String(p).replace(/[^0-9.]/g, ''));
@@ -572,7 +551,7 @@ function gridCardHTML(t, i) {
   return `
     <a class="truck-card reveal" href="${href}" style="transition-delay:${Math.min(i * 0.04, 0.3)}s">
       <div class="truck-card-img-wrap">
-        ${img ? `<img class="truck-card-img" ${photoAttrs(img)} alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy" decoding="async">` : '<div class="truck-card-img"></div>'}
+        ${img ? `<img class="truck-card-img" src="${img}" alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy">` : '<div class="truck-card-img"></div>'}
         ${t.bodyStyle ? `<span class="truck-badge">${escapeHtml(t.bodyStyle)}</span>` : ''}
       </div>
       <div class="truck-card-body">
@@ -596,7 +575,7 @@ function cardHTML(t, i, isFlagship) {
     return `
       <a class="truck-card reveal" href="${href}" style="transition-delay:${Math.min(i * 0.05, 0.4)}s">
         <div class="truck-card-img-wrap">
-          ${img ? `<img class="truck-card-img" ${photoAttrs(img)} alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy" decoding="async">` : '<div class="truck-card-img"></div>'}
+          ${img ? `<img class="truck-card-img" src="${img}" alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy">` : '<div class="truck-card-img"></div>'}
           ${t.bodyStyle ? `<span class="truck-badge">${escapeHtml(t.bodyStyle)}</span>` : ''}
         </div>
         <div class="truck-card-body">
@@ -613,7 +592,7 @@ function cardHTML(t, i, isFlagship) {
   return `
     <a class="truck-card truck-card-list reveal" href="${href}" style="transition-delay:${Math.min(i * 0.04, 0.3)}s">
       <div class="truck-card-img-wrap list-img">
-        ${img ? `<img class="truck-card-img" ${photoAttrs(img)} alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy" decoding="async">` : '<div class="truck-card-img"></div>'}
+        ${img ? `<img class="truck-card-img" src="${img}" alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy">` : '<div class="truck-card-img"></div>'}
         ${t.bodyStyle ? `<span class="truck-badge">${escapeHtml(t.bodyStyle)}</span>` : ''}
       </div>
       <div class="truck-card-body list-body">
@@ -653,12 +632,12 @@ function renderVehicle(t) {
   const gallery = imgs.length ? `
     <div class="vdp-gallery">
       <div class="vdp-main-wrap">
-        <img class="vdp-main" id="vdpMain" src="${fastPhoto(imgs[0])}" alt="${escapeHtml(title)} for sale in Coquitlam BC" fetchpriority="high">
+        <img class="vdp-main" id="vdpMain" src="${imgs[0]}" alt="${escapeHtml(title)} for sale in Coquitlam BC">
         ${imgs.length > 1 ? `<button class="vdp-nav vdp-prev" data-dir="-1" aria-label="Previous image">‹</button>
         <button class="vdp-nav vdp-next" data-dir="1" aria-label="Next image">›</button>
         <span class="vdp-count" id="vdpCount">1 / ${imgs.length}</span>` : ''}
       </div>
-      ${imgs.length > 1 ? `<div class="vdp-thumbs">${imgs.map((im, i) => `<img class="vdp-thumb ${i === 0 ? 'active' : ''}" ${photoAttrs(im)} data-idx="${i}" alt="${escapeHtml(title)}, photo ${i + 1}" loading="lazy" decoding="async">`).join('')}</div>` : ''}
+      ${imgs.length > 1 ? `<div class="vdp-thumbs">${imgs.map((im, i) => `<img class="vdp-thumb ${i === 0 ? 'active' : ''}" src="${im}" data-idx="${i}" alt="${escapeHtml(title)} — photo ${i + 1}">`).join('')}</div>` : ''}
     </div>` : '<div class="vdp-noimg">📷</div>';
 
   // Full vehicle details (dealership-style label:value list)
@@ -752,19 +731,10 @@ function renderVehicle(t) {
 
   // Image carousel: prev/next buttons + thumbnail click
   let cur = 0;
-  const mainImg = document.getElementById('vdpMain');
-  // fast copy missing for this photo: fall back to the original
-  if (mainImg) mainImg.addEventListener('error', () => {
-    if (mainImg.src !== imgs[cur]) mainImg.src = imgs[cur];
-  });
-  const warm = (k) => { const im = new Image(); im.decoding = 'async'; im.src = fastPhoto(imgs[(k + imgs.length) % imgs.length]); };
-  if (imgs.length > 1) warm(1);
   const showImage = (i) => {
     if (!imgs.length) return;
     cur = (i + imgs.length) % imgs.length;
-    mainImg.src = fastPhoto(imgs[cur]);
-    warm(cur + 1); // next/previous are ready before the arrow is pressed
-    warm(cur - 1);
+    document.getElementById('vdpMain').src = imgs[cur];
     const count = document.getElementById('vdpCount');
     if (count) count.textContent = `${cur + 1} / ${imgs.length}`;
     const thumbEls = document.querySelectorAll('.vdp-thumb');
