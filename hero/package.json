@@ -1,0 +1,20 @@
+{
+  "name": "dangm-home-hero",
+  "private": true,
+  "version": "1.0.0",
+  "description": "React + Framer Motion homepage hero (site/js/home-hero.js) and the site-wide glass layer (site/js/glass.js) for dangm.ca. Built files are committed, so the Pages deploy needs no build step.",
+  "type": "module",
+  "scripts": {
+    "build": "vite build && vite build --config vite.glass.config.js",
+    "watch": "vite build --watch"
+  },
+  "dependencies": {
+    "framer-motion": "11.18.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "4.3.4",
+    "vite": "5.4.11"
+  }
+}

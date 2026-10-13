@@ -133,9 +133,11 @@ NAV = """  <nav class="nav scrolled" id="nav">
       <div class="nav-links">
         <a href="/index.html">Home</a>
         <a href="/inventory.html">Inventory</a>
+        <a href="/locations/">Locations</a>
         <a href="/blog/">Guides</a>
         <a href="/forum/" class="active">Forum</a>
         <a href="/about.html">About</a>
+        <a href="/index.html#contact">Contact</a>
       </div>
       <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
       <a href="/inventory.html" class="nav-cta">View Inventory</a>
@@ -205,8 +207,10 @@ THREAD_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v={css_v}">
+  <link rel="stylesheet" href="/css/glass.css?v=1">
+  <script src="/js/glass.js?v=1" defer></script>
 </head>
-<body class="page-vehicle">
+<body class="page-vehicle glass">
 {nav}
   <main class="vehicle-main" id="forumPost">
     <article class="forum-post">
@@ -270,8 +274,10 @@ HUB_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v={css_v}">
+  <link rel="stylesheet" href="/css/glass.css?v=1">
+  <script src="/js/glass.js?v=1" defer></script>
 </head>
-<body class="page-inventory">
+<body class="page-inventory glass">
 {nav}
   <header class="page-hero" id="top">
     <div class="page-hero-bg"></div>

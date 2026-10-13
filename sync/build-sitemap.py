@@ -230,9 +230,14 @@ PAGE_TMPL = """<!DOCTYPE html>
   <script type="application/ld+json">
   {breadcrumb_ld}
   </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{base_rel}css/styles.css?v=25">
+  <link rel="stylesheet" href="{base_rel}css/glass.css?v=1">
+  <script src="{base_rel}js/glass.js?v=1" defer></script>
 </head>
-<body class="page-vehicle">
+<body class="page-vehicle glass">
   <nav class="nav scrolled">
     <div class="nav-inner">
       <a href="{base_rel}index.html" class="nav-logo">
@@ -242,8 +247,11 @@ PAGE_TMPL = """<!DOCTYPE html>
       <div class="nav-links">
         <a href="{base_rel}index.html">Home</a>
         <a href="{base_rel}inventory.html" class="active">Inventory</a>
-        <a href="{base_rel}forum.html">Forum</a>
+        <a href="{base_rel}locations/">Locations</a>
+        <a href="{base_rel}blog/">Guides</a>
+        <a href="{base_rel}forum/">Forum</a>
         <a href="{base_rel}about.html">About</a>
+        <a href="{base_rel}index.html#contact">Contact</a>
       </div>
       <a href="{base_rel}inventory.html" class="nav-cta">View Inventory</a>
     </div>

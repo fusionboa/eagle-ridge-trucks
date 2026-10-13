@@ -5,8 +5,15 @@ name: Truck Feed Sync
 
 on:
   schedule:
-    - cron: '0 * * * *'     # every hour
+    # Hourly at :17. GitHub delays or drops scheduled runs at the top of the
+    # hour (its busiest minute): ':00' was firing only every 3-9 hours.
+    - cron: '17 * * * *'
   workflow_dispatch:        # allow manual "Run workflow" from GitHub UI
+
+# Never run two syncs at once (a slow run must finish before the next deploys)
+concurrency:
+  group: truck-feed-sync
+  cancel-in-progress: false
 
 jobs:
   sync:
@@ -57,6 +64,12 @@ jobs:
       - name: Rebuild static city location pages + locations sitemap
         run: python3 sync/build-locations.py
 
+      - name: Bake homepage hero vehicle + optimised photos (most expensive listed truck)
+        continue-on-error: true
+        run: |
+          python3 -m pip install --quiet --user --break-system-packages pillow || echo "pillow install failed; hero falls back to remote photos"
+          python3 sync/build-hero.py
+
       - name: Build pages-dist
         run: |
           rm -rf pages-dist
@@ -65,8 +78,16 @@ jobs:
 
       - name: Deploy to Cloudflare Pages (production)
         if: ${{ env.DEPLOY_ENABLED == '1' }}
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy pages-dist --project-name=eagle-ridge-trucks --branch=main --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # Retry: Cloudflare occasionally answers "Unknown internal error" on
+        # publish (Oct 12 13:00 run); one blip shouldn't fail the whole sync.
+        # --branch=main is required, or the deploy lands on Preview.
+        run: |
+          for i in 1 2 3; do
+            if npx --yes wrangler@3.90.0 pages deploy pages-dist --project-name=eagle-ridge-trucks --branch=main --commit-dirty=true; then exit 0; fi
+            echo "deploy attempt $i failed; retrying in 30s"
+            sleep 30
+          done
+          exit 1

@@ -1,0 +1,128 @@
+{
+ "stage": {
+  "w": 1376,
+  "h": 768
+ },
+ "layers": {
+  "sky": {
+   "src": "images/scene/sky.webp",
+   "bytes": 23648
+  },
+  "far": {
+   "src": "images/scene/far.webp",
+   "bbox": [
+    0,
+    291,
+    1376,
+    599
+   ],
+   "bytes": 61658
+  },
+  "road": {
+   "src": "images/scene/road.webp",
+   "bbox": [
+    0,
+    340,
+    1376,
+    768
+   ],
+   "horizon": 340,
+   "bytes": 45672
+  }
+ },
+ "trucks": [
+  {
+   "aspect": 1.9023,
+   "srcset": [
+    [
+     "images/scene/truck-1-front34-640.webp",
+     1217
+    ],
+    [
+     "images/scene/truck-1-front34-360.webp",
+     685
+    ]
+   ],
+   "src": "images/scene/truck-1-front34-640.webp"
+  },
+  {
+   "aspect": 1.5412,
+   "srcset": [
+    [
+     "images/scene/truck-2-front-640.webp",
+     986
+    ],
+    [
+     "images/scene/truck-2-front-360.webp",
+     555
+    ]
+   ],
+   "src": "images/scene/truck-2-front-640.webp"
+  },
+  {
+   "aspect": 2.7892,
+   "srcset": [
+    [
+     "images/scene/truck-3-side-640.webp",
+     1785
+    ],
+    [
+     "images/scene/truck-3-side-360.webp",
+     1004
+    ]
+   ],
+   "src": "images/scene/truck-3-side-640.webp"
+  },
+  {
+   "aspect": 2.008,
+   "srcset": [
+    [
+     "images/scene/truck-4-rear34-640.webp",
+     1285
+    ],
+    [
+     "images/scene/truck-4-rear34-360.webp",
+     723
+    ]
+   ],
+   "src": "images/scene/truck-4-rear34-640.webp"
+  },
+  {
+   "aspect": 1.8737,
+   "srcset": [
+    [
+     "images/scene/truck-5-rear-640.webp",
+     1199
+    ],
+    [
+     "images/scene/truck-5-rear-360.webp",
+     675
+    ]
+   ],
+   "src": "images/scene/truck-5-rear-640.webp"
+  }
+ ],
+ "match": {
+  "make": "GMC",
+  "model": "Sierra 3500",
+  "trim": "Denali Ultimate",
+  "color": "Black"
+ },
+ "label": "2026 GMC Sierra 3500HD Denali Ultimate",
+ "stands": [
+  {
+   "side": "left",
+   "src": "images/scene/trees-left.webp",
+   "w": 340,
+   "h": 489,
+   "base": 455
+  },
+  {
+   "side": "right",
+   "src": "images/scene/trees-right.webp",
+   "w": 336,
+   "h": 489,
+   "base": 455
+  }
+ ]
+}

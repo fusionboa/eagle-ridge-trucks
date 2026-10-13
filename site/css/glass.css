@@ -1,0 +1,296 @@
+/* ============================================================
+   dangm.ca site-wide liquid glass (every page except the homepage)
+   Loaded after styles.css on pages whose <body> has class "glass".
+   Pairs with js/glass.js (source: /hero/src/glass.js), which adds the
+   mountain-road backdrop and the motion. Everything here is scoped to
+   body.glass, so styles.css itself is untouched and removing the class
+   (or this file) restores the old look exactly.
+   The homepage uses home.css; the shared pieces (nav, scene, glass
+   material, buttons) intentionally mirror it so every page matches.
+   ============================================================ */
+
+/* ─── Dark glass palette (re-skins the shared components) ─── */
+body.glass {
+  --bg: #070a12;
+  --bg-2: rgba(255, 255, 255, 0.05);
+  --bg-3: rgba(255, 255, 255, 0.03);
+  --surface: rgba(16, 20, 34, 0.55);
+  --surface-2: rgba(40, 46, 70, 0.6);
+  --text: #f3f5f9;
+  --text-muted: #b3bccc;
+  --accent: #e2b441;
+  --accent-2: #f5d27a;
+  --border: rgba(255, 255, 255, 0.14);
+  --shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  --glass-blur: 22px;
+  --glass-sat: 175%;
+  /* no-JS fallback ground: dusk gradient matching the scene */
+  background: #0b0f1d linear-gradient(180deg, #121733 0%, #2a2650 45%, #6b4a62 70%, #1a1d2e 100%) fixed;
+  color: var(--text);
+  /* The fixed scene sits behind everything on its own negative layer inside
+     body's stacking context: no page element's positioning is changed
+     (inventory modal, sticky sidebar keep working as before). */
+  isolation: isolate;
+}
+
+/* page opens frosted and clears ("liquid glass" load). Pure CSS: can't stick */
+body.glass::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 300;
+  pointer-events: none;
+  background: rgba(9, 12, 24, 0.45);
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  backdrop-filter: blur(26px) saturate(150%);
+  animation: glFrost 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.1s forwards;
+}
+@keyframes glFrost { to { opacity: 0; visibility: hidden; } }
+
+/* ─── Scene (injected by glass.js; same art as the homepage) ─── */
+.xs-host { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+.xs { position: absolute; inset: 0; overflow: hidden; background: #141a33; }
+.xs-stage {
+  --stage-h: max(100vh, 100vw * var(--sh) / var(--sw));
+  position: absolute; left: 50%;
+  width: max(100vw, 100vh * var(--sw) / var(--sh));
+  height: var(--stage-h);
+  top: clamp(calc(100vh - var(--stage-h)), calc(50vh - var(--hfrac) * var(--stage-h)), 0px);
+  translate: -50% 0;
+}
+.xs-img { position: absolute; left: -6%; top: 0; width: 112%; height: 100%; object-fit: fill; user-select: none; }
+.xs-far { top: var(--far-lift); }
+.xs-road { left: 0; width: 100%; transform-origin: 50% var(--horizon); scale: 1.25; }
+.xs-stand { position: absolute; user-select: none; }
+.xs-haze {
+  position: absolute; left: 0; right: 0;
+  top: calc(var(--horizon) - 4%); height: 8%;
+  background: linear-gradient(180deg, transparent, rgba(236, 170, 150, 0.34) 45%, rgba(236, 170, 150, 0.22) 55%, transparent);
+  filter: blur(6px);
+}
+.xs-vignette {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(3, 4, 10, 0.6) 100%),
+    linear-gradient(180deg, rgba(3, 4, 10, 0.35), transparent 22%);
+}
+
+/* ─── Liquid glass material ──────────────────────────────── */
+body.glass :is(.lead-inner, .contact-card, .about-page-body, .vehicle-main, .inv-sidebar,
+  .faq-item, .footer-inner, .truck-card, .forum-card, .service-card, .modal-content, .lead-form) {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03) 42%, rgba(255, 255, 255, 0.06)),
+    rgba(14, 18, 32, 0.5);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    0 24px 60px rgba(0, 0, 0, 0.36);
+}
+/* glass inside glass: no second blur, just a lighter pane */
+body.glass :is(.lead-inner, .vehicle-main, .about-page-body) :is(.lead-form, .faq-item, .feature, .vdp-form, .vdp-main-wrap) {
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+/* ─── Liquid glass nav (same as the homepage) ────────────── */
+body.glass .nav, body.glass .nav.scrolled { padding: 14px 16px; background: none; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
+body.glass .nav-inner {
+  position: relative;
+  max-width: 1180px;
+  padding: 10px 12px 10px 18px;
+  border-radius: 999px;
+  isolation: isolate;
+  background:
+    radial-gradient(120px 60px at var(--mx, 30%) var(--my, 0%), rgba(255, 255, 255, 0.22), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04)),
+    rgba(12, 16, 28, 0.42);
+  -webkit-backdrop-filter: blur(18px) saturate(190%) brightness(1.08);
+  backdrop-filter: blur(18px) saturate(190%) brightness(1.08);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.55),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.08),
+    inset 0 0 18px rgba(255, 255, 255, 0.06),
+    0 10px 40px rgba(0, 0, 0, 0.35);
+}
+html.lg-refract body.glass .nav-inner { backdrop-filter: url(#lgRefract) blur(14px) saturate(190%) brightness(1.08); }
+body.glass .nav-logo, body.glass .logo-text { color: #fff; }
+body.glass .nav-links { position: relative; align-items: center; gap: 26px; }
+body.glass .nav-links a { position: relative; z-index: 1; color: rgba(243, 245, 249, 0.78); padding: 8px 0; }
+body.glass .nav-links a:hover, body.glass .nav-links a:focus-visible, body.glass .nav-links a.active { color: #fff; }
+body.glass .nav-links a.active::after { background: var(--accent-2); }
+body.glass .lg-pill {
+  position: absolute; left: 0; top: 50%;
+  height: 38px; margin-top: -19px; width: 60px;
+  border-radius: 999px; opacity: 0; pointer-events: none; z-index: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.07));
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6), 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+body.glass :is(.nav-cta, .btn-ghost, .btn:not(.btn-primary)) {
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.05));
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.45), 0 6px 18px rgba(0, 0, 0, 0.22);
+}
+body.glass :is(.nav-cta, .btn-ghost, .btn:not(.btn-primary)):hover {
+  color: #fff;
+  border-color: rgba(245, 210, 122, 0.7);
+  background: linear-gradient(180deg, rgba(245, 210, 122, 0.32), rgba(226, 180, 65, 0.12));
+}
+body.glass .nav-toggle {
+  color: #fff;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px; width: 44px; height: 44px;
+}
+body.glass .btn-primary {
+  color: #1a1305;
+  background: linear-gradient(180deg, #f8dc8f, #e2b441 55%, #c9952a);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.7), 0 10px 30px rgba(226, 180, 65, 0.28);
+}
+body.glass .btn-primary:hover { box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.7), 0 16px 40px rgba(226, 180, 65, 0.4); }
+body.glass :is(.btn, .nav-links a, .nav-cta, .chip, .price-range, .view-btn, .vdp-thumb, .vdp-nav):focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; }
+@media (max-width: 900px) {
+  body.glass .nav-inner { border-radius: 26px; padding: 8px 8px 8px 14px; }
+  body.glass .nav-links {
+    top: calc(100% + 10px);
+    border-radius: 22px; padding: 14px 20px;
+    background: rgba(12, 16, 28, 0.85);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 20px 50px rgba(0, 0, 0, 0.45);
+    align-items: stretch;
+  }
+  body.glass .nav-links a { padding: 10px 4px; min-height: 44px; display: flex; align-items: center; }
+  body.glass .nav-cta { display: none; }
+}
+
+/* ─── Page heroes / headings over the scene ──────────────── */
+body.glass .page-hero-bg { background: none; }
+body.glass .page-hero-bg::after { display: none; }
+body.glass :is(.page-hero-title, .section-title, .vdp-title, .forum-post-title, .sidebar-title) { color: #fff; text-shadow: 0 4px 30px rgba(5, 7, 15, 0.45); }
+body.glass :is(.page-hero-sub, .hero-eyebrow) { text-shadow: 0 2px 16px rgba(5, 7, 15, 0.6); }
+body.glass .page-hero-sub { color: rgba(243, 245, 249, 0.86); }
+body.glass :is(.eyebrow, .hero-eyebrow) { color: var(--accent-2); }
+body.glass .breadcrumbs a:hover { color: #fff; }
+
+/* ─── Readable glass containers ──────────────────────────── */
+/* car listings (VDP), blog guides and forum threads: one glass sheet */
+body.glass .vehicle-main {
+  margin: 110px auto 60px;
+  width: calc(100% - 32px);
+  padding: 40px clamp(18px, 4vw, 48px) 56px;
+  border-radius: 28px;
+}
+body.glass .forum-post { padding: 8px 0 24px; }
+body.glass .forum-post-body { color: #d3d9e4; }
+body.glass .forum-post-body :is(h2, h3, strong) { color: #fff; }
+body.glass :is(.forum-post-body, .forum-post, .vehicle-main, .about-page-body, .lead-note) a:not(.btn) { color: var(--accent-2); text-underline-offset: 2px; }
+body.glass :is(.forum-post-body, .forum-post, .vehicle-main) a:not(.btn):hover { color: #fff; }
+body.glass .about-page-body {
+  padding: 40px clamp(18px, 4vw, 48px);
+  border-radius: 28px;
+  color: #d3d9e4;
+}
+body.glass .inv-sidebar { border-radius: 22px; }
+body.glass .lead { background: none; }
+body.glass .lead-inner { padding: 48px; border-radius: 32px; }
+body.glass .contact-card { border-radius: 28px; }
+body.glass .contact-info { background: none; }
+body.glass :is(.truck-card, .forum-card, .service-card) { border-radius: 22px; }
+body.glass .faq-item { border-radius: 18px; }
+body.glass .footer { border-top: 0; padding: 24px 16px 32px; }
+body.glass .footer-inner { padding: 26px 32px; border-radius: 28px; }
+body.glass .footer a { color: rgba(243, 245, 249, 0.8); }
+body.glass .footer a:hover { color: #fff; }
+
+/* car listing page details */
+body.glass .vdp-main-wrap { border-radius: 20px; overflow: hidden; }
+body.glass .vdp-nav {
+  color: #fff;
+  background: rgba(10, 13, 24, 0.5);
+  -webkit-backdrop-filter: blur(10px) saturate(180%);
+  backdrop-filter: blur(10px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+body.glass .vdp-nav:hover { color: #1a1305; background: var(--accent-2); border-color: var(--accent-2); }
+body.glass .vdp-count { color: #fff; background: rgba(10, 13, 24, 0.55); }
+body.glass .vdp-thumb { border-radius: 12px; }
+body.glass .detail-row { border-bottom-color: rgba(255, 255, 255, 0.1); }
+body.glass .detail-row dd { color: #fff; }
+body.glass .vdp-desc p, body.glass .vdp-features { color: #d3d9e4; }
+body.glass .vdp-back { color: var(--accent-2); }
+
+/* text + accents on dark glass */
+body.glass :is(.truck-card-price, .vdp-price, .contact-row a, .forum-card-cta, .truck-card-cta) { color: var(--accent-2); }
+body.glass .truck-badge { color: var(--accent-2); }
+body.glass .lead-error { color: #ff9b8f; }
+body.glass :is(.chip-active, .price-range.price-active) { color: #1a1305; }
+body.glass .view-btn.view-active { color: #1a1305; }
+
+/* form controls */
+body.glass :is(.filter-search, .filter-select, .lead-field input, .lead-field select, .vdp-form input, .vdp-form textarea, .vdp-form select, .contact-form input, .contact-form textarea) {
+  background: rgba(5, 8, 16, 0.45);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+body.glass :is(input, textarea)::placeholder { color: rgba(255, 255, 255, 0.5); }
+body.glass select option { color: #10161d; background: #fff; }
+
+/* blog comparison tables (light-theme rules hardcode dark-on-light) */
+body.glass .cmp-table th { background: rgba(255, 255, 255, 0.08); color: #fff; }
+body.glass .cmp-table td { border-bottom-color: rgba(255, 255, 255, 0.12); color: #d3d9e4; }
+
+/* dark CTA bands written with inline styles in blog/location templates → glass */
+body.glass [style*="#0b1220"] {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03) 42%),
+    rgba(14, 18, 32, 0.32) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  backdrop-filter: blur(10px) saturate(160%);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* ─── Effects (glass.js) ─────────────────────────────────── */
+body.glass :is(.lead-inner, .contact-card, .about-page-body, .vehicle-main, .inv-sidebar, .footer-inner, .faq-item, .forum-card, .service-card) { position: relative; }
+.lg-lit::after {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.16) 46%, rgba(255, 255, 255, 0.04) 54%, transparent 70%) no-repeat;
+  background-size: 250% 100%;
+  background-position: 120% 0;
+  animation: lgStreak 1.6s cubic-bezier(0.6, 0, 0.25, 1) forwards;
+}
+@keyframes lgStreak { to { background-position: -120% 0; opacity: 0.2; } }
+body.glass :is(.lead-inner, .contact-card, .about-page-body, .vehicle-main, .inv-sidebar, .faq-item, .footer-inner, .truck-card, .forum-card, .service-card)::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), rgba(255, 255, 255, 0.1), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.35s var(--ease);
+  z-index: 0;
+}
+body.glass .lg-hot::before { opacity: 1; }
+body.glass :is(.truck-grid, .forum-grid, .service-grid) { perspective: 1400px; }
+body.glass :is(.truck-card, .forum-card, .service-card) { transform-style: preserve-3d; }
+.lg-w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+.lg-w > span { display: inline-block; will-change: transform; }
+
+@media (max-width: 820px) {
+  body.glass .vehicle-main { margin-top: 92px; width: calc(100% - 24px); padding: 24px 16px 40px; border-radius: 22px; }
+  body.glass .lead-inner { padding: 28px 20px; border-radius: 26px; }
+  body.glass .footer-inner { padding: 22px 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.glass::after { display: none; }
+}

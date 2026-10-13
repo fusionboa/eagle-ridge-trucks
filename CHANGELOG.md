@@ -1,5 +1,26 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.18.0 — Homepage revamp: React + Framer Motion hero, mountain road scene, liquid glass (Oct 12, 2026)
+
+- **New `hero/` (React 18 + Framer Motion 11, built with Vite)** → one deferred bundle `site/js/home-hero.js` (83 KB gzip), loaded by `index.html` only. The built file is committed, so the hourly workflow and `pages deploy pages-dist --branch=main` need no Node build step. After editing `hero/src`: `cd hero && npm install && npm run build`, then bump `home-hero.js?v=N` in `site/index.html`
+- **Progressive enhancement, SEO untouched:** the static `<header class="hero">` stays in the HTML (Googlebot / no-JS version). React replaces it in place and reuses its exact headline markup, so the H1, copy, CTAs, `#statCount` and all JSON-LD are unchanged. Every other page (inventory, VDPs, forum, blog, locations) is untouched: `styles.css` and `main.js` were not modified
+- **Intro loader:** road lines draw to the horizon, wordmark rises, progress bar tracks the real hero photo load, then a headlight iris opens onto the page. Full intro once per session, quick fade after. Hard caps: 4.2s in JS, 6s CSS failsafe
+- **Scroll walk-around of the most expensive listed truck:** sticky stage; scrolling wipes through the 5 walk-around photos (front 3/4, front, side, rear 3/4, rear) with a 0° to 180° readout, glass spec chips (price, engine, drive, odometer, colour) orbit in front of and behind the truck, turntable ring on the road, finale panel with "View this truck" (static /v/ page) + call CTA
+- **Scene:** fixed full-page SVG backdrop (dusk sky, three snow-capped ranges, pine foothills, perspective road whose lane dashes advance as you scroll), parallax layers pan opposite the orbit. Generated from fixed seeds, zero image downloads
+- **Liquid glass:** nav is a floating glass capsule (backdrop blur + saturation, specular highlight that follows the pointer, spring-animated glass pill between links, Chromium-only SVG refraction). Lead form, flagship cards, service cards, about, FAQ, contact and footer re-skinned as dark glass over the scene via `site/css/home.css` (scoped to `body.home-v2`)
+- **New `sync/build-hero.py`** (hourly, `continue-on-error`): writes `site/data/hero.json` (the hero truck, so the page no longer waits on the ~1 MB inventory API) and bakes the 5 walk-around photos into cropped WebP in `site/images/hero/` (eDealer banner + AutoVerify strip removed). ~9 MB of 1.3-2 MB PNGs → ~370 KB desktop / ~200 KB mobile. Photos warm one at a time because the eDealer host stalls on parallel requests. Falls back to the remote photos (CSS-cropped) or the live API if anything is missing
+- **Animation safety (the `.reveal` lessons):** nothing is hidden unless JS has booted (`html.xh-js` + 4s CSS failsafe for the static hero, 5s failsafe for the headline, 2.5s for section rises); React's headline copy strips `.reveal` so main.js never strands it at opacity 0; section rises skip `.reveal` elements. `prefers-reduced-motion`: no intro, no scroll-jacking, static hero with photo + specs
+- Verified in headless Chrome at 1440x900 and 390x844 (plus reduced motion): no console errors, flagship grid + live stat count + lead form intact
+- No em-dashes in visible copy; phone CTA 604-735-1396; workflow gained one step (Pillow install + `build-hero.py`) before "Build pages-dist"
+- **Gemini art scene (same day):** the drawn SVG scene is replaced by four AI-generated layers (sky, snowy range, pine forest, road) and an illustrated 2026 GMC Sierra 3500HD Denali Ultimate in 5 walk-around angles, all from `assets/` (green-screen PNGs). `hero/tools/process-art.py` keys out the green, removes spill, grades every layer to the dusk sky, crops the trucks and writes alpha WebP to `site/images/scene/` (~205 KB scene, ~470 KB / ~220 KB trucks desktop / mobile) plus `hero/src/art.json`. The truck drives up the road from the horizon on load, stands in the right lane beside the headline, then the camera swings in and walks around it with spec chips orbiting in front of and behind it. The illustration is only used while the hero truck matches that model + colour (`art.match`); otherwise the listing's real photos show in the glass frame. Always labelled on screen: "Illustration of the 2026 GMC Sierra 3500HD Denali Ultimate. See real photos" (links to the listing). Gemini's visible corner mark falls on the keyed-out green or off-stage; the files keep Google's SynthID watermark. Cache-bust home.css → v2, home-hero.js → v3
+- **Scene polish + drive-in (same day):** the forest is now two cut-out pine stands planted on the fields either side of the road (feathered road-side edge, faded base with a ground shadow, lighter grade) instead of trees cut off at the horizon; the stage keeps the horizon near mid-screen on wide displays so mountains and treetops are no longer cropped. On load the truck drives down the road toward the camera: true 1/z perspective from a speck at the vanishing point into the right lane, headlight flares + a light pool on the road, light suspension bounce and a brake dip, 4s on the first visit (page scroll held until it parks, 7s cap), 1.6s on repeat visits, none with reduced motion. Cache-bust home.css → v5, home-hero.js → v7
+- **Liquid glass intro + section effects (same day):** the loader is now a frosted glass sheet with the scene loading blurred behind it, a floating glass capsule (wordmark, liquid gold progress fill tracking the real load, sweeping sheen, Chromium refraction) and morphing glass droplets; on ready the capsule swells and dissolves and the frost melts into the truck's drive. Below the hero: glass panels (lead, about, contact, footer) materialize from a soft rounded drop with a one-time light streak, section titles reveal word by word behind a mask, smaller pieces rise in with sibling stagger, every glass surface gets a pointer-tracked specular highlight, and flagship + service cards tilt in 3D (individual `rotate`, so it composes with main.js's .reveal transforms). Same safety rules: hidden only by JS, 2.5s + scroll-idle failsafes, .reveal elements untouched, reduced motion = none of it. Fixed the doubled ✓ on the About list. Cache-bust home.css → v7, home-hero.js → v8
+- **One nav everywhere:** every page and generator template now shows the same sections: Home · Inventory · Locations · Guides · Forum · About · Contact. Before, the homepage and main pages had no Guides or Locations, the blog had no Locations or Contact, the static VDPs had neither and still linked the old `forum.html`. Each file keeps its own link-path style (relative, `/`, `{base_rel}`) and its active highlight; the homepage keeps `#contact` as an in-page jump. Templates updated: `sync/build-sitemap.py`, `build-forum.py`, `build-locations.py`, `blog-engine/build.py`. Fits at 920px+; below that the existing mobile menu takes over
+- **Fix: Contact from other pages "disappeared".** `index.html#contact` (the Contact link on every non-home page) landed ~3,900px short with the contact card still hidden: the intro held scroll, then the 3D hero grew to its full height after the browser's own jump. Now a homepage visit with a section hash skips the long intro + drive hold, re-lands on the section once the hero has its final height, and keeps it pinned for up to 5s while flagship cards/images load above it (stops the moment the visitor scrolls/touches/types). Verified at 1440, 1100 and 390 wide. home-hero.js → v10
+- **Homepage look on every page, incl. car listings:** all other pages (inventory, both VDP types: interactive `vehicle.html` and the static `/v/` pages, about, forum hub + threads, city pages, blog index + guides) now share the homepage styling via `site/css/glass.css` (dark glass palette, glass nav, glass panels/cards/forms/tables/gallery controls, scoped to `body.glass`) and `site/js/glass.js` (23 KB gzip, no React, built from `hero/src/glass.js` by `npm run build`): the same Gemini mountain-road backdrop, glass nav pill + refraction, panels that materialize, content that rises in, pointer highlight and card tilt; each page opens frosted and clears in 0.7s (pure CSS). Pages and generator templates (`sync/build-sitemap.py`, `build-forum.py`, `build-locations.py`, `blog-engine/build.py`) only gained `glass.css?v=1` + deferred `glass.js?v=1` after the styles.css link and a `glass` body class; `styles.css`, `main.js`, markup, meta and JSON-LD untouched. Scene sits behind content via body `isolation` + negative z-index, so no element's positioning changed (inventory modal, sticky sidebar). Verified: inventory search still filters (419 → 56 for "sierra"); about.html's existing `applyFilters` null error predates this
+- **Static VDP font:** `sync/build-sitemap.py`'s page template never loaded the Inter webfont (every other page does), so the 400+ `/v/` car pages fell back to Arial; added the same Google Fonts preconnect + stylesheet lines
+- **Sync reliability:** the 13:00 UTC Oct 12 run failed only at the very end: Cloudflare answered "Failed to publish your Function. Unknown internal error" during `pages deploy`, and nothing retried it. Bigger problem: the `0 * * * *` schedule was firing only every 3-9 hours (GitHub delays/drops top-of-the-hour crons), so inventory went stale on the site. Fixes in `.github/workflows/sync.yml`: cron moved to `17 * * * *`, the deploy step now runs the same `wrangler pages deploy pages-dist --project-name=eagle-ridge-trucks --branch=main --commit-dirty=true` (wrangler 3.90.0, as before) with 3 attempts, and a `concurrency` group so two syncs never overlap
+
 ## v0.17.0 — Hub-and-spoke SEO upgrade: dynamic VDP meta, standalone forum threads, AutoDealer schema, Surrey page (Oct 6, 2026)
 
 - **Vehicle pages (Step 1):** dynamic meta now follows the exact hyper-local algorithm in both the static /v/ generator (`sync/build-sitemap.py`) and the interactive renderer (`js/main.js`): title `"[Year] [Make] [Model] For Sale in Coquitlam, BC | Car Credit Approved | DanGM"`, description `"Looking for a [Year] [Make] [Model] in Coquitlam or the Lower Mainland? Zero-pressure car buying & specialist credit options. Call 604-735-1396 to apply."` Vehicle JSON-LD enriched with brand, model, vehicleConfiguration, bodyType, interior colour, url and an offer URL
@@ -151,7 +172,7 @@
 - Titles reordered keyword-first (item 11): inventory "New & Used Cars & Trucks for Sale Coquitlam BC | dangm.ca", about "GM Consultant in Coquitlam & Vancouver BC | dangm.ca", vehicle fallback now geo'd
 - FAQPage + AutoDealer + ItemList + BreadcrumbList schema verified present site-wide; Vehicle JSON-LD verified on VDPs (items 7, 9)
 - Broken-link crawl: all internal page links + local assets resolve, 0 broken (item 5); H1 audit: exactly one per page (item 12)
-- AutoDealer address stays "Coquitlam, BC" until dad's street address lands (items 8/17 pending)
+- AutoDealer address stays "Coquitlam, BC" until the client's street address lands (items 8/17 pending)
 
 ### Deploy
 - Cache-bust `?v=12` → `?v=13` site-wide, `node --check` on main.js, 414 pages + sitemap rebuilt, Pages deploy `--branch main`
@@ -175,7 +196,7 @@
 - **New: `sync/build-sitemap.py`** — regenerates the vehicle sitemap from the live API before every deploy (`python3 sync/build-sitemap.py`)
   - Falls back to `/tmp/trucks.json` if API is unreachable; filters to `listed !== false`
 - robots.txt now lists **3 sitemaps**: main + vehicles + images; verified live
-- Cloudflare auto-injects AI-bot blocks (CCBot/ClaudeBot/Bytespider/etc `Disallow: /`) into robots.txt — Googlebot explicitly Allowed, SEO unaffected; AI scrapers can't mass-lift dad's inventory
+- Cloudflare auto-injects AI-bot blocks (CCBot/ClaudeBot/Bytespider/etc `Disallow: /`) into robots.txt — Googlebot explicitly Allowed, SEO unaffected; AI scrapers can't mass-lift the client's inventory
 - sitemap.xml + sitemap-images.xml lastmod refreshed → 2026-09-10
 
 ### Structured data
@@ -188,7 +209,7 @@
 
 ### Still open (next SEO session)
 - Google Search Console: replace `YOUR_VERIFICATION_CODE` placeholder in index.html, submit sitemaps
-- Discounted pricing (feed shows MSRP before discounts) — pending dad/eagleridgegm.com scrape decision
+- Discounted pricing (feed shows MSRP before discounts) — pending the client/eagleridgegm.com scrape decision
 - About page content fill-in
 
 ## v0.13.7 — Nav logo swapped to the Gemini mark + real scroll-fix (Sep 8, 2026)
@@ -208,7 +229,7 @@
 
 ## v0.13.6 — Gemini logo installed site-wide (Sep 8, 2026)
 
-### New brand assets (from Jaden's Gemini generation — Downloads/dangmlogo.png)
+### New brand assets (from the developer's Gemini generation — Downloads/dangmlogo.png)
 - Trimmed transparent edges, centered on a square canvas, exported at multiple sizes:
   - `images/logo.png` (512×512) · `images/og-logo.png` (512×512, social previews)
   - `images/favicon.png` (64×64) · `images/apple-touch-icon.png` (180×180, iPhone home-screen)
@@ -390,22 +411,22 @@
 
 ## v0.12.2 — 🏷️ Overlay removal added to the prompt (Sep 7, 2026)
 
-**Jaden's addition:** some feed photos have text banners/stickers/badges baked ON the car itself — background removal can't touch those. Prompt now also asks for overlay removal.
+**the developer's addition:** some feed photos have text banners/stickers/badges baked ON the car itself — background removal can't touch those. Prompt now also asks for overlay removal.
 
 ### Changed
 - Prompt (worker + batch) gains one line: `If there are any text banners, stickers, badges, or overlay graphics in the photo, remove those too.`
 - Deliberate wording: generic "overlay" language, NEVER the word "watermark" (policy trip → refusal). Refusals cost $0 anyway (no output image = no charge) and are logged as free skips.
 - Worker redeployed (version 5d9c9d71); batch reads prompt at runtime.
 
-## v0.12.1 — 🧼 Prompt simplified to Jaden's proven one (Sep 7, 2026)
+## v0.12.1 — 🧼 Prompt simplified to the developer's proven one (Sep 7, 2026)
 
-**Insight:** background removal alone wipes ALL dealership branding for free (logos/watermarks/banners live in the background) — and "remove watermark" wording risks Gemini refusing on policy. Simple beats clever, and it's what Jaden already proved works by hand.
+**Insight:** background removal alone wipes ALL dealership branding for free (logos/watermarks/banners live in the background) — and "remove watermark" wording risks Gemini refusing on policy. Simple beats clever, and it's what the developer already proved works by hand.
 
 ### Changed
 - `GEMINI_CLEAN_PROMPT` (worker) + `PROMPT` (batch) replaced with:
   `Edit this vehicle photo: remove the background completely and make it pure white. Keep the vehicle itself exactly as it is — same angle, same color, same wheels, nothing redrawn, nothing added, fully in frame. Output only the edited image.`
 - Kept only the guards that matter: vehicle untouched (no AI redraw = no wrong wheels/color), no crop, image-only output. Zero branding/watermark language.
-- Backdrop switched from light gray to **pure white** (Jaden's manual flow).
+- Backdrop switched from light gray to **pure white** (the developer's manual flow).
 - Worker redeployed (version e9da8c82); batch script reads its prompt at runtime — no other deploy needed.
 
 ## v0.12.0 — ✨ AI-Clean buttons in the admin panel (Sep 6, 2026)
@@ -428,7 +449,7 @@
 
 ### Deploy
 - Worker redeployed (version 011d17b3); Pages redeployed with `--branch=main`; `admin.js?v=11` + new `ai-clean.js?v=1` live on dangm.ca (both 200). Verified: unauthenticated → 401 on both new endpoints.
-- Pending: real `GEMINI_API_KEY` (billing) → `wrangler secret put GEMINI_API_KEY` from `worker/` → test one truck in dev → buttons ready for dad.
+- Pending: real `GEMINI_API_KEY` (billing) → `wrangler secret put GEMINI_API_KEY` from `worker/` → test one truck in dev → buttons ready for the client.
 
 ## v0.11.0 — 🖼️ Gemini image-cleanup pipeline (Sep 6, 2026)
 
@@ -458,13 +479,13 @@
 - **Phone number corrected everywhere: 605 → 604-735-1396** (had a typo since launch). Fixed in: index.html (schema.org + FAQ + contact), main.js (JSON-LD, SEO descriptions, all Call buttons), inventory/vehicle/forum/forum-post metas, context.md. `tel:` links fixed too (`tel:6047351396`).
 - **ROOT CAUSE of all the 'deploy not going live' mysteries found:** local repo branch is `master`, but Cloudflare Pages production only serves deploys from **`main`** — plain `wrangler pages deploy` was landing deploys on Preview. **Fix: always deploy with `--branch=main`.** Verified live on dangm.ca after.
 - Asset versions bumped to `?v=4`.
-- Rejected idea (for the record): scraping Go North Surrey GM's listing photos — they're a competitor dealership's licensed photos; stripping filenames/proxying them would land on dad at work. The eDealer feed photos (13–20 per truck, all 406 listed) are already the professional shots needed.
+- Rejected idea (for the record): scraping Go North Surrey GM's listing photos — they're a competitor dealership's licensed photos; stripping filenames/proxying them would land on the client at work. The eDealer feed photos (13–20 per truck, all 406 listed) are already the professional shots needed.
 
-## v0.10.2 — 🐛 Stock search fix + dad's game plan (Sep 3, 2026)
+## v0.10.2 — 🐛 Stock search fix + the client's game plan (Sep 3, 2026)
 
 **Bug fix:** `/api/admin/stock-images` returned "query required" / 0 results when called with `?q=` — the worker only read `?query=`. Now accepts both (`q` and `query`). Verified live: 29 licensed results for "2024 GMC Sierra 1500".
 
-**Plan (per dad):** lean on the stock finder for listing images NOW; dad asks dealership IT tomorrow (Sep 4) about a raw unwatermarked outbound inventory feed. When IT delivers: swap `FEED_URL` → every listing instantly gets professional photos of the actual vehicles, zero image editing.
+**Plan (per the client):** lean on the stock finder for listing images NOW; the client asks dealership IT tomorrow (Sep 4) about a raw unwatermarked outbound inventory feed. When IT delivers: swap `FEED_URL` → every listing instantly gets professional photos of the actual vehicles, zero image editing.
 
 ---
 
@@ -497,7 +518,7 @@
 
 ## v0.9.0 — ↩️ Reverted AI background removal; kept all UI/layout work (Sep 3, 2026)
 
-**Decision:** the ✂️ Remove BG (AI) feature (v0.8.0–v0.8.3) is **reverted** — quality on real dealer photos wasn't good enough (interiors mutilated, banners sometimes survived) and Jaden needs listings live for Dan ASAP. The browser AI idea is parked in context.md if we ever revisit it.
+**Decision:** the ✂️ Remove BG (AI) feature (v0.8.0–v0.8.3) is **reverted** — quality on real dealer photos wasn't good enough (interiors mutilated, banners sometimes survived) and the developer needs listings live quickly. The browser AI idea is parked in context.md if we ever revisit it.
 
 ### Kept (all UI/layout work intact)
 - 📱 Full mobile support — admin topbar stack, scrollable tabs, fullscreen modals, touch-visible image buttons, site hero clearance (v0.8.1)
@@ -595,7 +616,7 @@ Combined with v0.8.2 (white background, cover-only prompt for interiors, full-pr
 
 ## v0.7.0 — dangm.ca DOMAIN LIVE (Aug 26, 2026) 🎉
 
-**Jaden:** bought dangm.ca on GoDaddy and connected it to Cloudflare Pages from the terminal (API token, no dashboard clicking).
+**The developer:** bought dangm.ca on GoDaddy and connected it to Cloudflare Pages from the terminal (API token, no dashboard clicking).
 
 ### What happened
 - **Zone:** dangm.ca added to Cloudflare (was already created, status pending → **active** at 15:40)
@@ -621,10 +642,10 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.6.0 — Curated consultant copy + redirect crash fix (Aug 26, 2026)
 
-**Jaden:** dad is a salesman/consultant at Eagle Ridge GM (not the owner) — change copy to "curated attention", fix the mobile top-bar overlap, and fix the inventory/forum crash (infinite redirect loop).
+**The developer:** the client is a salesman/consultant at Eagle Ridge GM (not the owner) — change copy to "curated attention", fix the mobile top-bar overlap, and fix the inventory/forum crash (infinite redirect loop).
 
 ### Changes
-- **Copy:** "an individual you can trust" → dad is now a **GM consultant** at Eagle Ridge GM; "curated attention, zero pressure", "1:1 — Personal consultant", "hand-picked from the dealership inventory"; removed all "owner" wording
+- **Copy:** "an individual you can trust" → the client is now a **GM consultant** at Eagle Ridge GM; "curated attention, zero pressure", "1:1 — Personal consultant", "hand-picked from the dealership inventory"; removed all "owner" wording
 - **Redirect crash FIXED:** `_redirects` rewrite rules conflicted with Cloudflare Pages' auto-pretty-URL redirects (`/inventory` → `/inventory.html` → `/inventory` loop). **Deleted `_redirects`** — Pages serves `.html` → clean URLs natively without a loop. All 5 pages now return 200
 - **Mobile nav overlap FIXED:** subpage breadcrumbs were rendering under the fixed nav bar on mobile — added clear padding
 - **Cache:** `_headers` no-store tweak to fight the stuck homepage edge cache
@@ -637,7 +658,7 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.5.0 — Geo-targeted + individual consultant tone (Aug 23, 2026)
 
-**Jaden:** remove all "Best GM consultant", "7-day warranty", placeholder/dealership-sounding content, and make the site geo-targeted to Coquitlam/Vancouver/Tri-Cities ONLY — not Halifax or anywhere else. Sound like an individual consultant (his dad), not a dealership. Remove financing options.
+**The developer:** remove all "Best GM consultant", "7-day warranty", placeholder/dealership-sounding content, and make the site geo-targeted to Coquitlam/Vancouver/Tri-Cities ONLY — not Halifax or anywhere else. Sound like an individual consultant (the client), not a dealership. Remove financing options.
 
 ### Changes
 - **Geo-targeting on ALL 5 pages:**
@@ -719,7 +740,6 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.1.0 — Initial build (Aug 18, 2026)
 
-**Mission:** Get dad 10 truck sales → Legion arrives early. 🎄
 
 ### What was built
 - **`sync/sync.js`** — Node FTP bridge (reuses FB Lister's FTP approach): downloads `feed.csv` from ftp.edealer.ca, parses trucks (handles quoted CSV fields), downloads images, pushes to the worker. Auto-removes trucks deleted from the feed. Runs hourly (or `--once`).
@@ -753,7 +773,7 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.1.1 — Inventory split (Aug 18, 2026)
 
-**Jaden's feedback:** inventory moved to its own page; home page shows the most expensive (flagship) trucks.
+**the developer's feedback:** inventory moved to its own page; home page shows the most expensive (flagship) trucks.
 
 - **`site/inventory.html`** — NEW full inventory page: page hero, search/filter/sort, all listed trucks. Nav links to it.
 - **`site/index.html`** — home page now has a **Flagship section** ("The Flagships / Our Most Capable Trucks") showing the **top 3 most expensive** trucks, with a "Browse the full collection →" button.
@@ -766,7 +786,7 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.1.2 — Backup safety + GitHub Actions bridge (Aug 18, 2026)
 
-**Jaden's requests:** (1) never silently lose published work if a truck leaves the feed, (2) keep a backup section in admin, (3) no Pixel needed — use a free cloud cron instead.
+**the developer's requests:** (1) never silently lose published work if a truck leaves the feed, (2) keep a backup section in admin, (3) no Pixel needed — use a free cloud cron instead.
 
 ### Changes
 - **Backup safety in worker sync:**
@@ -790,7 +810,7 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.1.3 — Real FB Lister keys wired in (Aug 18, 2026)
 
-**Jaden's request:** "just use those same keys from facebooklister!"
+**the developer's request:** "just use those same keys from facebooklister!"
 
 - **D1 database:** now points at FB Lister's real D1 (`fblister-prod-db`, id `10542189-fb0f-4a9b-9b86-19143bdc5418`) — our `trucks`/`backups` tables coexist fine (no name collisions with FB Lister's tables)
 - **Auth:** switched from raw Google OAuth to **Firebase Auth (same project as FB Lister)** — `fblisterpro`, same apiKey/authDomain/appId, same Google popup login. Worker now verifies Firebase ID tokens with `aud=fblisterpro` (same as FB Lister's `validAudiences`)
@@ -808,7 +828,7 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.2.0 — DEPLOYED LIVE + TEST MODE (Aug 18, 2026)
 
-**Jaden's request:** deploy it so he can test — and make the admin work WITHOUT Google login for now.
+**the developer's request:** deploy it so he can test — and make the admin work WITHOUT Google login for now.
 
 ### Deployed to production 🚀
 - **Worker LIVE:** `https://eagle-ridge-trucks.fblister.workers.dev` — D1 tables created in the REAL `fblister-prod-db` (trucks + backups, 11 tables total)
@@ -840,11 +860,11 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 - [ ] SEO pass: per-truck landing pages, Vehicle schema, Google Business Profile, blog posts
 - [ ] Gemini image pipeline (manual for now — download → edit → re-upload)
 - [ ] Remove test mode + restore Google-only admin before "real" launch
-- [ ] Dad's dealership website / blog ideas for max sales
+- [ ] Dealership website / blog ideas for max sales
 
 ## v0.2.1 — ADMIN FIXED FOR REAL (Aug 19, 2026)
 
-**Jaden reported: the admin page "just doesn't do anything" / the test-mode button appears dead.** Caught and reproduced with headless Chrome (console showed `Error: Failed to load` in a real browser while curl passed).
+**The developer reported: the admin page "just doesn't do anything" / the test-mode button appears dead.** Caught and reproduced with headless Chrome (console showed `Error: Failed to load` in a real browser while curl passed).
 
 ### Root cause #1 — DOUBLE `/api` in the request URL (the real killer)
 - `ADMIN_CONFIG.apiBase` was set to `https://eagle-ridge-trucks.fblister.workers.dev/api` and every fetch in `admin.js` appends its own `/api/...` path → requests went to **`/api/api/admin/trucks`** → the worker route never matched → non-2xx → `Failed to load`.
@@ -865,7 +885,7 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.2.2 — SITE + ADMIN UI FIXES (Aug 19, 2026, late night)
 
-**Jaden reported:** site throws `TypeError at main.js:257`, trucks show no price/engine, admin still shows the login thing on top, and the edit modal's Cancel/× buttons don't close it.
+**The developer reported:** site throws `TypeError at main.js:257`, trucks show no price/engine, admin still shows the login thing on top, and the edit modal's Cancel/× buttons don't close it.
 
 ### Fixes
 - **`site/js/main.js` — inventory page crashed:** `init()` called `document.getElementById('contactForm').addEventListener(...)` but `inventory.html` has no contact form → TypeError → `loadTrucks()` never ran → page showed zero trucks. Fixed: guard `if (contactForm)`.
@@ -888,7 +908,7 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.2.3 — NaN price fix + VIN decoder + AI descriptions (Aug 19, 2026)
 
-**Jaden reported:** admin dashboard shows "NaN" at price (edit shows it fine), and engine is still missing. Asked to use the **proper VIN decoder** (NOT Groq — Groq can't decode VINs) + the **Groq API from FB Lister** for other enrichment.
+**The developer reported:** admin dashboard shows "NaN" at price (edit shows it fine), and engine is still missing. Asked to use the **proper VIN decoder** (NOT Groq — Groq can't decode VINs) + the **Groq API from FB Lister** for other enrichment.
 
 ### Fixes / features
 - **`admin/js/admin.js` — NaN price:** dashboard rows used `Number(t.price)` on `"34544 CAD"` strings → `NaN`. Added `priceNum()` + `formatPrice()` helpers and used them in both the main list and the backups list → `$34,544`.
@@ -911,7 +931,7 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.2.4 — TRUCKS WERE INVISIBLE (opacity: 0) — the real "doesn't show" bug (Aug 19, 2026)
 
-**Jaden reported (repeatedly):** "does not show on the inventory page still." The truck was listed, the API returned it, the DOM had the card — but it was **invisible**.
+**the developer reported (repeatedly):** "does not show on the inventory page still." The truck was listed, the API returned it, the DOM had the card — but it was **invisible**.
 
 ### Root cause
 - `renderGrid()` adds the `in-view` class to each truck card (staggered fade-in via `requestAnimationFrame`).
@@ -928,7 +948,7 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.3.0 — Dealership-style layout + Vehicle Detail Page (Aug 19, 2026)
 
-**Jaden's request:** copy the layout from Eagle Ridge GM's real site (he saved the VLP + VDP HTML from the dealership) — how they show cars — but keep our dark/gold luxury look. Clicking a listing should open a dedicated page, not a modal.
+**the developer's request:** copy the layout from Eagle Ridge GM's real site (he saved the VLP + VDP HTML from the dealership) — how they show cars — but keep our dark/gold luxury look. Clicking a listing should open a dedicated page, not a modal.
 
 ### New layout
 - **Inventory list → horizontal cards** (image left, details right), mirroring the dealership's VLP:
@@ -959,7 +979,7 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.3.1 — Full VDP info + Workers AI descriptions (Aug 19, 2026)
 
-**Jaden:** "the full info when you click on car isnt there — make it like the HTML I sent" + "add a different free AI to gen the description, make it catchy, don't mention Eagle Ridge".
+**The developer:** "the full info when you click on car isnt there — make it like the HTML I sent" + "add a different free AI to gen the description, make it catchy, don't mention Eagle Ridge".
 
 ### VDP — now matches the dealership's detail page
 - **Vehicle Details** — proper label:value list (Body Style, Engine, Exterior/Interior Colour, Transmission, Drivetrain, Fuel Type, Mileage, VIN, Stock #).
@@ -978,7 +998,7 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.3.2 — Responsive + image carousel + ZIP/folder upload (Aug 19, 2026)
 
-**Jaden:** make the site adapt to phones; the listing image is "massive and hard to see" (add next/prev buttons); the admin "download all images" button doesn't work (make it download a folder); allow uploading a whole folder of images.
+**The developer:** make the site adapt to phones; the listing image is "massive and hard to see" (add next/prev buttons); the admin "download all images" button doesn't work (make it download a folder); allow uploading a whole folder of images.
 
 ### Changes
 - **`worker/index.js` — `/api/image` proxy:** dealer images (`images.edealer.ca`) don't send CORS headers, so the browser can't fetch them for a ZIP. The worker now proxies `GET /api/image?url=...` (fetches server-side, returns with `Access-Control-Allow-Origin: *`).
@@ -998,7 +1018,7 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.4.2 — Hero fix + Forum (comparison posts) (Aug 19, 2026)
 
-**Jaden:** the first section of the landing page shows nothing ("wheres the text?"), and add a separate forum for posting comparisons like "GMC Acadia vs …" that he can write in the admin, with a title + small text + optional image, that shows up for local searches.
+**The developer:** the first section of the landing page shows nothing ("wheres the text?"), and add a separate forum for posting comparisons like "GMC Acadia vs …" that he can write in the admin, with a title + small text + optional image, that shows up for local searches.
 
 ### Hero bug fixed
 - `initReveals()` was defined but **never called**, so every `.reveal` element (hero text, about) stayed `opacity: 0`. Added `initReveals()` to `init()`. Verified hero title/eyebrow `opacity: 1`.
@@ -1018,7 +1038,7 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.4.1 — Cover photo picker + remove financing calculator (Aug 19, 2026)
 
-**Jaden:** add an option to change a listing's cover photo in the admin, and remove the financing thing on the listing.
+**The developer:** add an option to change a listing's cover photo in the admin, and remove the financing thing on the listing.
 
 ### Changes
 - **Admin — cover photo picker:** in the Images modal, the current cover shows a gold "⭐ Cover" badge; every other image has a "Set cover" button on hover. Clicking it moves that image to the front of `customImages` (cover = first image) and saves, updating the site + admin rows instantly.
@@ -1031,7 +1051,7 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.4.0 — Rebrand to dangm.ca + cars & trucks + phone contact (Aug 19, 2026)
 
-**Jaden:** rename to **dangm.ca**, show **cars and trucks** (not just trucks), contact is by **calling 605-735-1396**, and remove all the " — " em-dashes ("really AI-like and unprofessional").
+**The developer:** rename to **dangm.ca**, show **cars and trucks** (not just trucks), contact is by **calling 605-735-1396**, and remove all the " — " em-dashes ("really AI-like and unprofessional").
 
 ### Changes
 - **Rebrand** (all pages): "Eagle Ridge Trucks" → **dangm.ca**; logo mark `ER` → `DG`; nav CTA "View Trucks" → "View Inventory"; titles/meta/keywords updated.
@@ -1048,7 +1068,7 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.3.4 — Fix bulk image upload (KV storage instead of D1) (Aug 19, 2026)
 
-**Jaden:** bulk image upload (folder + multiple files) fails with `Cross-Origin Request Blocked … 500` on `/api/admin/truck/:id`.
+**The developer:** bulk image upload (folder + multiple files) fails with `Cross-Origin Request Blocked … 500` on `/api/admin/truck/:id`.
 
 ### Root cause
 - Uploaded images were stored as **base64 data-URLs in D1**, but D1 rows cap at **2MB** (`D1_ERROR: string or blob too big: SQLITE_TOOBIG`). Multiple photos blow past 2MB instantly.
@@ -1071,7 +1091,7 @@ npx wrangler pages deploy pages-dist --project-name eagle-ridge-trucks --branch 
 
 ## v0.3.3 — Save images as real files (Aug 19, 2026)
 
-**Jaden:** "make an option to copy all images and paste" → "still link! we need images only to be downloaded then i can copy!" — i.e. he needs actual image FILES, not links.
+**The developer:** "make an option to copy all images and paste" → "still link! we need images only to be downloaded then i can copy!" — i.e. he needs actual image FILES, not links.
 
 ### Why "copy" couldn't work
 - Chrome throws `NotAllowedError: Support for multiple ClipboardItems is not implemented` when you try to write multiple raw images in one `navigator.clipboard.write()`.

@@ -320,6 +320,7 @@ NAV = """  <nav class="nav scrolled" id="nav">
         <a href="/blog/">Guides</a>
         <a href="/forum/">Forum</a>
         <a href="/about.html">About</a>
+        <a href="/index.html#contact">Contact</a>
       </div>
       <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
       <a href="/inventory.html" class="nav-cta">View Inventory</a>
@@ -425,8 +426,10 @@ CITY_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v={css_v}">
+  <link rel="stylesheet" href="/css/glass.css?v=1">
+  <script src="/js/glass.js?v=1" defer></script>
 </head>
-<body class="page-inventory">
+<body class="page-inventory glass">
 {nav}
   <header class="page-hero" id="top">
     <div class="page-hero-bg"></div>
@@ -531,8 +534,10 @@ HUB_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v={css_v}">
+  <link rel="stylesheet" href="/css/glass.css?v=1">
+  <script src="/js/glass.js?v=1" defer></script>
 </head>
-<body class="page-inventory">
+<body class="page-inventory glass">
 {nav}
   <header class="page-hero" id="top">
     <div class="page-hero-bg"></div>
