@@ -71,6 +71,24 @@ def all_images(truck):
     return out
 
 
+PHOTOS_DIR = os.path.join(SITE, "images", "photos")
+
+
+def photo_name(url):
+    """FNV-1a 32 of the photo URL; must match build-photos.py and photoKey() in js."""
+    h = 0x811C9DC5
+    for b in url.encode("utf-8"):
+        h ^= b
+        h = (h * 0x01000193) & 0xFFFFFFFF
+    return f"{h:08x}.webp"
+
+
+def fast_photo(url, base_rel="../../"):
+    """Baked WebP copy from sync/build-photos.py when it exists, else the original."""
+    name = photo_name(url)
+    return f"{base_rel}images/photos/{name}" if os.path.exists(os.path.join(PHOTOS_DIR, name)) else url
+
+
 def gallery_html(truck, h1, fallback):
     """Interactive photo gallery, server-rendered: every photo is in the HTML
     (Google can index them); js/vdp-gallery.js adds arrows/thumbs/keys/swipe.
@@ -82,7 +100,7 @@ def gallery_html(truck, h1, fallback):
     n = len(imgs)
     parts = [f'        <div class="vdp-gallery" data-static-gallery>',
              '          <div class="vdp-main-wrap">',
-             f'            <img class="vdp-main" src="{esc(imgs[0])}" alt="{alt}, photo 1 of {n}" data-alt="{alt}" fetchpriority="high">']
+             f'            <img class="vdp-main" src="{esc(fast_photo(imgs[0]))}" data-orig="{esc(imgs[0])}" alt="{alt}, photo 1 of {n}" data-alt="{alt}" fetchpriority="high">']
     if n > 1:
         parts += ['            <button class="vdp-nav vdp-prev" data-dir="-1" aria-label="Previous photo">&lsaquo;</button>',
                   '            <button class="vdp-nav vdp-next" data-dir="1" aria-label="Next photo">&rsaquo;</button>',
@@ -93,7 +111,7 @@ def gallery_html(truck, h1, fallback):
         for i, u in enumerate(imgs):
             first = i == 0
             rows.append(
-                f'            <img class="vdp-thumb{" active" if first else ""}" src="{PIXEL}" data-src="{esc(u)}" data-full="{esc(u)}" '
+                f'            <img class="vdp-thumb{" active" if first else ""}" src="{PIXEL}" data-src="{esc(fast_photo(u))}" data-full="{esc(fast_photo(u))}" data-orig="{esc(u)}" '
                 f'alt="{alt}, photo {i + 1}" decoding="async" tabindex="0" role="button"'
                 + (' aria-current="true"' if first else "") + ">"
             )
@@ -281,7 +299,7 @@ PAGE_TMPL = """<!DOCTYPE html>
   <link rel="stylesheet" href="{base_rel}css/styles.css?v=25">
   <link rel="stylesheet" href="{base_rel}css/glass.css?v=3">
   <script src="{base_rel}js/glass.js?v=2" defer></script>
-  <script src="{base_rel}js/vdp-gallery.js?v=1" defer></script>
+  <script src="{base_rel}js/vdp-gallery.js?v=2" defer></script>
 </head>
 <body class="page-vehicle glass">
   <nav class="nav scrolled">

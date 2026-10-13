@@ -11,6 +11,9 @@ __pycache__/
 data/images/
 data/sync-meta.json
 
+# Fast photo copies (sync/build-photos.py; cached in CI, never committed)
+site/images/photos/
+
 # Generated static VDP pages (rebuilt by sync/build-sitemap.py before deploy)
 site/v/
 
