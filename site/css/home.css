@@ -759,3 +759,23 @@ body.home-v2 .about-list li::before { content: none; }
   .xs-haze { filter: none; }
   body.home-v2 :is(.truck-card, .service-card) { transform-style: flat; }
 }
+
+/* Never crop vehicle photos: show the whole image, letterboxed */
+body.home-v2 .truck-card-img { object-fit: contain; background: #0d1120; }
+body.home-v2 .city-links a { color: var(--accent-2); }
+
+/* Phones: sticky lead bar (the hero is a long scroll track) */
+.sticky-cta { display: none; }
+@media (max-width: 820px) {
+  .sticky-cta {
+    display: flex; gap: 10px;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: rgba(9, 12, 24, 0.92);
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.35);
+  }
+  .sticky-cta .btn { flex: 1; text-align: center; padding: 12px 10px; font-size: 14px; min-height: 44px; }
+  body.home-v2 { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
+  .xh-disclose { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+}

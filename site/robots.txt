@@ -1,19 +1,21 @@
+# dangm.ca
+# Search engines and AI search/answer engines (Google, Bing, ChatGPT search,
+# Perplexity, Claude search) may crawl everything public.
 User-agent: *
 Allow: /
 Disallow: /admin/
 Disallow: /api/
 
-Sitemap: https://dangm.ca/sitemap.xml
-Sitemap: https://dangm.ca/sitemap-vehicles.xml
-Sitemap: https://dangm.ca/sitemap-blog.xml
-Sitemap: https://dangm.ca/sitemap-forum.xml
-Sitemap: https://dangm.ca/sitemap-locations.xml
+# AI model-training crawlers are blocked (Cloudflare already blocks them at the
+# edge; this keeps robots.txt and the real behaviour consistent). This does not
+# affect appearing in AI search answers.
+User-agent: GPTBot
+Disallow: /
 
-# Googlebot
-User-agent: Googlebot
-Allow: /
-Disallow: /admin/
-Disallow: /api/
+User-agent: ClaudeBot
+Disallow: /
 
-# Crawl-delay: polite crawl rate
-Crawl-delay: 2
+User-agent: CCBot
+Disallow: /
+
+Sitemap: https://dangm.ca/sitemap-index.xml

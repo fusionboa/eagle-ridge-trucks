@@ -13,6 +13,10 @@ SITE = os.path.join(ROOT, "site")
 POSTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "posts")
 BASE = "https://dangm.ca"
 TODAY = datetime.date.today().isoformat()
+# Date the guides' content last changed (shown + used in schema/sitemap).
+# Bump it when you edit post content; don't use the build date (Google learns
+# to ignore lastmod that changes every build).
+CONTENT_DATE = "2026-10-06"
 
 def esc(s): return html.escape(str(s), quote=True)
 
@@ -41,17 +45,29 @@ def render_section(s):
             out.append(f"<p>{esc(b)}</p>")
     return "\n".join(out)
 
+def inventory_link(p):
+    """Matching in-stock category for the guide's topic (static /inventory/<slug>/ pages)."""
+    slug = p["slug"]
+    if any(k in slug for k in ("tahoe", "yukon", "terrain", "equinox")):
+        return "/inventory/new-suvs/", "Shop SUVs in stock"
+    if any(k in slug for k in ("sierra", "silverado", "canyon", "colorado", "f-150", "truck", "diesel", "denali", "at4")):
+        return "/inventory/new-trucks/", "Shop trucks in stock"
+    return "/inventory", "Shop current inventory"
+
+
 def render_post(p):
     slug, title, desc, h1 = p["slug"], p["title"], p["desc"], p["h1"]
     img = f"{BASE}/images/banners/{p['img']}"
+    # raster copy for Article/og:image (Google + link previews ignore SVG)
+    img_png = img[:-4] + ".png" if img.endswith(".svg") else img
     url = f"{BASE}/blog/{slug}/"
     article_ld = json.dumps({
         "@context": "https://schema.org", "@type": "Article",
-        "headline": h1, "description": desc, "image": img,
-        "datePublished": p.get("date", TODAY), "dateModified": TODAY,
-        "mainEntityOfPage": url,
-        "author": {"@type": "Person", "name": "Dan", "jobTitle": "Personal GM Consultant", "url": f"{BASE}/about"},
-        "publisher": {"@type": "AutoDealer", "@id": f"{BASE}/#business", "name": "DanGM", "url": BASE, "telephone": "604-735-1396"},
+        "headline": h1, "description": desc, "image": img_png, "inLanguage": "en-CA",
+        "datePublished": p.get("date", CONTENT_DATE), "dateModified": p.get("updated", p.get("date", CONTENT_DATE)),
+        "mainEntityOfPage": {"@type": "WebPage", "@id": url},
+        "author": {"@type": "Person", "@id": f"{BASE}/about#dan", "name": "Dan", "jobTitle": "Personal GM Consultant", "url": f"{BASE}/about", "worksFor": {"@id": f"{BASE}/#dealer"}},
+        "publisher": {"@type": "Organization", "@id": f"{BASE}/#business", "name": "DanGM", "url": f"{BASE}/", "logo": {"@type": "ImageObject", "url": f"{BASE}/images/logo.png"}},
     }, ensure_ascii=False)
     faq_ld = json.dumps({
         "@context": "https://schema.org", "@type": "FAQPage",
@@ -81,15 +97,15 @@ def render_post(p):
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="geo.region" content="CA-BC">
   <meta name="geo.placename" content="Metro Vancouver, BC">
-  <link rel="alternate" hreflang="en-CA" href="{url.rstrip('/')}">
-  <link rel="alternate" hreflang="x-default" href="{url.rstrip('/')}">
-  <link rel="canonical" href="{url.rstrip('/')}">
+  <link rel="alternate" hreflang="en-CA" href="{url}">
+  <link rel="alternate" hreflang="x-default" href="{url}">
+  <link rel="canonical" href="{url}">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="DanGM">
   <meta property="og:title" content="{esc(title)}">
   <meta property="og:description" content="{esc(desc)}">
-  <meta property="og:url" content="{url.rstrip('/')}">
-  <meta property="og:image" content="{img}">
+  <meta property="og:url" content="{url}">
+  <meta property="og:image" content="{img_png}">
   <meta property="og:locale" content="en_CA">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="{esc(title)}">
@@ -102,27 +118,27 @@ def render_post(p):
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v=25">
-  <link rel="stylesheet" href="/css/glass.css?v=3">
+  <link rel="stylesheet" href="/css/glass.css?v=4">
   <script src="/js/glass.js?v=2" defer></script>
 </head>
 <body class="page-vehicle glass">
   <nav class="nav scrolled" id="nav">
     <div class="nav-inner">
-      <a href="/index.html" class="nav-logo">
+      <a href="/" class="nav-logo">
         <img class="logo-mark logo-img" src="/images/logo.png" alt="DanGM logo, personal GM consultant in Coquitlam BC">
         <span class="logo-text">dangm<em>.ca</em></span>
       </a>
       <div class="nav-links">
-        <a href="/index.html">Home</a>
-        <a href="/inventory.html">Inventory</a>
+        <a href="/">Home</a>
+        <a href="/inventory">Inventory</a>
         <a href="/locations/">Locations</a>
         <a href="/blog/" class="active">Guides</a>
         <a href="/forum/">Forum</a>
-        <a href="/about.html">About</a>
-        <a href="/index.html#contact">Contact</a>
+        <a href="/about">About</a>
+        <a href="/#contact">Contact</a>
       </div>
       <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
-      <a href="/inventory.html" class="nav-cta">View Inventory</a>
+      <a href="/inventory" class="nav-cta">View Inventory</a>
     </div>
   </nav>
 
@@ -131,21 +147,22 @@ def render_post(p):
       <a href="/blog/" class="vdp-back">&larr; All car buying guides</a>
       <p class="eyebrow">CAR BUYING GUIDE · {esc(p.get("kicker", "COMPARISON"))}</p>
       <h1 class="forum-post-title">{esc(h1)}</h1>
-      <p class="lead-note">By Dan · Personal GM Consultant, Coquitlam BC · Updated {TODAY}</p>
+      <p class="lead-note">By Dan · Personal GM Consultant, Coquitlam BC · Updated {p.get('updated', p.get('date', CONTENT_DATE))}</p>
       <img class="forum-post-img" src="{img}" alt="{esc(p.get("img_alt", h1))}" width="800" height="450" style="max-width:100%;height:auto;border-radius:16px" loading="lazy">
       <div class="forum-post-body">
         <p>{esc(p["hook"])}</p>
         {body}
         <div class="vdp-details" style="margin-top:28px"><h2>The verdict, in one line</h2><p><strong>{esc(p["verdict_line"])}</strong></p></div>
         <div class="forum-post-cta">
-          <a href="tel:6047351396" class="btn btn-primary">Call 604-735-1396</a>
+          <a href="{inventory_link(p)[0]}" class="btn btn-primary">{inventory_link(p)[1]}</a>
           <a href="/#lead" class="btn btn-ghost">Apply for Financing Approval</a>
+          <a href="tel:6047351396" class="btn btn-ghost">Call 604-735-1396</a>
         </div>
         <h2>Frequently asked questions</h2>
         <div class="faq-grid">{faq_html}</div>
         <h2>Keep reading</h2>
         <ul>{related}</ul>
-        <p>Every vehicle mentioned here is live in the <a href="/inventory.html">current Eagle Ridge GM inventory</a>. Want the short version for your situation? <a href="/#lead">Ask Dan directly</a>, or call 604-735-1396.</p>
+        <p>See what's on the lot right now in the <a href="/inventory">current Eagle Ridge GM inventory</a> (used trucks: <a href="/inventory/used-trucks/">browse</a>). Want the short version for your situation? <a href="/#lead">Ask Dan directly</a>, or call 604-735-1396.</p>
       </div>
     </article>
   </main>
@@ -157,13 +174,14 @@ def render_post(p):
         <span class="logo-text">dangm<em>.ca</em></span>
       </div>
       <p>© <span id="year"></span> dangm.ca. All rights reserved.</p>
+      <p class="footer-disclosure" style="font-size:12px;opacity:.7;margin-top:6px">Vehicles are sold and financed through Eagle Ridge Chevrolet Buick GMC, a licensed motor dealer in British Columbia. Financing subject to lender approval.</p>
       <nav class="footer-links" style="display:flex;flex-wrap:wrap;gap:1.5rem;justify-content:center;margin-top:14px" aria-label="Footer">
-        <a href="/inventory.html">Inventory</a>
+        <a href="/inventory">Inventory</a>
         <a href="/locations/">Locations</a>
         <a href="/locations/surrey/">Car Financing Surrey</a>
         <a href="/blog/">Car Buying Guides</a>
-        <a href="/forum.html">Forum</a>
-        <a href="/about.html">About</a>
+        <a href="/forum/">Forum</a>
+        <a href="/about">About</a>
       </nav>
     </div>
   </footer>
@@ -172,7 +190,7 @@ def render_post(p):
     window.SITE_PAGE = 'landing';
     window.SITE_CONFIG = {{ apiBase: 'https://eagle-ridge-trucks.fblister.workers.dev/api' }};
   </script>
-  <script src="/js/main.js?v=25"></script>
+  <script src="/js/main.js?v=26"></script>
 </body>
 </html>
 '''
@@ -187,7 +205,7 @@ def main():
         os.makedirs(d, exist_ok=True)
         with open(os.path.join(d, "index.html"), "w", encoding="utf-8") as f:
             f.write(render_post(p))
-        urls.append(f"  <url>\n    <loc>{BASE}/blog/{p['slug']}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n    <lastmod>{TODAY}</lastmod>\n  </url>")
+        urls.append(f"  <url>\n    <loc>{BASE}/blog/{p['slug']}/</loc>\n    <lastmod>{p.get('updated', p.get('date', CONTENT_DATE))}</lastmod>\n  </url>")
         cards.append(
             f'      <a class="forum-card reveal" href="/blog/{p["slug"]}/">\n'
             f'        <div class="forum-card-img-wrap"><img class="forum-card-img" src="/images/banners/{p["img"]}" alt="{esc(p.get("img_alt", p["h1"]))}" loading="lazy"></div>\n'

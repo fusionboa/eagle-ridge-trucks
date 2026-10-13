@@ -16,20 +16,46 @@ const FLAGSHIP_COUNT = 3;
 let allTrucks = [];
 
 // ─── Load trucks (home + inventory) ────────────────────────
+// Inventory snapshot baked hourly by sync/build-sitemap.py (same listed
+// vehicles as the API, without long descriptions): served by Cloudflare in
+// well under a second, while the live API can take 10-20 s for ~1.2 MB.
+const SNAPSHOT = '/data/inventory.json';
+const fingerprint = (list) => list.map((t) => `${t.id}:${t.price}:${(t.images || [])[0] || ''}`).join('|');
+
 async function loadTrucks() {
+  // 1. Render instantly from the snapshot
+  let shown = '';
+  try {
+    const res = await fetch(SNAPSHOT, { cache: 'no-cache' });
+    if (res.ok) {
+      const data = await res.json();
+      allTrucks = normalizeTrucks(Array.isArray(data) ? data : data.trucks || []);
+      if (allTrucks.length) { renderAll(); updateStatCount(); shown = fingerprint(allTrucks); }
+    }
+  } catch (_) { /* fall through to the live API */ }
+
+  // 2. Refresh from the live API (admin edits, price changes since the last
+  //    bake) and re-render only if anything actually changed
   try {
     const res = await fetch(`${API_BASE}/trucks`);
     if (!res.ok) throw new Error('API failed');
     const data = await res.json();
-    allTrucks = normalizeTrucks(Array.isArray(data) ? data : data.trucks || []);
-  } catch (e) {
-    try {
-      const res = await fetch(DATA_FALLBACK);
-      const data = await res.json();
-      allTrucks = normalizeTrucks(Object.values(data).filter((t) => t.listed));
-    } catch (e2) {
-      console.error('Could not load trucks', e2);
+    const live = normalizeTrucks(Array.isArray(data) ? data : data.trucks || []);
+    if (live.length && fingerprint(live) !== shown) {
+      allTrucks = live;
+      renderAll();
+      updateStatCount();
     }
+    return;
+  } catch (e) {
+    if (shown) return; // the snapshot is already on screen
+  }
+  try {
+    const res = await fetch(DATA_FALLBACK);
+    const data = await res.json();
+    allTrucks = normalizeTrucks(Object.values(data).filter((t) => t.listed));
+  } catch (e2) {
+    console.error('Could not load trucks', e2);
   }
   renderAll();
   updateStatCount();
@@ -40,7 +66,7 @@ async function loadVehicle() {
   const id = new URLSearchParams(location.search).get('id');
   const el = document.getElementById('vehicleContent');
   if (!id) {
-    el.innerHTML = '<div class="empty">No vehicle specified. <a href="inventory.html">Browse inventory</a></div>';
+    el.innerHTML = '<div class="empty">No vehicle specified. <a href="/inventory">Browse inventory</a></div>';
     return;
   }
   try {
@@ -51,7 +77,7 @@ async function loadVehicle() {
     if (!t) throw new Error('not found');
     renderVehicle(t);
   } catch (e) {
-    el.innerHTML = '<div class="empty">Vehicle not found. <a href="inventory.html">Browse inventory</a></div>';
+    el.innerHTML = '<div class="empty">Vehicle not found. <a href="/inventory">Browse inventory</a></div>';
   }
 }
 
@@ -68,6 +94,28 @@ function normalizeTrucks(trucks) {
 function resolveImage(img) {
   if (/^https?:\/\//i.test(img)) return img;
   return `data/${img}`;
+}
+
+// Fast photo copies baked hourly by sync/build-photos.py: the full photo
+// (never cropped), resized + compressed to ~60-100 KB WebP at
+// /images/photos/<fnv1a32(url)>.webp instead of the 1-2 MB eDealer PNG.
+// Not baked yet (brand-new arrival)? The <img> falls back to the original.
+function photoKey(url) {
+  let h = 0x811c9dc5;
+  for (const b of new TextEncoder().encode(url)) {
+    h ^= b;
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
+}
+function fastPhoto(url) {
+  return /^https?:\/\//i.test(url || '') ? `/images/photos/${photoKey(url)}.webp` : url;
+}
+// <img> attributes: fast copy + automatic fallback to the original
+function photoAttrs(url) {
+  const fast = fastPhoto(url);
+  if (fast === url) return `src="${url}"`;
+  return `src="${fast}" data-orig="${url}" onerror="this.onerror=null;this.src=this.dataset.orig"`;
 }
 
 // Shared price helper ("34544 CAD" → 34544)
@@ -551,7 +599,7 @@ function gridCardHTML(t, i) {
   return `
     <a class="truck-card reveal" href="${href}" style="transition-delay:${Math.min(i * 0.04, 0.3)}s">
       <div class="truck-card-img-wrap">
-        ${img ? `<img class="truck-card-img" src="${img}" alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy">` : '<div class="truck-card-img"></div>'}
+        ${img ? `<img class="truck-card-img" ${photoAttrs(img)} alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy" decoding="async">` : '<div class="truck-card-img"></div>'}
         ${t.bodyStyle ? `<span class="truck-badge">${escapeHtml(t.bodyStyle)}</span>` : ''}
       </div>
       <div class="truck-card-body">
@@ -575,7 +623,7 @@ function cardHTML(t, i, isFlagship) {
     return `
       <a class="truck-card reveal" href="${href}" style="transition-delay:${Math.min(i * 0.05, 0.4)}s">
         <div class="truck-card-img-wrap">
-          ${img ? `<img class="truck-card-img" src="${img}" alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy">` : '<div class="truck-card-img"></div>'}
+          ${img ? `<img class="truck-card-img" ${photoAttrs(img)} alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy" decoding="async">` : '<div class="truck-card-img"></div>'}
           ${t.bodyStyle ? `<span class="truck-badge">${escapeHtml(t.bodyStyle)}</span>` : ''}
         </div>
         <div class="truck-card-body">
@@ -592,7 +640,7 @@ function cardHTML(t, i, isFlagship) {
   return `
     <a class="truck-card truck-card-list reveal" href="${href}" style="transition-delay:${Math.min(i * 0.04, 0.3)}s">
       <div class="truck-card-img-wrap list-img">
-        ${img ? `<img class="truck-card-img" src="${img}" alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy">` : '<div class="truck-card-img"></div>'}
+        ${img ? `<img class="truck-card-img" ${photoAttrs(img)} alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy" decoding="async">` : '<div class="truck-card-img"></div>'}
         ${t.bodyStyle ? `<span class="truck-badge">${escapeHtml(t.bodyStyle)}</span>` : ''}
       </div>
       <div class="truck-card-body list-body">
@@ -632,12 +680,12 @@ function renderVehicle(t) {
   const gallery = imgs.length ? `
     <div class="vdp-gallery">
       <div class="vdp-main-wrap">
-        <img class="vdp-main" id="vdpMain" src="${imgs[0]}" alt="${escapeHtml(title)} for sale in Coquitlam BC">
+        <img class="vdp-main" id="vdpMain" src="${fastPhoto(imgs[0])}" alt="${escapeHtml(title)} for sale in Coquitlam BC" fetchpriority="high">
         ${imgs.length > 1 ? `<button class="vdp-nav vdp-prev" data-dir="-1" aria-label="Previous image">‹</button>
         <button class="vdp-nav vdp-next" data-dir="1" aria-label="Next image">›</button>
         <span class="vdp-count" id="vdpCount">1 / ${imgs.length}</span>` : ''}
       </div>
-      ${imgs.length > 1 ? `<div class="vdp-thumbs">${imgs.map((im, i) => `<img class="vdp-thumb ${i === 0 ? 'active' : ''}" src="${im}" data-idx="${i}" alt="${escapeHtml(title)} — photo ${i + 1}">`).join('')}</div>` : ''}
+      ${imgs.length > 1 ? `<div class="vdp-thumbs">${imgs.map((im, i) => `<img class="vdp-thumb ${i === 0 ? 'active' : ''}" ${photoAttrs(im)} data-idx="${i}" alt="${escapeHtml(title)}, photo ${i + 1}" loading="lazy" decoding="async">`).join('')}</div>` : ''}
     </div>` : '<div class="vdp-noimg">📷</div>';
 
   // Full vehicle details (dealership-style label:value list)
@@ -685,7 +733,7 @@ function renderVehicle(t) {
 
   document.getElementById('vehicleContent').innerHTML = `
     <div class="vdp-hero">
-      <a href="inventory.html" class="vdp-back">← Back to inventory</a>
+      <a href="/inventory" class="vdp-back">← Back to inventory</a>
       <h1 class="vdp-title">${escapeHtml(title)}</h1>
       <div class="vdp-price">${escapeHtml(price)}</div>
       ${tagsHTML(t, 'vdp-tags')}
@@ -723,7 +771,7 @@ function renderVehicle(t) {
       </div>
       <div class="vdp-contact-actions">
         <a href="tel:6047351396" class="btn btn-primary">Call 604-735-1396</a>
-        <a href="inventory.html" class="btn btn-ghost">Back to inventory</a>
+        <a href="/inventory" class="btn btn-ghost">Back to inventory</a>
       </div>
     </section>
     ${renderRelatedVehicles(t)}
@@ -731,10 +779,19 @@ function renderVehicle(t) {
 
   // Image carousel: prev/next buttons + thumbnail click
   let cur = 0;
+  const mainImg = document.getElementById('vdpMain');
+  // fast copy missing for this photo: fall back to the original
+  if (mainImg) mainImg.addEventListener('error', () => {
+    if (mainImg.src !== imgs[cur]) mainImg.src = imgs[cur];
+  });
+  const warm = (k) => { const im = new Image(); im.decoding = 'async'; im.src = fastPhoto(imgs[(k + imgs.length) % imgs.length]); };
+  if (imgs.length > 1) warm(1);
   const showImage = (i) => {
     if (!imgs.length) return;
     cur = (i + imgs.length) % imgs.length;
-    document.getElementById('vdpMain').src = imgs[cur];
+    mainImg.src = fastPhoto(imgs[cur]);
+    warm(cur + 1); // next/previous are ready before the arrow is pressed
+    warm(cur - 1);
     const count = document.getElementById('vdpCount');
     if (count) count.textContent = `${cur + 1} / ${imgs.length}`;
     const thumbEls = document.querySelectorAll('.vdp-thumb');
@@ -904,7 +961,7 @@ async function loadForumPost() {
   const id = new URLSearchParams(location.search).get('id');
   const el = document.getElementById('forumPost');
   if (!id) {
-    el.innerHTML = '<div class="empty">No post specified. <a href="forum.html">Browse the forum</a></div>';
+    el.innerHTML = '<div class="empty">No post specified. <a href="/forum/">Browse the forum</a></div>';
     return;
   }
   try {
@@ -931,17 +988,17 @@ async function loadForumPost() {
     if (canon) canon.href = staticUrl;
     el.innerHTML = `
       <div class="forum-post">
-        <a href="forum.html" class="vdp-back">← Back to forum</a>
+        <a href="/forum/" class="vdp-back">← Back to forum</a>
         <h1 class="forum-post-title">${escapeHtml(p.title)}</h1>
         ${p.image ? `<img class="forum-post-img" src="${p.image}" alt="${escapeHtml(p.title)}">` : ''}
         <div class="forum-post-body">${formatPostBody(p.body)}</div>
         <div class="forum-post-cta">
-          <a href="inventory.html" class="btn btn-primary">Browse Inventory</a>
+          <a href="/inventory" class="btn btn-primary">Browse Inventory</a>
           <a href="tel:6047351396" class="btn btn-ghost">Call 604-735-1396</a>
         </div>
       </div>`;
   } catch (e) {
-    el.innerHTML = '<div class="empty">Post not found. <a href="forum.html">Browse the forum</a></div>';
+    el.innerHTML = '<div class="empty">Post not found. <a href="/forum/">Browse the forum</a></div>';
   }
 }
 
@@ -959,7 +1016,8 @@ function init() {
   initNav();
   initReveals();
   initLeadForm();
-  document.getElementById('year').textContent = new Date().getFullYear();
+  const yearEl = document.getElementById('year'); // not every template has one
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
 
   // Static pages (location landing pages, blog guides): nav + reveals + lead
   // form only. Return before loadTrucks() so pages without a truck grid
@@ -981,7 +1039,15 @@ function init() {
     return;
   }
 
+  // Pages without a vehicle grid (about, 404, ...) have nothing to load
+  // (about.html used to throw in applyFilters here)
+  if (!document.getElementById('truckGrid')) return;
+
   if (PAGE === 'inventory') {
+    // /inventory?q=sierra denali (site search, sold-vehicle 404 "see similar")
+    const q = new URLSearchParams(location.search).get('q');
+    const search = document.getElementById('searchInput');
+    if (q && search) search.value = q.slice(0, 80);
     ['searchInput', 'makeFilter', 'typeFilter', 'conditionFilter', 'sortFilter'].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('input', renderAll);

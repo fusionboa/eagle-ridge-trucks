@@ -337,3 +337,26 @@ body.glass :is(.truck-card, .forum-card, .feature) {
   body.glass .xs-haze { filter: none; }
   body.glass :is(.truck-card, .forum-card, .service-card) { transform-style: flat; }
 }
+
+/* ─── Vehicle summary, inventory index, uncropped photos ─── */
+body.glass .vdp-summary { margin-top: 14px; max-width: 760px; color: #d3d9e4; font-size: 15.5px; line-height: 1.7; }
+body.glass .inventory-index { max-width: 1240px; margin: 0 auto; padding-top: 0; }
+body.glass .inventory-cats { text-align: center; color: var(--text-muted); line-height: 2; }
+body.glass .inventory-cats a, body.glass .inventory-az a { color: var(--accent-2); }
+body.glass .inventory-az {
+  margin-top: 18px; padding: 16px 22px; border-radius: 18px;
+  background: rgba(16, 20, 36, 0.6); border: 1px solid rgba(255, 255, 255, 0.12);
+}
+body.glass .inventory-az summary { cursor: pointer; font-weight: 600; color: #fff; }
+body.glass .inventory-az ul { columns: 3 260px; margin: 14px 0 0; padding-left: 18px; color: var(--text-muted); font-size: 13.5px; line-height: 1.9; }
+body.glass .inventory-az li span { opacity: 0.7; }
+/* Never crop vehicle photos: show the whole image, letterboxed */
+body.glass .truck-card-img, body.glass .truck-card-list .list-img .truck-card-img { object-fit: contain; background: #0d1120; }
+
+/* About page body */
+body.glass .about-page-body h2 { font-size: 22px; color: #fff; margin: 28px 0 10px; letter-spacing: -0.01em; }
+body.glass .about-page-body h2:first-child { margin-top: 0; }
+body.glass .about-page-body p { margin: 0 0 12px; }
+body.glass .about-page-body :is(ol, ul) { margin: 0 0 12px; padding-left: 22px; line-height: 1.75; }
+body.glass .about-page-body li { margin-bottom: 8px; }
+body.glass .about-page-body strong { color: #fff; }

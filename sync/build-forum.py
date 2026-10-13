@@ -34,7 +34,7 @@ PHONE = "604-735-1396"
 PHONE_HREF = "tel:6047351396"
 TODAY = datetime.date.today().isoformat()
 CSS_V = "25"
-JS_V = "25"
+JS_V = "26"
 
 
 def esc(s):
@@ -97,12 +97,12 @@ def thread_jsonld(p, slug, url, title, desc, img):
         "headline": clean_text(p.get("title")),
         "text": clean_text(p.get("body")),
         "description": desc,
-        "image": img,
+        "image": (BASE + img if img.startswith("/") else img)[:-4] + ".png" if img.endswith(".svg") else (BASE + img if img.startswith("/") else img),
         "datePublished": (p.get("created_at") or TODAY)[:10],
         "dateModified": (p.get("updated_at") or p.get("created_at") or TODAY)[:10],
         "inLanguage": "en-CA",
-        "author": {"@type": "Person", "name": "Dan", "jobTitle": "Personal GM Consultant", "url": f"{BASE}/about.html"},
-        "publisher": {"@type": "AutoDealer", "@id": f"{BASE}/#business", "name": "DanGM", "url": BASE, "telephone": PHONE},
+        "author": {"@type": "Person", "@id": f"{BASE}/about#dan", "name": "Dan", "jobTitle": "Personal GM Consultant", "url": f"{BASE}/about", "worksFor": {"@id": f"{BASE}/#dealer"}},
+        "publisher": {"@type": "Organization", "@id": f"{BASE}/#business", "name": "DanGM", "url": f"{BASE}/", "logo": {"@type": "ImageObject", "url": f"{BASE}/images/logo.png"}},
         "isPartOf": {"@type": "WebPage", "@id": f"{BASE}/forum/", "name": "Lower Mainland Auto Forum"},
         "about": {"@type": "Thing", "name": "Car buying and auto financing in Coquitlam, BC"},
     }
@@ -126,21 +126,21 @@ def breadcrumb_jsonld(title, url):
 
 NAV = """  <nav class="nav scrolled" id="nav">
     <div class="nav-inner">
-      <a href="/index.html" class="nav-logo">
+      <a href="/" class="nav-logo">
         <img class="logo-mark logo-img" src="/images/logo.png" alt="DanGM logo, personal GM consultant in Coquitlam BC">
         <span class="logo-text">dangm<em>.ca</em></span>
       </a>
       <div class="nav-links">
-        <a href="/index.html">Home</a>
-        <a href="/inventory.html">Inventory</a>
+        <a href="/">Home</a>
+        <a href="/inventory">Inventory</a>
         <a href="/locations/">Locations</a>
         <a href="/blog/">Guides</a>
         <a href="/forum/" class="active">Forum</a>
-        <a href="/about.html">About</a>
-        <a href="/index.html#contact">Contact</a>
+        <a href="/about">About</a>
+        <a href="/#contact">Contact</a>
       </div>
       <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
-      <a href="/inventory.html" class="nav-cta">View Inventory</a>
+      <a href="/inventory" class="nav-cta">View Inventory</a>
     </div>
   </nav>
 """
@@ -152,13 +152,14 @@ FOOTER = """  <footer class="footer">
         <span class="logo-text">dangm<em>.ca</em></span>
       </div>
       <p>© <span id="year"></span> dangm.ca. All rights reserved.</p>
+      <p class="footer-disclosure" style="font-size:12px;opacity:.7;margin-top:6px">Vehicles are sold and financed through Eagle Ridge Chevrolet Buick GMC, a licensed motor dealer in British Columbia. Financing subject to lender approval.</p>
       <nav class="footer-links" style="display:flex;flex-wrap:wrap;gap:1.5rem;justify-content:center;margin-top:14px" aria-label="Footer">
-        <a href="/inventory.html">Inventory</a>
+        <a href="/inventory">Inventory</a>
         <a href="/locations/">Locations</a>
         <a href="/locations/surrey/">Car Financing Surrey</a>
         <a href="/blog/">Car Buying Guides</a>
         <a href="/forum/">Forum</a>
-        <a href="/about.html">About</a>
+        <a href="/about">About</a>
       </nav>
     </div>
   </footer>
@@ -207,7 +208,7 @@ THREAD_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v={css_v}">
-  <link rel="stylesheet" href="/css/glass.css?v=3">
+  <link rel="stylesheet" href="/css/glass.css?v=4">
   <script src="/js/glass.js?v=2" defer></script>
 </head>
 <body class="page-vehicle glass">
@@ -225,7 +226,7 @@ THREAD_TMPL = """<!DOCTYPE html>
         <a href="{phone_href}" class="btn btn-primary">Call {phone}</a>
         <a href="/#lead" class="btn btn-ghost">Apply for financing approval</a>
       </div>
-      <p>Want a straight answer about your own situation in the Tri-Cities or Metro Vancouver? <a href="/#lead">Ask Dan directly</a>, or browse the <a href="/inventory.html">current Eagle Ridge GM inventory</a> in Coquitlam first.</p>
+      <p>Want a straight answer about your own situation in the Tri-Cities or Metro Vancouver? <a href="/#lead">Ask Dan directly</a>, or browse the <a href="/inventory">current Eagle Ridge GM inventory</a> in Coquitlam first.</p>
       <h2>More from the Lower Mainland Auto Forum</h2>
       <ul>
         {related}
@@ -274,7 +275,7 @@ HUB_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v={css_v}">
-  <link rel="stylesheet" href="/css/glass.css?v=3">
+  <link rel="stylesheet" href="/css/glass.css?v=4">
   <script src="/js/glass.js?v=2" defer></script>
 </head>
 <body class="page-inventory glass">
@@ -308,7 +309,7 @@ def render_thread(p, slug, related):
     url = f"{BASE}/forum/{slug}/"
     title = meta_title(p)
     desc = meta_desc(p)
-    img = p.get("image") or f"{BASE}/images/banners/zero-pressure-used-car-buying-coquitlam.svg"
+    img = p.get("image") or f"{BASE}/images/banners/zero-pressure-used-car-buying-coquitlam.png"
     rel_html = "\n        ".join(
         f'<li><a href="/forum/{r_slug}/">{esc(clean_text(r["title"]))}</a></li>'
         for r_slug, r in related
@@ -316,14 +317,14 @@ def render_thread(p, slug, related):
     return THREAD_TMPL.format(
         title=esc(title),
         desc=esc(desc),
-        url_rstrip=url.rstrip("/"),
+        url_rstrip=url,
         img=esc(img),
         thread_ld=thread_jsonld(p, slug, url, title, desc, img),
         breadcrumb_ld=breadcrumb_jsonld(p.get("title"), url),
         nav=NAV,
         h1=esc(clean_text(p.get("title"))),
         body=body_paragraphs(p.get("body")),
-        today=TODAY,
+        today=(p.get("updated_at") or p.get("created_at") or TODAY)[:10],
         phone=PHONE,
         phone_href=PHONE_HREF,
         related=rel_html,
@@ -402,8 +403,7 @@ def main():
             f.write(render_thread(p, slug, related))
         urls.append(
             f"  <url>\n    <loc>{BASE}/forum/{slug}/</loc>\n"
-            f"    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n"
-            f"    <lastmod>{TODAY}</lastmod>\n  </url>"
+            f"    <lastmod>{(p.get('updated_at') or p.get('created_at') or TODAY)[:10]}</lastmod>\n  </url>"
         )
         written += 1
 

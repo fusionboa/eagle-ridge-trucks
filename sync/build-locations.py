@@ -30,8 +30,10 @@ BASE = "https://dangm.ca"
 PHONE = "604-735-1396"
 PHONE_HREF = "tel:6047351396"
 TODAY = datetime.date.today().isoformat()
+# Date the city pages' content last changed (sitemap lastmod). Bump on edits.
+CONTENT_DATE = "2026-10-13"
 CSS_V = "25"
-JS_V = "25"
+JS_V = "26"
 
 
 def esc(s):
@@ -270,6 +272,28 @@ CITIES = [
 ]
 
 
+# Unique per-city blocks (the audit found the CTA band identical on every
+# city page). Routes name real roads only: no invented drive times.
+ROUTES = {
+    "coquitlam": "Eagle Ridge GM sits on Barnet Hwy at the Coquitlam and Port Moody line, so from most of Coquitlam it's a short hop along Barnet Hwy or Lougheed Hwy (Hwy 7).",
+    "port-coquitlam": "From Port Coquitlam, head west on Lougheed Hwy (Hwy 7) into Coquitlam and continue onto Barnet Hwy. No highway on-ramps needed.",
+    "port-moody": "From Port Moody it's a straight drive east on Barnet Hwy (Hwy 7A): Eagle Ridge GM is just past the city line into Coquitlam.",
+    "burnaby": "From Burnaby, take Lougheed Hwy (Hwy 7) east, or Hwy 1 east to the Cape Horn interchange and up into Coquitlam, then onto Barnet Hwy.",
+    "new-westminster": "From New Westminster, follow Brunette Ave north to Lougheed Hwy (Hwy 7), then east into Coquitlam and onto Barnet Hwy.",
+    "vancouver": "From Vancouver, take Hwy 1 east or Lougheed Hwy (Hwy 7) east through Burnaby into Coquitlam, then onto Barnet Hwy.",
+    "surrey": "From Surrey, cross the Port Mann Bridge on Hwy 1 and exit at the Cape Horn interchange onto Lougheed Hwy (Hwy 7), then continue into Coquitlam and onto Barnet Hwy.",
+}
+CTAS = {
+    "coquitlam": "Living right here means you can stop in on a lunch break. Tell Dan what you drive now, what you can afford each month and what your credit looks like, and he'll come back with real options and the numbers in writing.",
+    "port-coquitlam": "PoCo drivers get the same one-on-one process as everyone else: a short call, a shortlist that fits your budget, and financing matched to your situation, whether that's a past proposal or no Canadian credit file yet.",
+    "port-moody": "If you commute along Barnet Hwy you already pass the lot. Book a time with Dan and he'll have the vehicles and the financing options ready, so the visit is about test drives, not paperwork.",
+    "burnaby": "Burnaby buyers often compare a lot of dealers. Dan's offer is simple: one consultant, honest answers about what you qualify for, and no pressure if it isn't the right fit.",
+    "new-westminster": "Whether you're in Sapperton, Queensborough or the West End, one call gets you a straight answer on what's possible with your credit, plus a shortlist from Eagle Ridge GM's new and used inventory.",
+    "vancouver": "Vancouver buyers don't need to cross town for a showroom shuffle. Start with a call or the online form, get your options and numbers first, and only make the drive when there's a vehicle worth seeing.",
+    "surrey": "Surrey drivers can sort out the approval side before crossing the bridge. Dan explains the options for bad credit, bankruptcy or newcomer financing up front, so the trip to Coquitlam is for picking up keys.",
+}
+
+
 def service_jsonld(c):
     return json.dumps({
         "@context": "https://schema.org",
@@ -277,15 +301,8 @@ def service_jsonld(c):
         "name": f"Bad Credit Auto Financing {c['name']}",
         "serviceType": "Bad credit, bankruptcy, and new-to-Canada car financing",
         "url": f"{BASE}/locations/{c['slug']}/",
-        "telephone": PHONE,
-        "provider": {
-            "@type": "AutoDealer", "@id": f"{BASE}/#business", "name": "DanGM",
-            "url": BASE, "telephone": PHONE,
-            "address": {"@type": "PostalAddress", "streetAddress": "2595 Barnet Hwy", "addressLocality": "Coquitlam",
-                        "addressRegion": "BC", "postalCode": "V3E 1K9", "addressCountry": "CA"},
-        },
-        "areaServed": [{"@type": "City", "name": c["name"]}, {"@type": "City", "name": "Coquitlam"},
-                       {"@type": "City", "name": "Vancouver"}, {"@type": "AdministrativeArea", "name": "Tri-Cities"}],
+        "provider": {"@type": "ProfessionalService", "@id": f"{BASE}/#business", "name": "DanGM", "telephone": "+1-604-735-1396"},
+        "areaServed": {"@type": "City", "name": c["name"], "containedInPlace": {"@type": "AdministrativeArea", "name": "British Columbia"}},
     }, ensure_ascii=False)
 
 
@@ -309,21 +326,21 @@ def breadcrumb_jsonld(c):
 
 NAV = """  <nav class="nav scrolled" id="nav">
     <div class="nav-inner">
-      <a href="/index.html" class="nav-logo">
+      <a href="/" class="nav-logo">
         <img class="logo-mark logo-img" src="/images/logo.png" alt="DanGM logo, personal GM consultant in Coquitlam BC">
         <span class="logo-text">dangm<em>.ca</em></span>
       </a>
       <div class="nav-links">
-        <a href="/index.html">Home</a>
-        <a href="/inventory.html">Inventory</a>
+        <a href="/">Home</a>
+        <a href="/inventory">Inventory</a>
         <a href="/locations/" class="active">Locations</a>
         <a href="/blog/">Guides</a>
         <a href="/forum/">Forum</a>
-        <a href="/about.html">About</a>
-        <a href="/index.html#contact">Contact</a>
+        <a href="/about">About</a>
+        <a href="/#contact">Contact</a>
       </div>
       <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
-      <a href="/inventory.html" class="nav-cta">View Inventory</a>
+      <a href="/inventory" class="nav-cta">View Inventory</a>
     </div>
   </nav>
 """
@@ -335,25 +352,25 @@ LEAD = """  <section class="lead" id="lead">
         <h2 class="section-title">Talk to Dan, no pressure, ever</h2>
         <p class="section-sub">Tell us what you need and Dan calls you personally. Bad credit, bankruptcy, new-to-Canada, trade-ins: 30 seconds is all it takes.</p>
         <ul class="lead-points">
-          <li>✓ High approval rate: bad credit, bankruptcy, and no credit welcome</li>
+          <li>✓ Financing options for bad credit, bankruptcy and no credit</li>
           <li>✓ New-to-Canada programs: no Canadian credit history, no problem</li>
           <li>✓ Every vehicle hand-picked and personally inspected</li>
-          <li>✓ Honest numbers in writing before you visit</li>
+          <li>✓ The numbers in writing before you visit</li>
         </ul>
       </div>
       <form class="lead-form" id="leadForm" novalidate>
         <input type="text" name="website" id="leadWebsite" class="lead-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
         <div class="lead-field">
           <label for="leadName">Full name</label>
-          <input type="text" id="leadName" name="name" required maxlength="100" placeholder="Your name">
+          <input type="text" id="leadName" name="name" autocomplete="name" required maxlength="100" placeholder="Your name">
         </div>
         <div class="lead-field">
           <label for="leadPhone">Phone number</label>
-          <input type="tel" id="leadPhone" name="phone" required maxlength="20" placeholder="604 555 1234">
+          <input type="tel" id="leadPhone" name="phone" autocomplete="tel" required maxlength="20" placeholder="604 555 1234">
         </div>
         <div class="lead-field">
           <label for="leadEmail">Email <span class="lead-optional">(optional)</span></label>
-          <input type="email" id="leadEmail" name="email" maxlength="120" placeholder="you@email.com">
+          <input type="email" id="leadEmail" name="email" autocomplete="email" maxlength="120" placeholder="you@email.com">
         </div>
         <div class="lead-field">
           <label for="leadInterest">How can we help?</label>
@@ -380,12 +397,13 @@ FOOTER = """  <footer class="footer">
         <span class="logo-text">dangm<em>.ca</em></span>
       </div>
       <p>© <span id="year"></span> dangm.ca. All rights reserved.</p>
+      <p class="footer-disclosure" style="font-size:12px;opacity:.7;margin-top:6px">Vehicles are sold and financed through Eagle Ridge Chevrolet Buick GMC, a licensed motor dealer in British Columbia. Financing subject to lender approval.</p>
       <nav class="footer-links" style="display:flex;flex-wrap:wrap;gap:1.5rem;justify-content:center;margin-top:14px" aria-label="Footer">
-        <a href="/inventory.html">Inventory</a>
+        <a href="/inventory">Inventory</a>
         <a href="/locations/">Locations</a>
         <a href="/blog/">Car Buying Guides</a>
         <a href="/forum/">Forum</a>
-        <a href="/about.html">About</a>
+        <a href="/about">About</a>
       </nav>
     </div>
   </footer>
@@ -426,7 +444,7 @@ CITY_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v={css_v}">
-  <link rel="stylesheet" href="/css/glass.css?v=3">
+  <link rel="stylesheet" href="/css/glass.css?v=4">
   <script src="/js/glass.js?v=2" defer></script>
 </head>
 <body class="page-inventory glass">
@@ -448,6 +466,10 @@ CITY_TMPL = """<!DOCTYPE html>
     <div class="about-page-body">
       {intro}
     </div>
+    <div class="about-page-body" style="margin-top:24px">
+      <h2>Getting to Eagle Ridge GM from {name}</h2>
+      <p>{route} Dan works inside Eagle Ridge GM at 2595 Barnet Hwy, Coquitlam, Monday to Saturday, 9am to 6pm.</p>
+    </div>
     <div style="text-align:center;margin:36px auto 8px;max-width:720px">
       <img src="/images/banners/{banner}" alt="{banner_alt}" width="800" height="450" style="max-width:100%;height:auto;border-radius:16px" loading="lazy">
     </div>
@@ -459,11 +481,11 @@ CITY_TMPL = """<!DOCTYPE html>
     <div style="max-width:760px;margin:0 auto">
       <p class="eyebrow" style="color:#7fb2ff;letter-spacing:.14em;font-weight:700">{name_upper}, LET US GET YOU APPROVED</p>
       <h2 class="section-title" style="color:#fff;margin:8px 0 14px">Bad credit is not the end of your {name} car search</h2>
-      <p style="font-size:1.1rem;line-height:1.7;color:#d6e2f5">Bad credit, a bankruptcy in your past, or zero Canadian credit history. None of it stops you from driving. Dan is a personal GM consultant who works for you, not a commission desk, and he gets Lower Mainland drivers approved every week with honest numbers in writing before you visit. One call is all it takes to find out what you qualify for today.</p>
+      <p style="font-size:1.1rem;line-height:1.7;color:#d6e2f5">{cta_text}</p>
       <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:30px">
         <a href="{phone_href}" class="btn btn-primary" style="font-size:1.15rem;padding:18px 34px">Call {phone} now</a>
         <a href="/#lead" class="btn btn-ghost" style="font-size:1.15rem;padding:18px 34px;border-color:#7fb2ff;color:#fff">Apply for Financing Approval</a>
-        <a href="/inventory.html" class="btn btn-ghost" style="font-size:1.15rem;padding:18px 34px;border-color:#7fb2ff;color:#fff">Browse Inventory</a>
+        <a href="/inventory" class="btn btn-ghost" style="font-size:1.15rem;padding:18px 34px;border-color:#7fb2ff;color:#fff">Browse Inventory</a>
       </div>
     </div>
   </section>
@@ -534,7 +556,7 @@ HUB_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v={css_v}">
-  <link rel="stylesheet" href="/css/glass.css?v=3">
+  <link rel="stylesheet" href="/css/glass.css?v=4">
   <script src="/js/glass.js?v=2" defer></script>
 </head>
 <body class="page-inventory glass">
@@ -582,10 +604,11 @@ def render_city(c, all_cities):
     others = [x for x in all_cities if x["slug"] != c["slug"]][:5]
     neighbors = "\n      ".join(f'<li><a href="/locations/{o["slug"]}/">Car financing in {esc(o["name"])}</a></li>' for o in others)
     return CITY_TMPL.format(
+        route=esc(ROUTES.get(c["slug"], "")), cta_text=esc(CTAS.get(c["slug"], "")),
         BASE=BASE, css_v=CSS_V, js_v=JS_V, nav=NAV, footer=FOOTER, lead=LEAD,
         title=esc(c["title"]), desc=esc(c["desc"]),
         ogdesc=esc(f"Bad credit, bankruptcy, or no Canadian credit history? {c['name']} drivers get approved through DanGM, in partnership with Eagle Ridge GM. Call {PHONE}."),
-        url_rstrip=url.rstrip("/"), name=esc(c["name"]), name_upper=esc(c["name"].upper()),
+        url_rstrip=url, name=esc(c["name"]), name_upper=esc(c["name"].upper()),
         h1=esc(c["h1"]), eyebrow=esc(c["eyebrow"]), sub=esc(c["sub"]),
         banner=c["banner"], banner_alt=esc(c["banner_alt"]),
         intro=intro, modules=modules, faq_html=faq_html, neighbors=neighbors,
@@ -630,15 +653,13 @@ def main():
             f.write(render_city(c, CITIES))
         urls.append(
             f"  <url>\n    <loc>{BASE}/locations/{c['slug']}/</loc>\n"
-            f"    <changefreq>monthly</changefreq>\n    <priority>0.8</priority>\n"
-            f"    <lastmod>{TODAY}</lastmod>\n  </url>"
+            f"    <lastmod>{CONTENT_DATE}</lastmod>\n  </url>"
         )
     with open(os.path.join(OUT_DIR, "index.html"), "w", encoding="utf-8") as f:
         f.write(render_hub(CITIES))
     urls.append(
         f"  <url>\n    <loc>{BASE}/locations/</loc>\n"
-        f"    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n"
-        f"    <lastmod>{TODAY}</lastmod>\n  </url>"
+        f"    <lastmod>{CONTENT_DATE}</lastmod>\n  </url>"
     )
     xml = ('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
            + "\n".join(urls) + "\n</urlset>\n")

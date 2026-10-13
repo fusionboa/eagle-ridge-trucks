@@ -1,0 +1,28 @@
+# DanGM (dangm.ca)
+
+> DanGM is Dan, a personal GM car-buying consultant working inside Eagle Ridge GM (Eagle Ridge Chevrolet Buick GMC), 2595 Barnet Hwy, Coquitlam, BC V3E 1K9. Zero-pressure car buying, financing for every credit situation (including bankruptcy and consumer proposals), new-to-Canada and work-permit car financing, and trade-in appraisals. Serves Coquitlam, Port Coquitlam, Port Moody, Burnaby, New Westminster, Surrey and Vancouver. Phone: 604-735-1396. Hours: Monday to Saturday, 9am to 6pm.
+
+Vehicles are sold and financed through Eagle Ridge Chevrolet Buick GMC, a licensed motor dealer in British Columbia. Inventory pages are regenerated every hour from the dealership's live feed.
+
+## Inventory
+- [Search all inventory](https://dangm.ca/inventory): every new and used vehicle in stock, filterable by make, type, condition and price
+- [Used trucks](https://dangm.ca/inventory/used-trucks/)
+- [New trucks](https://dangm.ca/inventory/new-trucks/)
+- [Used SUVs](https://dangm.ca/inventory/used-suvs/)
+- [New SUVs](https://dangm.ca/inventory/new-suvs/)
+- [Used cars and vans](https://dangm.ca/inventory/used-cars/)
+- [Vehicle sitemap](https://dangm.ca/sitemap-vehicles.xml): one page per vehicle with price, mileage, VIN and photos
+
+## Financing and buying guides
+- [New to Canada car loans](https://dangm.ca/blog/new-to-canada-car-loans/)
+- [Car loans after bankruptcy](https://dangm.ca/blog/gmc-truck-loans-after-bankruptcy/)
+- [Trading in a financed car with negative equity](https://dangm.ca/blog/trading-in-financed-car-negative-equity/)
+- [Temporary residents and work permits](https://dangm.ca/blog/temporary-resident-car-financing-bc/)
+- [All guides and comparisons](https://dangm.ca/blog/)
+
+## Local pages
+- [Locations served](https://dangm.ca/locations/)
+
+## Contact
+- [About Dan](https://dangm.ca/about)
+- Phone: 604-735-1396
