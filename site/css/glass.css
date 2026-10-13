@@ -221,6 +221,17 @@ body.glass .vdp-nav {
 body.glass .vdp-nav:hover { color: #1a1305; background: var(--accent-2); border-color: var(--accent-2); }
 body.glass .vdp-count { color: #fff; background: rgba(10, 13, 24, 0.55); }
 body.glass .vdp-thumb { border-radius: 12px; }
+body.glass .vdp-main { transition: opacity 0.25s ease; }
+body.glass .vdp-main.is-swapping { opacity: 0.35; }
+/* shimmer while the (slow) main photo downloads */
+.vdp-main-wrap.is-loading {
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0.04) 30%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.04) 70%) 0 0 / 300% 100%;
+  animation: vdpShimmer 1.4s linear infinite;
+}
+.vdp-main-wrap.is-loading .vdp-main { opacity: 0; }
+@keyframes vdpShimmer { to { background-position: -150% 0; } }
+body.glass .vdp-thumb[src^="data:"] { background: rgba(255, 255, 255, 0.06); }
+body.glass .vdp-thumbs { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.25) transparent; }
 body.glass .detail-row { border-bottom-color: rgba(255, 255, 255, 0.1); }
 body.glass .detail-row dd { color: #fff; }
 body.glass .vdp-desc p, body.glass .vdp-features { color: #d3d9e4; }

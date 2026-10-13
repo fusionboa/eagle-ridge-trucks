@@ -58,6 +58,51 @@ def load_trucks():
     return d.get("trucks", d if isinstance(d, list) else [])
 
 
+# 1x1 transparent placeholder for thumbnails until vdp-gallery.js loads them
+PIXEL = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+
+
+def all_images(truck):
+    imgs = truck.get("customImages") or truck.get("images") or []
+    out = []
+    for img in imgs:
+        if isinstance(img, str) and img.startswith("http") and img not in out:
+            out.append(img)
+    return out
+
+
+def gallery_html(truck, h1, fallback):
+    """Interactive photo gallery, server-rendered: every photo is in the HTML
+    (Google can index them); js/vdp-gallery.js adds arrows/thumbs/keys/swipe.
+    Same classes as the interactive vehicle.html gallery."""
+    imgs = all_images(truck)
+    alt = esc(f"{h1} for sale in Coquitlam BC")
+    if not imgs:
+        return f'        <img class="vdp-main" src="{esc(fallback)}" alt="{alt}" style="border-radius:12px">'
+    n = len(imgs)
+    parts = [f'        <div class="vdp-gallery" data-static-gallery>',
+             '          <div class="vdp-main-wrap">',
+             f'            <img class="vdp-main" src="{esc(imgs[0])}" alt="{alt}, photo 1 of {n}" data-alt="{alt}" fetchpriority="high">']
+    if n > 1:
+        parts += ['            <button class="vdp-nav vdp-prev" data-dir="-1" aria-label="Previous photo">&lsaquo;</button>',
+                  '            <button class="vdp-nav vdp-next" data-dir="1" aria-label="Next photo">&rsaquo;</button>',
+                  f'            <span class="vdp-count" aria-live="polite">1 / {n}</span>']
+    parts.append('          </div>')
+    if n > 1:
+        rows = []
+        for i, u in enumerate(imgs):
+            first = i == 0
+            rows.append(
+                f'            <img class="vdp-thumb{" active" if first else ""}" src="{PIXEL}" data-src="{esc(u)}" data-full="{esc(u)}" '
+                f'alt="{alt}, photo {i + 1}" decoding="async" tabindex="0" role="button"'
+                + (' aria-current="true"' if first else "") + ">"
+            )
+        thumbs = "\n".join(rows)
+        parts += ['          <div class="vdp-thumbs">', thumbs, '          </div>']
+    parts.append('        </div>')
+    return "\n".join(parts)
+
+
 def cover_image(truck):
     imgs = truck.get("customImages") or truck.get("images") or []
     for img in imgs:
@@ -147,7 +192,7 @@ def vehicle_jsonld(t, page_url, title, desc, img):
         "url": page_url,
         "name": title.split(" | ")[0],
         "description": desc,
-        "image": img or "",
+        "image": ([img] + [u for u in all_images(t) if u != img]) if img else "",
         "brand": {"@type": "Brand", "name": t.get("make") or ""},
         "model": t.get("model") or "",
         "vehicleConfiguration": t.get("trim") or "",
@@ -234,8 +279,9 @@ PAGE_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{base_rel}css/styles.css?v=25">
-  <link rel="stylesheet" href="{base_rel}css/glass.css?v=1">
+  <link rel="stylesheet" href="{base_rel}css/glass.css?v=2">
   <script src="{base_rel}js/glass.js?v=1" defer></script>
+  <script src="{base_rel}js/vdp-gallery.js?v=1" defer></script>
 </head>
 <body class="page-vehicle glass">
   <nav class="nav scrolled">
@@ -264,7 +310,7 @@ PAGE_TMPL = """<!DOCTYPE html>
     </div>
     <div class="vdp-layout">
       <div class="vdp-gallery-col">
-        <img src="{img}" alt="{h1} at dangm.ca, Coquitlam BC" loading="lazy" style="width:100%;border-radius:12px;">
+{gallery}
       </div>
       <div class="vdp-info-col">
         <div class="vdp-details">
@@ -275,7 +321,6 @@ PAGE_TMPL = """<!DOCTYPE html>
         </div>
         <div class="vdp-actions">
           <a href="{phone_href}" class="btn btn-primary">Call {phone}</a>
-          <a href="{base_rel}vehicle.html?id={stock}" class="btn">Open interactive gallery</a>
         </div>
       </div>
     </div>
@@ -325,6 +370,7 @@ def render_page(t, slug, today):
         desc=esc(desc),
         page_url=esc(slug_url),
         img=esc(img),
+        gallery=gallery_html(t, h1, img),
         vehicle_ld=vehicle_jsonld(t, slug_url, title, desc, img),
         breadcrumb_ld=BREADCRUMB_LD.replace(
             '{"@type": "ListItem", "position": 3, "name": "Vehicle"}',
