@@ -426,8 +426,8 @@ CITY_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v={css_v}">
-  <link rel="stylesheet" href="/css/glass.css?v=2">
-  <script src="/js/glass.js?v=1" defer></script>
+  <link rel="stylesheet" href="/css/glass.css?v=3">
+  <script src="/js/glass.js?v=2" defer></script>
 </head>
 <body class="page-inventory glass">
 {nav}
@@ -534,8 +534,8 @@ HUB_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v={css_v}">
-  <link rel="stylesheet" href="/css/glass.css?v=2">
-  <script src="/js/glass.js?v=1" defer></script>
+  <link rel="stylesheet" href="/css/glass.css?v=3">
+  <script src="/js/glass.js?v=2" defer></script>
 </head>
 <body class="page-inventory glass">
 {nav}

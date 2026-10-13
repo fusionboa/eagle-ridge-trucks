@@ -13,6 +13,8 @@ const MIN_MS = 1800;
 const MAX_MS = 4200;
 const WORD = 'dangm.ca'.split('');
 const ease = [0.22, 1, 0.36, 1];
+// Morphing blur droplets are pure decoration and costly on phones
+const TOUCH = window.matchMedia('(hover: none), (pointer: coarse)').matches;
 // Organic blob outline the droplets morph through
 const BLOB = [
   '42% 58% 62% 38% / 46% 40% 60% 54%',
@@ -58,7 +60,7 @@ export default function Loader({ progress, ready, onDone, quick }) {
               className="xl-stage"
               exit={{ scale: 1.25, opacity: 0, filter: 'blur(14px)', transition: { duration: 0.75, ease: [0.7, 0, 0.3, 1] } }}
             >
-              {DROPS.map((dr, i) => (
+              {!TOUCH && DROPS.map((dr, i) => (
                 <m.span
                   key={i}
                   className="xl-drop"

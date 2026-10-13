@@ -62,7 +62,8 @@ function injectScene() {
   host.append(xs);
   document.body.prepend(host);
 
-  if (reduce) return;
+  // Phones: no per-scroll work at all (keeps scrolling buttery)
+  if (reduce || window.matchMedia('(hover: none), (pointer: coarse)').matches) return;
   // Gentle depth while reading: far layers drift up slower than near ones
   const layers = [
     [stage.querySelector('.xs-sky'), 0.02],

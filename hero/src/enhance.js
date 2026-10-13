@@ -15,7 +15,8 @@ export function enhanceNav(reduce) {
 
   const brands = (navigator.userAgentData && navigator.userAgentData.brands) || [];
   const isChromium = brands.some((b) => /Chromium/i.test(b.brand));
-  if (isChromium && !reduce) {
+  const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if (isChromium && !reduce && finePointer) {
     // Gentle noise displacement of whatever is behind the glass
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('aria-hidden', 'true');

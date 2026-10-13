@@ -18,6 +18,9 @@ import Loader from './Loader.jsx';
 import { loadHeroTruck, preload, matchesArt, PHOTO_SIZES } from './data.js';
 
 const ease = [0.22, 1, 0.36, 1];
+// Phones/tablets: scroll drives the walk-around directly (a smoothing spring
+// trails behind the finger) and animated blur filters are skipped.
+const TOUCH = window.matchMedia('(hover: none), (pointer: coarse)').matches;
 const INTRO_KEY = 'dangm-intro-seen';
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 // Normalised position of v inside [a, b], clamped
@@ -202,7 +205,7 @@ export default function Hero({ copyHTML, sceneHost, loaderHost }) {
     const kids = Array.from(el.children);
     const ctl = animate(
       kids,
-      { opacity: [0, 1], y: [28, 0], filter: ['blur(8px)', 'blur(0px)'] },
+      TOUCH ? { opacity: [0, 1], y: [28, 0] } : { opacity: [0, 1], y: [28, 0], filter: ['blur(8px)', 'blur(0px)'] },
       { duration: 0.9, ease, delay: stagger(0.08, { startDelay: 0.1 }) },
     );
     return () => ctl.stop();
@@ -212,7 +215,8 @@ export default function Hero({ copyHTML, sceneHost, loaderHost }) {
   const trackRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: trackRef, offset: ['start start', 'end end'] });
   const { scrollY } = useScroll();
-  const p = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.4, restDelta: 0.0005 });
+  const smoothed = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.4, restDelta: 0.0005 });
+  const p = TOUCH ? scrollYProgress : smoothed;
   const hasCar = !!truck;
   const artMode = !!truck?.art;
   // As the hero track ends, the truck scrolls away with the page
@@ -312,7 +316,7 @@ export default function Hero({ copyHTML, sceneHost, loaderHost }) {
         <div className="xh-stage">
           <m.div
             className="hero-content xh-copy"
-            style={still ? undefined : { opacity: copyOpacity, y: copyY, filter: copyFilter, pointerEvents: copyPE }}
+            style={still ? undefined : { opacity: copyOpacity, y: copyY, filter: TOUCH ? undefined : copyFilter, pointerEvents: copyPE }}
           >
             <div ref={copyRef} className="xh-copy-inner" dangerouslySetInnerHTML={{ __html: copyHTML }} />
           </m.div>

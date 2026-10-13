@@ -16,7 +16,20 @@ export const PHOTO_SIZES_ART = '(max-width: 820px) 70vw, 60vw';
 const GROUND = 0.78; // truck tyres touch the road at 78% of the stage height (stays on screen on ultrawides)
 const MAX_ASPECT = Math.max(...art.trucks.map((t) => t.aspect));
 
-const stageHeight = () => Math.max(window.innerHeight, (window.innerWidth * STAGE.h) / STAGE.w);
+const TOUCH = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+// The CSS stage is sized in 100vh, which stays put while a phone's address
+// bar slides in and out; window.innerHeight does not. Measure 100vh itself so
+// the truck matches the stage and doesn't re-layout on every bar movement.
+let vhProbe = null;
+function viewportH() {
+  if (!vhProbe) {
+    vhProbe = document.createElement('div');
+    vhProbe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:100vh;visibility:hidden;pointer-events:none';
+    document.body.appendChild(vhProbe);
+  }
+  return vhProbe.offsetHeight || window.innerHeight;
+}
+const stageHeight = () => Math.max(viewportH(), (window.innerWidth * STAGE.h) / STAGE.w);
 // Truck height in CSS px; mirrors --truck-h in home.css
 function truckHeight() {
   return Math.min(stageHeight() * 0.325, (window.innerWidth * 0.92) / MAX_ASPECT);
@@ -25,7 +38,14 @@ const FAR = 19; // at the horizon the truck is 1/(1+FAR) = 5% of its parked size
 function useTruckHeight() {
   const [h, setH] = useState(truckHeight);
   useEffect(() => {
-    const on = () => setH(truckHeight());
+    // Only real layout changes (width / rotation) re-measure; height-only
+    // resizes are a phone's address bar and must not rebuild the truck.
+    let w = window.innerWidth;
+    const on = () => {
+      if (window.innerWidth === w) return;
+      w = window.innerWidth;
+      setH(truckHeight());
+    };
     window.addEventListener('resize', on, { passive: true });
     return () => window.removeEventListener('resize', on);
   }, []);
@@ -38,7 +58,7 @@ function Angle({ t, i, count, frame }) {
   const rampIn = (f, k) => (k <= 0 ? 1 : k >= count ? 0 : clamp01((f - k + 0.58) / 0.16));
   const opacity = useTransform(frame, (f) => rampIn(f, i) * (1 - rampIn(f, i + 1)));
   const x = useTransform(frame, (f) => `${(rampIn(f, i + 1) - (1 - rampIn(f, i))) * -4}%`);
-  const filter = useTransform(opacity, (o) => (o > 0.98 || o < 0.02 ? 'none' : `blur(${(Math.sin(o * Math.PI) * 2.5).toFixed(2)}px)`));
+  const filter = useTransform(opacity, (o) => (TOUCH || o > 0.98 || o < 0.02 ? 'none' : `blur(${(Math.sin(o * Math.PI) * 2.5).toFixed(2)}px)`));
   return (
     <m.img
       className="xc-truck"

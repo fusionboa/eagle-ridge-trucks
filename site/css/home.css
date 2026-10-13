@@ -725,3 +725,37 @@ body.home-v2 .about-list li::before { content: none; }
   .xh-hint i::after { animation: none; }
   .xs-img { will-change: auto; }
 }
+
+/* ─── Phones / touch: same look, far less GPU work ───────────
+   Live backdrop blur is re-rendered every frame while scrolling and is
+   the main source of stutter on phones. On touch devices the glass keeps
+   its tint, borders and highlights but drops the live blur. */
+@media (hover: none), (pointer: coarse) {
+  .lg,
+  body.home-v2 :is(.lead-inner, .service-card, .faq-item, .contact-card, .about-inner, .truck-card, .footer-inner, .about-card, .hero-badge),
+  body.home-v2 :is(.nav-cta, .lg-btn.btn-ghost),
+  .xh-frame-tag, .xh-deg, .xh-chip {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  .lg,
+  body.home-v2 :is(.lead-inner, .service-card, .faq-item, .contact-card, .about-inner, .truck-card, .footer-inner) {
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02) 42%, rgba(255, 255, 255, 0.05)),
+      rgba(16, 20, 36, 0.86);
+  }
+  .xh-chip { background: rgba(16, 20, 36, 0.82); }
+  /* one small blurred element (the nav) is fine; keep it light */
+  body.home-v2 .nav-inner {
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    background-color: rgba(12, 16, 28, 0.72);
+  }
+  /* loader: tinted sheet instead of a full-screen live blur */
+  .xl, .xl-capsule, .xl-drop { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .xl { background: radial-gradient(60% 50% at 50% 45%, rgba(120, 110, 170, 0.22), transparent 70%), rgba(9, 12, 24, 0.94); }
+  .xl-capsule { background: linear-gradient(160deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05) 45%), rgba(24, 28, 50, 0.9); }
+  .xl-sheen, .xl-fill i { animation: none; }
+  .xs-haze { filter: none; }
+  body.home-v2 :is(.truck-card, .service-card) { transform-style: flat; }
+}

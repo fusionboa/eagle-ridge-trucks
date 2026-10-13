@@ -305,3 +305,35 @@ body.glass :is(.truck-card, .forum-card, .service-card) { transform-style: prese
 @media (prefers-reduced-motion: reduce) {
   body.glass::after { display: none; }
 }
+
+/* ─── Performance ────────────────────────────────────────── */
+/* Card grids can hold hundreds of cards (inventory: 400+): live blur on
+   each one stutters even on desktops, so cards get tinted glass without it. */
+body.glass :is(.truck-card, .forum-card, .feature) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02) 42%, rgba(255, 255, 255, 0.05)),
+    rgba(16, 20, 36, 0.78);
+}
+/* Phones / touch: no live blur anywhere except a light one on the nav */
+@media (hover: none), (pointer: coarse) {
+  body.glass :is(.lead-inner, .contact-card, .about-page-body, .vehicle-main, .inv-sidebar, .faq-item, .footer-inner, .service-card, .modal-content, .lead-form, .nav-cta, .btn-ghost, .btn:not(.btn-primary), .vdp-nav),
+  body.glass [style*="#0b1220"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  body.glass :is(.lead-inner, .contact-card, .about-page-body, .vehicle-main, .inv-sidebar, .faq-item, .footer-inner, .service-card, .modal-content) {
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02) 42%, rgba(255, 255, 255, 0.05)),
+      rgba(16, 20, 36, 0.86);
+  }
+  body.glass .nav-inner {
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    background-color: rgba(12, 16, 28, 0.72);
+  }
+  body.glass::after { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(9, 12, 24, 0.85); animation-duration: 0.45s; }
+  body.glass .xs-haze { filter: none; }
+  body.glass :is(.truck-card, .forum-card, .service-card) { transform-style: flat; }
+}
