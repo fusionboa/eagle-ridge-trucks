@@ -5,9 +5,11 @@ name: Truck Feed Sync
 
 on:
   schedule:
-    # Hourly at :17. GitHub delays or drops scheduled runs at the top of the
-    # hour (its busiest minute): ':00' was firing only every 3-9 hours.
-    - cron: '17 * * * *'
+    # Every 15 minutes, off the busy :00 minute. GitHub delays or drops many
+    # scheduled runs (the hourly ':17' schedule only fired every 3-8 hours);
+    # more attempts keep inventory fresh. The concurrency group below means
+    # overlapping runs queue instead of running twice.
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:        # allow manual "Run workflow" from GitHub UI
 
 # Never run two syncs at once (a slow run must finish before the next deploys)

@@ -324,6 +324,9 @@ async function sync() {
     // 2. Parse trucks
     const trucks = parseTrucks(csvText);
     console.log(`   🚛 Found ${trucks.length} trucks in feed`);
+    // Column names only (no values): shows which field carries the dealer stock #
+    const feedColumns = Object.keys(parseCSV(csvText, { columns: true, to: 1, relax_column_count: true })[0] || {});
+    console.log(`   🧾 Feed columns: ${feedColumns.filter((c) => !/^image\[\d+\]/.test(c)).join(', ')}`);
 
     // 2b. Enrich: VIN-decode engines/specs + generate AI descriptions
     await enrichTrucks(trucks);

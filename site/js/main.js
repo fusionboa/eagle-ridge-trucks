@@ -7,7 +7,6 @@
 
 // API_BASE is the worker root (no trailing /api) — fetches append their own path.
 const API_BASE = (window.SITE_CONFIG?.apiBase || '').replace(/\/+$/, '');
-const DATA_FALLBACK = 'data/trucks.json';
 
 // Page mode: 'home' | 'inventory' | 'vehicle'
 const PAGE = window.SITE_PAGE || 'home';
@@ -50,10 +49,12 @@ async function loadTrucks() {
   } catch (e) {
     if (shown) return; // the snapshot is already on screen
   }
+  // Live API down and no snapshot on screen yet: retry the hourly snapshot
+  // (never an old static file, which could show sold vehicles)
   try {
-    const res = await fetch(DATA_FALLBACK);
+    const res = await fetch(SNAPSHOT, { cache: 'no-cache' });
     const data = await res.json();
-    allTrucks = normalizeTrucks(Object.values(data).filter((t) => t.listed));
+    allTrucks = normalizeTrucks(data.trucks || []);
   } catch (e2) {
     console.error('Could not load trucks', e2);
   }

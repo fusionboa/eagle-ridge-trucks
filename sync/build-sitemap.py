@@ -442,7 +442,7 @@ PAGE_TMPL = """<!DOCTYPE html>
     </div>
   </footer>
   <script>window.SITE_PAGE = 'landing';</script>
-  <script src="/js/main.js?v=27"></script>
+  <script src="/js/main.js?v=28"></script>
 </body>
 </html>
 """
@@ -679,7 +679,7 @@ def category_page(c, items, slugs, today):
     </div>
   </footer>
   <script>window.SITE_PAGE = 'landing';</script>
-  <script src="/js/main.js?v=27"></script>
+  <script src="/js/main.js?v=28"></script>
 </body>
 </html>
 """
