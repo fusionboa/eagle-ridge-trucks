@@ -74,15 +74,6 @@ function base64urlToBytes(s) {
 
 // ─── Auth helpers ───────────────────────────────────────────────────────────
 async function authUser(request, env) {
-  // TEST MODE: when DEV_MODE=true, a request carrying X-Dev-Key is treated as
-  // an admin. This lets Jaden test the admin panel WITHOUT Google sign-in.
-  // ⚠️ Remove DEV_MODE / DEV_KEY before going fully live.
-  if (env.DEV_MODE === 'true') {
-    const devKey = request.headers.get('X-Dev-Key') || '';
-    if (devKey && env.DEV_KEY && devKey === env.DEV_KEY) {
-      return { email: 'dev@test.local', name: 'Dev Test', sub: 'dev-test-mode', isDev: true };
-    }
-  }
   const auth = request.headers.get('Authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
   if (!token) return null;
@@ -91,8 +82,6 @@ async function authUser(request, env) {
 
 function isAdmin(user, env) {
   if (!user || !user.email) return false;
-  // Dev test mode bypasses the email allowlist
-  if (user.isDev) return true;
   const allowed = (env.ADMIN_EMAILS || '')
     .split(',')
     .map((s) => s.trim().toLowerCase())
@@ -339,7 +328,7 @@ async function handle(request, env) {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Dev-Key, X-Bridge-Token',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Bridge-Token',
         },
       });
     }
@@ -351,15 +340,6 @@ async function handle(request, env) {
 
     // Health
     if (path === '/api/health') return json({ ok: true, service: 'eagle-ridge-trucks' });
-
-    // DEBUG (commented out — remove later): inspect env for test-mode debugging
-    // if (path === '/api/debug') {
-    //   return json({
-    //     devMode: env.DEV_MODE || null,
-    //     devKeyLen: env.DEV_KEY ? env.DEV_KEY.length : 0,
-    //     devKeyFirst: env.DEV_KEY ? env.DEV_KEY.slice(0, 4) : null,
-    //   });
-    // }
 
     // PUBLIC: list listed trucks
     if (path === '/api/trucks' && request.method === 'GET') {
