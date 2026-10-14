@@ -95,7 +95,7 @@ function Chip({ chip, idx, count, theta, rx, ry, show, layer }) {
 // render, as fractions of the image box), plus a light pool on the road ahead.
 const HEADLIGHTS = [[0.055, 0.4], [0.405, 0.385]];
 
-export default function Showroom({ frame, carX, carScale, exitY, theta, chipShow, chips, entered, avail, still, quick, narrow, onArrived }) {
+export default function Showroom({ frame, carX, carScale, exitY, exitOpacity, theta, chipShow, chips, entered, avail, still, quick, narrow, onArrived }) {
   const h = useTruckHeight();
 
   // ── Drive-in: d goes 1 (at the vanishing point) → 0 (parked) ──
@@ -146,7 +146,7 @@ export default function Showroom({ frame, carX, carScale, exitY, theta, chipShow
   return (
     <m.div
       className="xc"
-      style={{ top: `${GROUND * 100}%`, '--truck-h': `${h}px`, y: exitY }}
+      style={{ top: `${GROUND * 100}%`, '--truck-h': `${h}px`, y: exitY, opacity: exitOpacity }}
     >
       <m.div className="xc-move" style={{ x: carX, scale: carScale }}>
         {/* drive-in down the road on entry */}

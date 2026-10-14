@@ -444,7 +444,7 @@ CITY_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v={css_v}">
-  <link rel="stylesheet" href="/css/glass.css?v=4">
+  <link rel="stylesheet" href="/css/glass.css?v=5">
   <script src="/js/glass.js?v=2" defer></script>
 </head>
 <body class="page-inventory glass">
@@ -469,9 +469,6 @@ CITY_TMPL = """<!DOCTYPE html>
     <div class="about-page-body" style="margin-top:24px">
       <h2>Getting to Eagle Ridge GM from {name}</h2>
       <p>{route} Dan works inside Eagle Ridge GM at 2595 Barnet Hwy, Coquitlam, Monday to Saturday, 9am to 6pm.</p>
-    </div>
-    <div style="text-align:center;margin:36px auto 8px;max-width:720px">
-      <img src="/images/banners/{banner}" alt="{banner_alt}" width="800" height="450" style="max-width:100%;height:auto;border-radius:16px" loading="lazy">
     </div>
   </section>
 
@@ -556,7 +553,7 @@ HUB_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v={css_v}">
-  <link rel="stylesheet" href="/css/glass.css?v=4">
+  <link rel="stylesheet" href="/css/glass.css?v=5">
   <script src="/js/glass.js?v=2" defer></script>
 </head>
 <body class="page-inventory glass">
@@ -575,7 +572,6 @@ HUB_TMPL = """<!DOCTYPE html>
       {cards}
     </div>
     <div style="text-align:center;margin:36px auto 0;max-width:820px">
-      <img src="/images/banners/chevrolet-suv-bad-credit-financing-lower-mainland.svg" alt="chevrolet-suv-bad-credit-financing-lower-mainland" width="800" height="450" style="max-width:100%;height:auto;border-radius:16px" loading="lazy">
       <p style="margin-top:24px">Not sure which city applies to you? <a href="/#lead">Ask Dan directly</a> or call 604-735-1396. Every driver in the Lower Mainland is welcome.</p>
     </div>
   </section>

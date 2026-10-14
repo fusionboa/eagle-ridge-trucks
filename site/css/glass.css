@@ -360,3 +360,6 @@ body.glass .about-page-body p { margin: 0 0 12px; }
 body.glass .about-page-body :is(ol, ul) { margin: 0 0 12px; padding-left: 22px; line-height: 1.75; }
 body.glass .about-page-body li { margin-bottom: 8px; }
 body.glass .about-page-body strong { color: #fff; }
+
+/* Guide byline: space before the article (the banner image used to provide it) */
+body.glass .forum-post-title + .lead-note { margin-bottom: 28px; }

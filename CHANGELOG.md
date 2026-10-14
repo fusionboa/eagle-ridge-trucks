@@ -1,5 +1,10 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.20.0 — Smoother phone scrolling, no clipart banners (Oct 13, 2026)
+
+- **Phone scroll no longer looks laggy.** On touch screens the hero walk-around followed raw scroll events, which phones deliver unevenly, so the truck and scenery moved on only ~43% of frames. A stiff, light spring now fills the gaps (98% of frames, settles ~100ms after the finger stops). The background no longer drifts with page scroll on phones, and the truck fades out at the end of the hero instead of sliding up a frame behind the page. Desktop unchanged. `home-hero.js?v=12`.
+- **Removed the cartoon truck banners** (`images/banners/*`) everywhere they were shown: homepage "Serving" strip, inventory page, every guide and guide card, forum and city pages, and from the generators (`blog-engine/build.py`, `sync/build-forum.py`, `sync/build-locations.py`) so rebuilds don't bring them back. The PNGs remain only as social-share/Article schema images. Guide bylines got spacing the image used to provide. `glass.css?v=5`.
+
 ## v0.19.0 — Full SEO audit fixes (Oct 13, 2026)
 
 From the `/seo audit https://dangm.ca` report (overall 60/100). Everything that didn't need information only the owner has:

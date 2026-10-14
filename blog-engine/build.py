@@ -118,7 +118,7 @@ def render_post(p):
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v=25">
-  <link rel="stylesheet" href="/css/glass.css?v=4">
+  <link rel="stylesheet" href="/css/glass.css?v=5">
   <script src="/js/glass.js?v=2" defer></script>
 </head>
 <body class="page-vehicle glass">
@@ -148,7 +148,6 @@ def render_post(p):
       <p class="eyebrow">CAR BUYING GUIDE · {esc(p.get("kicker", "COMPARISON"))}</p>
       <h1 class="forum-post-title">{esc(h1)}</h1>
       <p class="lead-note">By Dan · Personal GM Consultant, Coquitlam BC · Updated {p.get('updated', p.get('date', CONTENT_DATE))}</p>
-      <img class="forum-post-img" src="{img}" alt="{esc(p.get("img_alt", h1))}" width="800" height="450" style="max-width:100%;height:auto;border-radius:16px" loading="lazy">
       <div class="forum-post-body">
         <p>{esc(p["hook"])}</p>
         {body}
@@ -208,7 +207,6 @@ def main():
         urls.append(f"  <url>\n    <loc>{BASE}/blog/{p['slug']}/</loc>\n    <lastmod>{p.get('updated', p.get('date', CONTENT_DATE))}</lastmod>\n  </url>")
         cards.append(
             f'      <a class="forum-card reveal" href="/blog/{p["slug"]}/">\n'
-            f'        <div class="forum-card-img-wrap"><img class="forum-card-img" src="/images/banners/{p["img"]}" alt="{esc(p.get("img_alt", p["h1"]))}" loading="lazy"></div>\n'
             f'        <div class="forum-card-body">\n'
             f'          <h2 class="forum-card-title">{esc(p["h1"])}</h2>\n'
             f'          <p class="forum-card-sub">{esc(p["card_blurb"])}</p>\n'

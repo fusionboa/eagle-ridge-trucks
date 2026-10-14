@@ -216,12 +216,20 @@ export default function Hero({ copyHTML, sceneHost, loaderHost }) {
   const { scrollYProgress } = useScroll({ target: trackRef, offset: ['start start', 'end end'] });
   const { scrollY } = useScroll();
   const smoothed = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.4, restDelta: 0.0005 });
-  const p = TOUCH ? scrollYProgress : smoothed;
+  // Phones deliver scroll events unevenly, so following them raw moves the
+  // truck in small jumps. A stiff, light spring fills the gaps between events
+  // and still settles within ~100ms of the finger stopping.
+  const touchSmoothed = useSpring(scrollYProgress, { stiffness: 520, damping: 52, mass: 0.25, restDelta: 0.0005 });
+  const p = TOUCH ? touchSmoothed : smoothed;
   const hasCar = !!truck;
   const artMode = !!truck?.art;
   // As the hero track ends, the truck scrolls away with the page
   const { scrollYProgress: exitProgress } = useScroll({ target: trackRef, offset: ['end end', 'end start'] });
-  const exitY = useTransform(exitProgress, (v) => `${-v * 100}vh`);
+  // Desktop: the truck slides up with the page. Touch: a JS translate on a
+  // fixed layer trails the native scroll by a frame and looks laggy, so the
+  // truck fades out instead (opacity has no position to fall behind).
+  const exitY = useTransform(exitProgress, (v) => (TOUCH ? '0vh' : `${-v * 100}vh`));
+  const exitOpacity = useTransform(exitProgress, (v) => (TOUCH ? 1 - clamp01(v / 0.35) : 1));
   // Illustrated truck: waits in the right lane beside the copy, then the
   // camera swings in to centre it before walking around it
   const carX = useTransform(p, (v) => (cfg.current.narrow ? '0vw' : `${lerp(17, 0, seg(v, 0, 0.2))}vw`));
@@ -281,13 +289,14 @@ export default function Hero({ copyHTML, sceneHost, loaderHost }) {
   return (
     <>
       {sceneHost && createPortal(
-        <Scene orbit={hasCar && !still ? p : zero} pageY={scrollY}>
+        <Scene orbit={hasCar && !still ? p : zero} pageY={TOUCH ? zero : scrollY}>
           {artMode && (
             <Showroom
               frame={frame}
               carX={still ? (narrow ? '0vw' : '17vw') : carX}
               carScale={still ? 1 : carScale}
               exitY={exitY}
+              exitOpacity={exitOpacity}
               theta={theta}
               chipShow={chipShow}
               chips={chips}

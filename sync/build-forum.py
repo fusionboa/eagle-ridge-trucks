@@ -208,7 +208,7 @@ THREAD_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v={css_v}">
-  <link rel="stylesheet" href="/css/glass.css?v=4">
+  <link rel="stylesheet" href="/css/glass.css?v=5">
   <script src="/js/glass.js?v=2" defer></script>
 </head>
 <body class="page-vehicle glass">
@@ -275,7 +275,7 @@ HUB_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v={css_v}">
-  <link rel="stylesheet" href="/css/glass.css?v=4">
+  <link rel="stylesheet" href="/css/glass.css?v=5">
   <script src="/js/glass.js?v=2" defer></script>
 </head>
 <body class="page-inventory glass">
@@ -294,7 +294,6 @@ HUB_TMPL = """<!DOCTYPE html>
       {cards}
     </div>
     <div style="text-align:center;margin:36px auto 0;max-width:820px">
-      <img src="/images/banners/zero-pressure-used-car-buying-coquitlam.svg" alt="zero-pressure-used-car-buying-coquitlam" width="800" height="450" style="max-width:100%;height:auto;border-radius:16px" loading="lazy">
       <p style="margin-top:24px">Have a question that is not answered here? <a href="/#lead">Ask Dan directly</a> or call 604-735-1396. Zero pressure, honest answers, every time.</p>
     </div>
   </section>
