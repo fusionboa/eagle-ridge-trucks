@@ -648,7 +648,7 @@ function cardHTML(t, i, isFlagship) {
         <div class="list-top">
           <div class="list-info">
             <h3 class="truck-card-title">${escapeHtml(title)}</h3>
-            <p class="truck-card-sub">Stock #${escapeHtml(t.id)}</p>
+            ${t.stockNumber ? `<p class="truck-card-sub">Stock #${escapeHtml(t.stockNumber)}</p>` : ''}
           </div>
           <div class="list-price">
             <div class="truck-card-price">${escapeHtml(price)}</div>
@@ -700,7 +700,7 @@ function renderVehicle(t) {
     ['Fuel Type', t.fuelType],
     ['Mileage', t.mileage ? `${Number(t.mileage).toLocaleString()} km` : ''],
     ['VIN', t.vin],
-    ['Stock #', t.id],
+    ['Stock #', t.stockNumber],
   ].filter(([, v]) => v);
 
   // ─── Dynamic SEO: title, meta, OG, JSON-LD, breadcrumb ───

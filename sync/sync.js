@@ -163,6 +163,9 @@ function parseTrucks(csvText) {
 
     return {
       id: get('vehicle_id', 'Stock', 'StockNo', 'Stock #', 'StockNumber', 'STOCK', 'id') || `truck-${i}`,
+      // Dealer stock # as shown on eagleridgegm.com (vehicle_id above is the
+      // feed's internal listing ID; it stays the key so page URLs don't change)
+      stockNumber: get('stock_number', 'Stock', 'StockNo', 'Stock #', 'StockNumber', 'STOCK'),
       vin: get('vin', 'VIN', 'Vin'),
       year: get('year', 'Year', 'YR', 'ModelYear'),
       make: get('make', 'Make', 'Brand'),

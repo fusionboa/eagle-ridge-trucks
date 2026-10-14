@@ -240,7 +240,7 @@ def summary_text(t):
     ) if x]
     s2 = f" It has {', '.join(spec[:-1]) + ' and ' + spec[-1] if len(spec) > 1 else spec[0]}." if spec else ""
     price = price_str(t)
-    s3 = (f" Listed at {price}" if price else " Available") + f" (stock #{t.get('id')}) at Eagle Ridge GM, 2595 Barnet Hwy in Coquitlam."
+    s3 = (f" Listed at {price}" if price else " Available") + (f" (stock #{t.get('stockNumber')})" if t.get("stockNumber") else "") + f" at Eagle Ridge GM, 2595 Barnet Hwy in Coquitlam."
     s4 = f" Financing is available for every credit situation, including new-to-Canada buyers. Call Dan at {PHONE} to check approval or book a test drive."
     return clean_text(s1 + s2 + s3 + s4)
 
@@ -269,7 +269,7 @@ def details_rows(t):
         ("Fuel Type", t.get("fuelType")),
         ("Mileage", f"{int(t['mileage']):,} km" if t.get("mileage") else ""),
         ("VIN", t.get("vin")),
-        ("Stock #", t.get("id")),
+        ("Stock #", t.get("stockNumber")),
     ]
     return [(k, v) for k, v in rows if v]
 
@@ -308,7 +308,7 @@ def vehicle_jsonld(t, page_url, title, desc, img):
         "url": page_url,
         "name": name_str(t),
         "description": summary_text(t),
-        "sku": str(t.get("id") or ""),
+        "sku": str(t.get("stockNumber") or t.get("id") or ""),
         "image": ([img] + [u for u in all_images(t) if u != img]) if img else "",
         "brand": {"@type": "Brand", "name": t.get("make") or ""},
         "model": t.get("model") or "",
@@ -442,7 +442,7 @@ PAGE_TMPL = """<!DOCTYPE html>
     </div>
   </footer>
   <script>window.SITE_PAGE = 'landing';</script>
-  <script src="/js/main.js?v=28"></script>
+  <script src="/js/main.js?v=29"></script>
 </body>
 </html>
 """
@@ -493,7 +493,7 @@ def render_page(t, slug, today, categories=()):
         rows=rows,
         phone=PHONE,
         phone_href=PHONE_HREF,
-        stock=esc(str(t.get("id"))),
+        stock=esc(str(t.get("stockNumber") or "")),
         desc_block=desc_block,
         year_now=today[:4],
     )
@@ -529,7 +529,7 @@ OUT_CATS = os.path.join(SITE, "inventory")
 OUT_CAT_SITEMAP = os.path.join(SITE, "sitemap-inventory.xml")
 OUT_SNAPSHOT = os.path.join(SITE, "data", "inventory.json")
 INVENTORY_HTML = os.path.join(SITE, "inventory.html")
-SNAPSHOT_FIELDS = ("id", "year", "make", "model", "trim", "price", "salePrice", "mileage", "mileageUnit",
+SNAPSHOT_FIELDS = ("id", "stockNumber", "year", "make", "model", "trim", "price", "salePrice", "mileage", "mileageUnit",
                    "bodyStyle", "transmission", "drivetrain", "engine", "fuelType", "exteriorColor",
                    "interiorColor", "condition", "vin", "listed", "featured", "updatedAt")
 
@@ -679,7 +679,7 @@ def category_page(c, items, slugs, today):
     </div>
   </footer>
   <script>window.SITE_PAGE = 'landing';</script>
-  <script src="/js/main.js?v=28"></script>
+  <script src="/js/main.js?v=29"></script>
 </body>
 </html>
 """

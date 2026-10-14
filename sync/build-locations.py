@@ -33,7 +33,7 @@ TODAY = datetime.date.today().isoformat()
 # Date the city pages' content last changed (sitemap lastmod). Bump on edits.
 CONTENT_DATE = "2026-10-13"
 CSS_V = "25"
-JS_V = "28"
+JS_V = "29"
 
 
 def esc(s):
