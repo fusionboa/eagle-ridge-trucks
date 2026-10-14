@@ -943,7 +943,8 @@ function forumCardHTML(p) {
   const title = p.title || 'Untitled';
   const full = String(p.body || '');
   const body = full.replace(/\n/g, ' ').slice(0, 160);
-  const img = p.image
+  // The forum feed points some posts at the old clipart banners: never show those
+  const img = p.image && !p.image.includes('/images/banners/')
     ? `<div class="forum-card-img-wrap"><img class="forum-card-img" src="${p.image}" alt="${escapeHtml(title)} - Lower Mainland Auto Forum" loading="lazy"></div>`
     : '';
   return `
@@ -990,7 +991,7 @@ async function loadForumPost() {
       <div class="forum-post">
         <a href="/forum/" class="vdp-back">← Back to forum</a>
         <h1 class="forum-post-title">${escapeHtml(p.title)}</h1>
-        ${p.image ? `<img class="forum-post-img" src="${p.image}" alt="${escapeHtml(p.title)}">` : ''}
+        ${p.image && !p.image.includes('/images/banners/') ? `<img class="forum-post-img" src="${p.image}" alt="${escapeHtml(p.title)}">` : ''}
         <div class="forum-post-body">${formatPostBody(p.body)}</div>
         <div class="forum-post-cta">
           <a href="/inventory" class="btn btn-primary">Browse Inventory</a>

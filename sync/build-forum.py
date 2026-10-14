@@ -34,7 +34,7 @@ PHONE = "604-735-1396"
 PHONE_HREF = "tel:6047351396"
 TODAY = datetime.date.today().isoformat()
 CSS_V = "25"
-JS_V = "26"
+JS_V = "27"
 
 
 def esc(s):
@@ -336,7 +336,7 @@ def render_thread(p, slug, related):
 def render_hub(posts, slugs):
     cards = "\n      ".join(
         f'<a class="forum-card reveal in-view" href="/forum/{slugs[i]}/">\n'
-        + (f'        <div class="forum-card-img-wrap"><img class="forum-card-img" src="{esc(p.get("image"))}" alt="{esc(clean_text(p.get("title")))}" loading="lazy"></div>\n' if p.get("image") else "")
+        + (f'        <div class="forum-card-img-wrap"><img class="forum-card-img" src="{esc(p.get("image"))}" alt="{esc(clean_text(p.get("title")))}" loading="lazy"></div>\n' if p.get("image") and "/images/banners/" not in p.get("image") else "")
         + '        <div class="forum-card-body">\n'
         f'          <h2 class="forum-card-title">{esc(clean_text(p.get("title")))}</h2>\n'
         f'          <p class="forum-card-sub">{esc(excerpt(p.get("body"), 160))}</p>\n'
