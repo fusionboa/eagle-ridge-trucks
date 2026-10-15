@@ -101,14 +101,14 @@ export default function Showroom({ frame, carX, carScale, exitY, exitOpacity, th
   // ── Drive-in: d goes 1 (at the vanishing point) → 0 (parked) ──
   const d = useMotionValue(still ? 0 : 1);
   useEffect(() => {
-    if (still) { onArrived && onArrived(); return; }
+    if (still) { setParked(true); if (onArrived) onArrived(); return; }
     if (!entered) return;
     const ctl = animate(d, 0, {
       duration: quick ? 1.6 : 4,
       // ease-out quad on distance: with 1/z perspective this reads as a steady
       // approach that grows on you, then a smooth brake into the spot
       ease: [0.25, 0.46, 0.45, 0.94],
-      onComplete: () => onArrived && onArrived(),
+      onComplete: () => { setParked(true); if (onArrived) onArrived(); },
     });
     return () => ctl.stop();
   }, [entered, still]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -118,7 +118,8 @@ export default function Showroom({ frame, carX, carScale, exitY, exitOpacity, th
   const dy = (GROUND - STAGE.horizon / STAGE.h) * stageHeight(); // ground line below the horizon
   const s = useTransform(d, (v) => 1 / (1 + FAR * v));
   const driveX = useTransform(s, (v) => dx * (v - 1));
-  const driveY = useTransform([s, d], ([v, dv]) => dy * (v - 1) + (dv > 0.003 ? Math.sin(dv * 70) * 1.6 * v : 0));
+  // road bumps read as jitter on 60 Hz phone screens: desktop only
+  const driveY = useTransform([s, d], ([v, dv]) => dy * (v - 1) + (!TOUCH && dv > 0.003 ? Math.sin(dv * 70) * 1.6 * v : 0));
   const driveOpacity = useTransform(d, (v) => clamp01((1 - v) / 0.06)); // emerges from the haze
   // suspension: nose dips as it brakes, then settles
   const pitch = useTransform(d, (v) => (v < 0.12 ? 1 - Math.sin((v / 0.12) * Math.PI) * 0.018 : 1));
@@ -135,7 +136,9 @@ export default function Showroom({ frame, carX, carScale, exitY, exitOpacity, th
   const rx = Math.min(h * 1.75, window.innerWidth / 2 - 72);
   const ry = h * 0.36;
 
-  const chipLayer = (layer) => !still && (
+  // Phones: the spec-chip orbit (many animated layers) joins once the truck has parked
+  const [parked, setParked] = useState(!TOUCH || still);
+  const chipLayer = (layer) => !still && parked && (
     <div className={`xc-orbit xc-orbit--${layer}`} style={{ bottom: h * 0.5 }}>
       {chips.map((c, i) => (
         <Chip key={`${c.k}-${Math.round(h)}`} chip={c} idx={i} count={chips.length} theta={theta} rx={rx} ry={ry} show={chipShow} layer={layer} />

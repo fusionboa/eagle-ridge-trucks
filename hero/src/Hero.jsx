@@ -114,6 +114,9 @@ export default function Hero({ copyHTML, sceneHost, loaderHost }) {
   const [entered, setEntered] = useState(false);
   const [avail, setAvail] = useState(1); // walk-around photos warmed so far
   const [arrived, setArrived] = useState(false); // illustrated truck finished its drive-in
+  const arrivedResolve = useRef(null);
+  const arrivedOnce = useRef(new Promise((r) => { arrivedResolve.current = r; }));
+  useEffect(() => { if (arrived && arrivedResolve.current) arrivedResolve.current(); }, [arrived]);
   // Arriving on a section link (e.g. /index.html#contact from another page):
   // no long intro, no scroll hold, and we re-jump once the hero has its final
   // height, otherwise the browser's own jump lands thousands of px short.
@@ -150,6 +153,9 @@ export default function Hero({ copyHTML, sceneHost, loaderHost }) {
       if (!alive) return;
       progressRaw.set(1);
       setReady(true);
+      // Phones: decoding the other angles mid-drive makes the drive-in stutter,
+      // so warm them only once the truck has parked (or 6s, whichever first)
+      if (TOUCH && useArt) await Promise.race([arrivedOnce.current, new Promise((r) => setTimeout(r, 6000))]);
       // warm the rest of the walk-around one at a time, in orbit order
       for (const ph of orbit.slice(1)) {
         if (!alive) return;
@@ -219,7 +225,9 @@ export default function Hero({ copyHTML, sceneHost, loaderHost }) {
   // Phones deliver scroll events unevenly, so following them raw moves the
   // truck in small jumps. A stiff, light spring fills the gaps between events
   // and still settles within ~100ms of the finger stopping.
-  const touchSmoothed = useSpring(scrollYProgress, { stiffness: 520, damping: 52, mass: 0.25, restDelta: 0.0005 });
+  // Phones: near-direct tracking (the finger already gives momentum), so the
+  // walk-around turns with the swipe like a mouse wheel does on desktop
+  const touchSmoothed = useSpring(scrollYProgress, { stiffness: 900, damping: 70, mass: 0.2, restDelta: 0.0005 });
   const p = TOUCH ? touchSmoothed : smoothed;
   const hasCar = !!truck;
   const artMode = !!truck?.art;
