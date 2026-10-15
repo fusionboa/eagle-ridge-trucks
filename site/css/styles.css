@@ -473,7 +473,9 @@ section { padding: 110px 24px; }
 .price-clear:hover { border-color: var(--accent); color: var(--accent); }
 @media (max-width: 900px) {
   .inventory-split { grid-template-columns: 1fr; }
-  .inv-sidebar { position: static; }
+  /* top:auto too: glass.css makes it position:relative, and the desktop sticky top:100px
+     would then shift it down over the search bar */
+  .inv-sidebar { position: static; top: auto; }
   .price-ranges { flex-direction: row; flex-wrap: wrap; }
   .price-range { width: auto; }
 }

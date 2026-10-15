@@ -32,7 +32,7 @@ PHONE_HREF = "tel:6047351396"
 TODAY = datetime.date.today().isoformat()
 # Date the city pages' content last changed (sitemap lastmod). Bump on edits.
 CONTENT_DATE = "2026-10-13"
-CSS_V = "25"
+CSS_V = "26"
 JS_V = "29"
 
 

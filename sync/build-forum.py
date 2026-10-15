@@ -33,7 +33,7 @@ BASE = "https://dangm.ca"
 PHONE = "604-735-1396"
 PHONE_HREF = "tel:6047351396"
 TODAY = datetime.date.today().isoformat()
-CSS_V = "25"
+CSS_V = "26"
 JS_V = "29"
 
 
