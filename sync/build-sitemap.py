@@ -443,6 +443,8 @@ PAGE_TMPL = """<!DOCTYPE html>
   </footer>
   <script>window.SITE_PAGE = 'landing';</script>
   <script src="/js/main.js?v=29"></script>
+  <!-- OmniEngine: fuel/EV cost badge under the buttons + AI chat (served from dangm.ca/omniengine) -->
+  <script src="/omniengine/embed.js" data-omni-key="pk_c072fcf78b945b673f4f" data-target=".vdp-actions" async></script>
 </body>
 </html>
 """
