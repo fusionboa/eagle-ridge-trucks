@@ -280,32 +280,108 @@ async function runSync(env, trucks) {
 // Goes to dan@dangm.ca once that address is verified in Email Routing; until then to the
 // verified inbox dan@dangm.ca forwards to (secret LEAD_FALLBACK, kept out of this public repo).
 const oneLine = (v, max) => String(v || '').replace(/[\r\n<>]+/g, ' ').trim().slice(0, max);
+const escHtml = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const EMAIL_RE = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/;
+
+// Branded HTML version of the lead email (table layout + inline styles: what email apps render reliably)
+function leadEmailHtml({ name, phone, email, interest, when }) {
+  const gold = '#b8860b', ink = '#10161d', muted = '#5c6b7a', year = new Date().getFullYear();
+  const tel = phone.replace(/[^\d+]/g, '');
+  const row = (label, value) => `<tr><td style="padding:12px 0;border-bottom:1px solid #eef1f5;font-size:13px;color:${muted};width:110px;vertical-align:top">${label}</td><td style="padding:12px 0;border-bottom:1px solid #eef1f5;font-size:15px;color:${ink};font-weight:600">${value}</td></tr>`;
+  const btn = (href, label, solid) => `<a href="${href}" style="display:inline-block;margin:6px 6px 0 0;padding:13px 22px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;${solid ? `background:${gold};color:#ffffff` : `background:#ffffff;color:${ink};border:1px solid #d9dee5`}">${label}</a>`;
+  const subject = encodeURIComponent(`Re: your ${interest} enquiry at dangm.ca`);
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>New lead</title></head>
+<body style="margin:0;padding:0;background:#eef1f5;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif">
+<div style="display:none;max-height:0;overflow:hidden">${escHtml(name)} wants help with ${escHtml(interest)}. Call ${escHtml(phone)}.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef1f5;padding:28px 12px"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(16,22,29,.06)">
+  <tr><td style="background:${ink};padding:22px 28px">
+    <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+      <td style="vertical-align:middle"><img src="https://dangm.ca/images/logo-email.png" width="44" height="44" alt="dangm.ca" style="display:block;border:0;border-radius:10px"></td>
+      <td style="vertical-align:middle;padding-left:12px;font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-.3px">dangm<span style="color:#d4a017">.ca</span><div style="font-size:11px;font-weight:600;letter-spacing:1.6px;color:#9aa7b4;text-transform:uppercase;margin-top:2px">Personal GM Consultant · Coquitlam, BC</div></td>
+    </tr></table>
+  </td></tr>
+  <tr><td style="height:4px;background:linear-gradient(90deg,#b8860b,#d4a017,#b8860b);background-color:${gold};font-size:0;line-height:0">&nbsp;</td></tr>
+  <tr><td style="padding:30px 28px 8px">
+    <span style="display:inline-block;padding:5px 12px;border-radius:999px;background:#fbf3df;color:${gold};font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase">New website lead</span>
+    <h1 style="margin:14px 0 6px;font-size:26px;line-height:1.25;color:${ink};font-weight:800">${escHtml(name)}</h1>
+    <p style="margin:0;font-size:15px;color:${muted}">is asking about <strong style="color:${ink}">${escHtml(interest)}</strong> · ${escHtml(when)}</p>
+  </td></tr>
+  <tr><td style="padding:14px 28px 4px">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      ${row('Name', escHtml(name))}
+      ${row('Phone', `<a href="tel:${escHtml(tel)}" style="color:${ink};text-decoration:none">${escHtml(phone)}</a>`)}
+      ${row('Email', email ? `<a href="mailto:${escHtml(email)}" style="color:${gold};text-decoration:none">${escHtml(email)}</a>` : `<span style="color:${muted};font-weight:400">Not given</span>`)}
+      ${row('Interested in', escHtml(interest))}
+    </table>
+  </td></tr>
+  <tr><td style="padding:20px 28px 8px">
+    ${btn(`tel:${escHtml(tel)}`, `Call ${escHtml(name.split(' ')[0] || 'them')}`, true)}
+    ${email ? btn(`mailto:${escHtml(email)}?subject=${subject}`, 'Reply by email', false) : ''}
+    ${btn('https://dangm.ca/admin', 'All leads', false)}
+  </td></tr>
+  <tr><td style="padding:14px 28px 30px;font-size:13px;line-height:1.6;color:${muted}">
+    ${email ? 'Hit <strong>Reply</strong> to answer them directly from dan@dangm.ca.' : 'They didn&#39;t leave an email, so give them a call back.'} Fast replies win deals: leads contacted within 5 minutes are far more likely to buy.
+  </td></tr>
+  <tr><td style="background:#f7f8fa;border-top:1px solid #eef1f5;padding:22px 28px;font-size:12px;line-height:1.7;color:${muted};text-align:center">
+    <strong style="color:${ink}">dangm.ca</strong> · Inside Eagle Ridge GM, 2595 Barnet Hwy, Coquitlam, BC V3E 1K9<br>
+    <a href="tel:6047351396" style="color:${muted};text-decoration:none">604-735-1396</a> · <a href="mailto:dan@dangm.ca" style="color:${muted};text-decoration:none">dan@dangm.ca</a> · <a href="https://dangm.ca" style="color:${gold};text-decoration:none">dangm.ca</a><br>
+    <span style="font-size:11px;opacity:.8">© ${year} dangm.ca. All rights reserved. Vehicles are sold and financed through Eagle Ridge Chevrolet Buick GMC, a licensed motor dealer in British Columbia. This is an automatic notification from the dangm.ca website.</span>
+  </td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
+}
+
 async function notifyLead(env, lead) {
   if (!env.LEAD_EMAIL) return;
   const name = oneLine(lead.name, 100), phone = oneLine(lead.phone, 20), email = oneLine(lead.email, 254), interest = oneLine(lead.interest, 60);
+  const validEmail = EMAIL_RE.test(email) ? email : '';
   const when = new Date().toLocaleString('en-CA', { timeZone: 'America/Vancouver', dateStyle: 'medium', timeStyle: 'short' });
-  const body = [
+  const text = [
     `New lead from dangm.ca (${when})`, '',
     `Name:     ${name}`,
     `Phone:    ${phone}`,
-    `Email:    ${email || '(not given)'}`,
+    `Email:    ${validEmail || '(not given)'}`,
     `Interest: ${interest}`, '',
-    email ? 'Reply to this email to answer them directly.' : 'They did not leave an email: call them back.',
-    'All leads: https://dangm.ca/admin',
+    validEmail ? 'Reply to this email to answer them directly.' : 'They did not leave an email: call them back.',
+    'All leads: https://dangm.ca/admin', '',
+    `© ${new Date().getFullYear()} dangm.ca · Inside Eagle Ridge GM, 2595 Barnet Hwy, Coquitlam, BC · 604-735-1396`,
   ].join('\r\n');
+  const html = leadEmailHtml({ name, phone, email: validEmail, interest, when });
+  const b64 = (str) => {
+    const bytes = new TextEncoder().encode(str);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(bin).replace(/.{76}/g, '$&\r\n');
+  };
+  const subjectWord = (str) => `=?UTF-8?B?${b64(str).replace(/\r\n/g, '')}?=`;
+  const boundary = `dangm-${crypto.randomUUID()}`;
+  // The visible To is always dan@dangm.ca, so Gmail replies from that address (Send mail as);
+  // the envelope goes to whichever verified inbox works
   for (const to of ['dan@dangm.ca', env.LEAD_FALLBACK].filter(Boolean)) {
     const raw = [
-      'From: "dangm.ca website" <website@dangm.ca>',
-      `To: <${to}>`,
-      ...(email && /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(email) ? [`Reply-To: <${email}>`] : []),
-      `Subject: New lead: ${name} (${interest})`,
+      'From: "dangm.ca" <website@dangm.ca>',
+      'To: "Dan" <dan@dangm.ca>',
+      ...(validEmail ? [`Reply-To: ${subjectWord(name)} <${validEmail}>`] : []),
+      `Subject: ${subjectWord(`New lead: ${name} (${interest})`)}`,
       `Message-ID: <${crypto.randomUUID()}@dangm.ca>`,
       `Date: ${new Date().toUTCString()}`,
       'MIME-Version: 1.0',
-      'Content-Type: text/plain; charset=utf-8',
-      'Content-Transfer-Encoding: 8bit',
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
       '',
-      body,
+      `--${boundary}`,
+      'Content-Type: text/plain; charset=utf-8',
+      'Content-Transfer-Encoding: base64',
+      '',
+      b64(text),
+      `--${boundary}`,
+      'Content-Type: text/html; charset=utf-8',
+      'Content-Transfer-Encoding: base64',
+      '',
+      b64(html),
+      `--${boundary}--`,
+      '',
     ].join('\r\n');
     try {
       await env.LEAD_EMAIL.send(new EmailMessage('website@dangm.ca', to, raw));
