@@ -1118,3 +1118,8 @@ section { padding: 110px 24px; }
 .cmp-table th{border-bottom:2px solid #d4a53f;background:rgba(0,0,0,.05)}
 .cmp-table td{border-bottom:1px solid rgba(0,0,0,.1)}
 .cmp-table tr:last-child td{border-bottom:0}
+
+/* Email as a second contact option (under the phone) */
+.vdp-email { flex-basis: 100%; margin: 2px 0 0; font-size: 14px; color: var(--text-muted); }
+.vdp-email a { color: var(--accent-2, var(--accent)); text-decoration: underline; text-underline-offset: 3px; }
+.contact-email { margin-top: 10px; }

@@ -750,6 +750,7 @@ function renderVehicle(t) {
         </div>
         <div class="vdp-actions">
           <a href="tel:6047351396" class="btn btn-primary">Call 604-735-1396</a>
+          <a href="mailto:dan@dangm.ca" class="btn btn-ghost">Email dan@dangm.ca</a>
         </div>
       </div>
     </div>
@@ -772,6 +773,7 @@ function renderVehicle(t) {
       </div>
       <div class="vdp-contact-actions">
         <a href="tel:6047351396" class="btn btn-primary">Call 604-735-1396</a>
+        <a href="mailto:dan@dangm.ca" class="btn btn-ghost">Email dan@dangm.ca</a>
         <a href="/inventory" class="btn btn-ghost">Back to inventory</a>
       </div>
     </section>
@@ -997,6 +999,7 @@ async function loadForumPost() {
         <div class="forum-post-cta">
           <a href="/inventory" class="btn btn-primary">Browse Inventory</a>
           <a href="tel:6047351396" class="btn btn-ghost">Call 604-735-1396</a>
+          <a href="mailto:dan@dangm.ca" class="btn btn-ghost">Email dan@dangm.ca</a>
         </div>
       </div>`;
   } catch (e) {

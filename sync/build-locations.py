@@ -32,7 +32,7 @@ PHONE_HREF = "tel:6047351396"
 TODAY = datetime.date.today().isoformat()
 # Date the city pages' content last changed (sitemap lastmod). Bump on edits.
 CONTENT_DATE = "2026-10-13"
-CSS_V = "26"
+CSS_V = "27"
 JS_V = "29"
 
 
@@ -398,6 +398,7 @@ FOOTER = """  <footer class="footer">
       </div>
       <p>© <span id="year"></span> dangm.ca. All rights reserved.</p>
       <p class="footer-disclosure" style="font-size:12px;opacity:.7;margin-top:6px">Vehicles are sold and financed through Eagle Ridge Chevrolet Buick GMC, a licensed motor dealer in British Columbia. Financing subject to lender approval.</p>
+      <p class="footer-contact" style="margin-top:8px"><a href="tel:6047351396">604-735-1396</a> · <a href="mailto:dan@dangm.ca">dan@dangm.ca</a></p>
       <nav class="footer-links" style="display:flex;flex-wrap:wrap;gap:1.5rem;justify-content:center;margin-top:14px" aria-label="Footer">
         <a href="/inventory">Inventory</a>
         <a href="/locations/">Locations</a>
@@ -457,6 +458,7 @@ CITY_TMPL = """<!DOCTYPE html>
       <p class="page-hero-sub reveal">{sub}</p>
       <div class="hero-actions reveal">
         <a href="{phone_href}" class="btn btn-primary">Call {phone}</a>
+        <a href="mailto:dan@dangm.ca" class="btn btn-ghost">Email dan@dangm.ca</a>
         <a href="/#lead" class="btn btn-ghost">Apply for Financing Approval</a>
       </div>
     </div>
@@ -481,6 +483,7 @@ CITY_TMPL = """<!DOCTYPE html>
       <p style="font-size:1.1rem;line-height:1.7;color:#d6e2f5">{cta_text}</p>
       <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:30px">
         <a href="{phone_href}" class="btn btn-primary" style="font-size:1.15rem;padding:18px 34px">Call {phone} now</a>
+        <a href="mailto:dan@dangm.ca" class="btn btn-ghost">Email dan@dangm.ca</a>
         <a href="/#lead" class="btn btn-ghost" style="font-size:1.15rem;padding:18px 34px;border-color:#7fb2ff;color:#fff">Apply for Financing Approval</a>
         <a href="/inventory" class="btn btn-ghost" style="font-size:1.15rem;padding:18px 34px;border-color:#7fb2ff;color:#fff">Browse Inventory</a>
       </div>
@@ -572,7 +575,7 @@ HUB_TMPL = """<!DOCTYPE html>
       {cards}
     </div>
     <div style="text-align:center;margin:36px auto 0;max-width:820px">
-      <p style="margin-top:24px">Not sure which city applies to you? <a href="/#lead">Ask Dan directly</a> or call 604-735-1396. Every driver in the Lower Mainland is welcome.</p>
+      <p style="margin-top:24px">Not sure which city applies to you? <a href="/#lead">Ask Dan directly</a> or call 604-735-1396 or email <a href="mailto:dan@dangm.ca">dan@dangm.ca</a>. Every driver in the Lower Mainland is welcome.</p>
     </div>
   </section>
 {footer}

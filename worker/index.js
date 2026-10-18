@@ -22,6 +22,7 @@
 // ─── Firebase ID token verification (same project as FB Lister) ─────────────
 // FB Lister uses Firebase Auth with Google provider — tokens have aud='fblisterpro'.
 // We accept the SAME Firebase project so the same Google login works here.
+import { EmailMessage } from 'cloudflare:email';
 const GOOGLE_CERTS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
 
 async function verifyGoogleToken(token, env) {
@@ -275,6 +276,46 @@ async function runSync(env, trucks) {
   return { ok: true, count: trucks.length, removed, backedUp };
 }
 
+// ─── New-lead email (Cloudflare Email Routing send_email binding: free, no outside service) ───
+// Goes to dan@dangm.ca once that address is verified in Email Routing; until then to the
+// verified inbox dan@dangm.ca forwards to (secret LEAD_FALLBACK, kept out of this public repo).
+const oneLine = (v, max) => String(v || '').replace(/[\r\n<>]+/g, ' ').trim().slice(0, max);
+async function notifyLead(env, lead) {
+  if (!env.LEAD_EMAIL) return;
+  const name = oneLine(lead.name, 100), phone = oneLine(lead.phone, 20), email = oneLine(lead.email, 254), interest = oneLine(lead.interest, 60);
+  const when = new Date().toLocaleString('en-CA', { timeZone: 'America/Vancouver', dateStyle: 'medium', timeStyle: 'short' });
+  const body = [
+    `New lead from dangm.ca (${when})`, '',
+    `Name:     ${name}`,
+    `Phone:    ${phone}`,
+    `Email:    ${email || '(not given)'}`,
+    `Interest: ${interest}`, '',
+    email ? 'Reply to this email to answer them directly.' : 'They did not leave an email: call them back.',
+    'All leads: https://dangm.ca/admin',
+  ].join('\r\n');
+  for (const to of ['dan@dangm.ca', env.LEAD_FALLBACK].filter(Boolean)) {
+    const raw = [
+      'From: "dangm.ca website" <website@dangm.ca>',
+      `To: <${to}>`,
+      ...(email && /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(email) ? [`Reply-To: <${email}>`] : []),
+      `Subject: New lead: ${name} (${interest})`,
+      `Message-ID: <${crypto.randomUUID()}@dangm.ca>`,
+      `Date: ${new Date().toUTCString()}`,
+      'MIME-Version: 1.0',
+      'Content-Type: text/plain; charset=utf-8',
+      'Content-Transfer-Encoding: 8bit',
+      '',
+      body,
+    ].join('\r\n');
+    try {
+      await env.LEAD_EMAIL.send(new EmailMessage('website@dangm.ca', to, raw));
+      return; // delivered: stop at the first address that works
+    } catch (e) {
+      console.warn('lead email to', to, 'failed:', e && e.message);
+    }
+  }
+}
+
 // ─── AI description generation (Cloudflare Workers AI — free, no key) ────────
 async function generateDescription(env, truck) {
   const title = [truck.year, truck.make, truck.model, truck.trim].filter(Boolean).join(' ');
@@ -307,8 +348,8 @@ ${facts ? `Key specs: ${facts}` : ''}`;
 
 // ─── Router ─────────────────────────────────────────────────────────────────
 export default {
-  async fetch(request, env) {
-    return handle(request, env).catch((e) =>
+  async fetch(request, env, ctx) {
+    return handle(request, env, ctx).catch((e) =>
       new Response(JSON.stringify({ error: 'Internal error: ' + (e && e.message ? e.message : String(e)) }), {
         status: 500,
         headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
@@ -317,7 +358,7 @@ export default {
   },
 };
 
-async function handle(request, env) {
+async function handle(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
     const db = env.D1;
@@ -380,6 +421,8 @@ async function handle(request, env) {
         await db.prepare(
           "INSERT INTO leads (name, phone, email, interest, ip, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))"
         ).bind(name, phone, email, interest, ip).run();
+        // Email Dan right away; the lead is already saved even if the email fails
+        if (ctx) ctx.waitUntil(notifyLead(env, { name, phone, email, interest }));
         return json({ ok: true });
       } catch (e) {
         return json({ ok: false, error: 'Could not submit: ' + e.message }, 500);

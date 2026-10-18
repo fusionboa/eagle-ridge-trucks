@@ -117,7 +117,7 @@ def render_post(p):
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=26">
+  <link rel="stylesheet" href="/css/styles.css?v=27">
   <link rel="stylesheet" href="/css/glass.css?v=5">
   <script src="/js/glass.js?v=2" defer></script>
 </head>
@@ -156,12 +156,13 @@ def render_post(p):
           <a href="{inventory_link(p)[0]}" class="btn btn-primary">{inventory_link(p)[1]}</a>
           <a href="/#lead" class="btn btn-ghost">Apply for Financing Approval</a>
           <a href="tel:6047351396" class="btn btn-ghost">Call 604-735-1396</a>
+          <a href="mailto:dan@dangm.ca" class="btn btn-ghost">Email dan@dangm.ca</a>
         </div>
         <h2>Frequently asked questions</h2>
         <div class="faq-grid">{faq_html}</div>
         <h2>Keep reading</h2>
         <ul>{related}</ul>
-        <p>See what's on the lot right now in the <a href="/inventory">current Eagle Ridge GM inventory</a> (used trucks: <a href="/inventory/used-trucks/">browse</a>). Want the short version for your situation? <a href="/#lead">Ask Dan directly</a>, or call 604-735-1396.</p>
+        <p>See what's on the lot right now in the <a href="/inventory">current Eagle Ridge GM inventory</a> (used trucks: <a href="/inventory/used-trucks/">browse</a>). Want the short version for your situation? <a href="/#lead">Ask Dan directly</a>, or call 604-735-1396 or email <a href="mailto:dan@dangm.ca">dan@dangm.ca</a>.</p>
       </div>
     </article>
   </main>
@@ -174,6 +175,7 @@ def render_post(p):
       </div>
       <p>© <span id="year"></span> dangm.ca. All rights reserved.</p>
       <p class="footer-disclosure" style="font-size:12px;opacity:.7;margin-top:6px">Vehicles are sold and financed through Eagle Ridge Chevrolet Buick GMC, a licensed motor dealer in British Columbia. Financing subject to lender approval.</p>
+      <p class="footer-contact" style="margin-top:8px"><a href="tel:6047351396">604-735-1396</a> · <a href="mailto:dan@dangm.ca">dan@dangm.ca</a></p>
       <nav class="footer-links" style="display:flex;flex-wrap:wrap;gap:1.5rem;justify-content:center;margin-top:14px" aria-label="Footer">
         <a href="/inventory">Inventory</a>
         <a href="/locations/">Locations</a>

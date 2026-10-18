@@ -33,7 +33,7 @@ BASE = "https://dangm.ca"
 PHONE = "604-735-1396"
 PHONE_HREF = "tel:6047351396"
 TODAY = datetime.date.today().isoformat()
-CSS_V = "26"
+CSS_V = "27"
 JS_V = "29"
 
 
@@ -153,6 +153,7 @@ FOOTER = """  <footer class="footer">
       </div>
       <p>© <span id="year"></span> dangm.ca. All rights reserved.</p>
       <p class="footer-disclosure" style="font-size:12px;opacity:.7;margin-top:6px">Vehicles are sold and financed through Eagle Ridge Chevrolet Buick GMC, a licensed motor dealer in British Columbia. Financing subject to lender approval.</p>
+      <p class="footer-contact" style="margin-top:8px"><a href="tel:6047351396">604-735-1396</a> · <a href="mailto:dan@dangm.ca">dan@dangm.ca</a></p>
       <nav class="footer-links" style="display:flex;flex-wrap:wrap;gap:1.5rem;justify-content:center;margin-top:14px" aria-label="Footer">
         <a href="/inventory">Inventory</a>
         <a href="/locations/">Locations</a>
@@ -224,6 +225,7 @@ THREAD_TMPL = """<!DOCTYPE html>
       </div>
       <div class="forum-post-cta">
         <a href="{phone_href}" class="btn btn-primary">Call {phone}</a>
+        <a href="mailto:dan@dangm.ca" class="btn btn-ghost">Email dan@dangm.ca</a>
         <a href="/#lead" class="btn btn-ghost">Apply for financing approval</a>
       </div>
       <p>Want a straight answer about your own situation in the Tri-Cities or Metro Vancouver? <a href="/#lead">Ask Dan directly</a>, or browse the <a href="/inventory">current Eagle Ridge GM inventory</a> in Coquitlam first.</p>
@@ -294,7 +296,7 @@ HUB_TMPL = """<!DOCTYPE html>
       {cards}
     </div>
     <div style="text-align:center;margin:36px auto 0;max-width:820px">
-      <p style="margin-top:24px">Have a question that is not answered here? <a href="/#lead">Ask Dan directly</a> or call 604-735-1396. Zero pressure, honest answers, every time.</p>
+      <p style="margin-top:24px">Have a question that is not answered here? <a href="/#lead">Ask Dan directly</a> or call 604-735-1396 or email <a href="mailto:dan@dangm.ca">dan@dangm.ca</a>. Zero pressure, honest answers, every time.</p>
     </div>
   </section>
 {footer}

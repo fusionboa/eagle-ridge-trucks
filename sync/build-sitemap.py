@@ -15,6 +15,7 @@ Static pages are self-canonical; vehicle.html?id=X stays the interactive
 variant. Generated pages land in site/v/ which is gitignored — they only
 exist in pages-dist after the deploy copy.
 """
+import urllib.parse
 import html
 import json
 import os
@@ -372,7 +373,7 @@ PAGE_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{base_rel}css/styles.css?v=26">
+  <link rel="stylesheet" href="{base_rel}css/styles.css?v=27">
   <link rel="stylesheet" href="{base_rel}css/glass.css?v=5">
   <script src="{base_rel}js/glass.js?v=2" defer></script>
   <script src="{base_rel}js/vdp-gallery.js?v=2" defer></script>
@@ -418,6 +419,7 @@ PAGE_TMPL = """<!DOCTYPE html>
         <div class="vdp-actions">
           <a href="{phone_href}" class="btn btn-primary">Call {phone}</a>
           <a href="/#lead" class="btn btn-ghost">Get pre-approved</a>
+          <p class="vdp-email">Prefer email? <a href="mailto:dan@dangm.ca?subject={email_subject}">dan@dangm.ca</a></p>
         </div>
       </div>
     </div>
@@ -431,6 +433,7 @@ PAGE_TMPL = """<!DOCTYPE html>
       </div>
       <p>&copy; {year_now} dangm.ca. All rights reserved.</p>
       <p class="footer-disclosure" style="font-size:12px;opacity:.7;margin-top:6px">Vehicles are sold and financed through Eagle Ridge Chevrolet Buick GMC, a licensed motor dealer in British Columbia. Financing subject to lender approval.</p>
+      <p class="footer-contact" style="margin-top:8px"><a href="tel:6047351396">604-735-1396</a> · <a href="mailto:dan@dangm.ca">dan@dangm.ca</a></p>
       <nav class="footer-links" style="display:flex;flex-wrap:wrap;gap:1.5rem;justify-content:center;margin-top:14px" aria-label="Footer">
         <a href="/inventory">Inventory</a>
         <a href="/locations/">Locations</a>
@@ -495,6 +498,7 @@ def render_page(t, slug, today, categories=()):
         rows=rows,
         phone=PHONE,
         phone_href=PHONE_HREF,
+        email_subject=esc(urllib.parse.quote(f"Question about the {h1}" + (f" (stock {t.get('stockNumber')})" if t.get("stockNumber") else ""))),
         stock=esc(str(t.get("stockNumber") or "")),
         desc_block=desc_block,
         year_now=today[:4],
@@ -621,7 +625,7 @@ def category_page(c, items, slugs, today):
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=26">
+  <link rel="stylesheet" href="/css/styles.css?v=27">
   <link rel="stylesheet" href="/css/glass.css?v=5">
   <script src="/js/glass.js?v=2" defer></script>
 </head>
@@ -654,6 +658,7 @@ def category_page(c, items, slugs, today):
       <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px">
         <a href="/#lead" class="btn btn-primary">Get pre-approved</a>
         <a href="{PHONE_HREF}" class="btn btn-ghost">Call {PHONE}</a>
+        <a href="mailto:dan@dangm.ca" class="btn btn-ghost">Email dan@dangm.ca</a>
       </div>
     </div>
   </header>
@@ -671,6 +676,7 @@ def category_page(c, items, slugs, today):
       </div>
       <p>&copy; {today[:4]} dangm.ca. All rights reserved.</p>
       <p class="footer-disclosure" style="font-size:12px;opacity:.7;margin-top:6px">Vehicles are sold and financed through Eagle Ridge Chevrolet Buick GMC, a licensed motor dealer in British Columbia. Financing subject to lender approval.</p>
+      <p class="footer-contact" style="margin-top:8px"><a href="tel:6047351396">604-735-1396</a> · <a href="mailto:dan@dangm.ca">dan@dangm.ca</a></p>
       <nav class="footer-links" style="display:flex;flex-wrap:wrap;gap:1.5rem;justify-content:center;margin-top:14px" aria-label="Footer">
         <a href="/inventory">Inventory</a>
         <a href="/locations/">Locations</a>

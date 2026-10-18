@@ -24,3 +24,7 @@ ADMIN_EMAILS = "jadenmichalmarwaha@gmail.com,jadenmichalmarwaha2@gmail.com"
 # Firebase project (same as FB Lister) — ID tokens from this project are accepted
 FIREBASE_PROJECT_ID = "fblisterpro"
 # BRIDGE_TOKEN is a secret — set it with: wrangler secret put BRIDGE_TOKEN
+
+# New-lead emails (Email Routing). Only verified Email Routing addresses can receive.
+[[send_email]]
+name = "LEAD_EMAIL"
