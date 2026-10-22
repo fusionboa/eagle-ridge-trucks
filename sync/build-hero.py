@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Bake the homepage hero: site/data/hero.json + optimised walk-around photos.
 
-The hero vehicle is the most expensive listed truck. eDealer photos are
+The hero vehicle is the most expensive listed truck, unless sync/hero-pin.txt exists (then the
+committed hero stays as is). eDealer photos are
 1.3-2 MB 1200x1200 PNGs with an Eagle Ridge banner on top and an AutoVerify
 strip at the bottom, so this script downloads the first 5 (the walk-around:
 front 3/4, front, side, rear 3/4, rear), crops to the truck and writes small
@@ -105,7 +106,13 @@ def bake_images(urls, stamped):
     return out
 
 
+PIN = os.path.join(os.path.dirname(__file__), "hero-pin.txt")
+
+
 def main():
+    if os.path.exists(PIN):
+        print("Hero pinned (sync/hero-pin.txt): keeping site/data/hero.json and site/images/hero/ as committed")
+        return 0
     try:
         d = json.loads(fetch(API, timeout=30))
     except Exception as e:

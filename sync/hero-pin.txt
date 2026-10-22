@@ -1,0 +1,4 @@
+# While this file exists, sync/build-hero.py leaves the homepage hero alone: site/data/hero.json and
+# site/images/hero/ stay on the vehicle committed in the repo (2026 GMC Sierra 3500HD Denali Ultimate,
+# Black, stock 15108440, which also matches the illustration in hero/src/art.json).
+# Delete this file to go back to "most expensive listed truck", updated hourly.

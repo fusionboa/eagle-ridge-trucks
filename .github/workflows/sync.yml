@@ -90,7 +90,7 @@ jobs:
       - name: Rebuild static city location pages + locations sitemap
         run: python3 sync/build-locations.py
 
-      - name: Bake homepage hero vehicle + optimised photos (most expensive listed truck)
+      - name: Bake homepage hero vehicle + optimised photos (most expensive listed truck, unless pinned)
         continue-on-error: true
         run: |
           python3 -m pip install --quiet --user --break-system-packages pillow || echo "pillow install failed; hero falls back to remote photos"
