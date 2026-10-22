@@ -1,5 +1,23 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.21.0: Fixed Sierra hero, email contact, OmniEngine on vehicle pages, feed fixes (Oct 13–22, 2026)
+
+- **Homepage hero fixed to the Sierra illustration.**
+  - The hero always shows the Gemini illustration of the 2026 GMC Sierra 3500HD Denali Ultimate (Black), whatever is in stock. Before, it switched to the listing photos as soon as a pricier truck arrived (a 2026 Yukon Denali Ultimate did on Oct 22).
+  - `sync/build-hero.py` leaves `site/data/hero.json` and `site/images/hero/` as committed while `sync/hero-pin.txt` exists; delete that file to go back to "most expensive listed truck". `home-hero.js?v=14`.
+- **dan@dangm.ca everywhere.** The email address sits next to the phone number as a contact option site-wide. New leads are emailed (branded HTML with the logo, addressed to dan@dangm.ca) through the Worker's Cloudflare Email Routing binding; the fallback address is a secret, never in the repo.
+- **OmniEngine on vehicle pages.** Vehicle pages load the OmniEngine embed from dangm.ca/omniengine: an EV dashboard on EVs and the "Ask Eva" assistant.
+- **Phones:** smoother truck drive-in on the homepage (no photo decoding mid-drive, no bump jitter, spec chips after parking, GPU layers), and the walk-around follows the finger (shorter track, tighter spring). The price filter no longer overlaps the search bar on phones (`styles.css?v=26`).
+- **Feed:**
+  - Vehicles show the dealer's real stock number (feed `stock_number`) instead of the listing ID, with doubled spaces collapsed ("175466  MF" → "175466 MF").
+  - The sync runs every 15 minutes and logs the feed columns; the stale `trucks.json` fallback is gone.
+- **Security:** removed the Worker's `DEV_MODE` / `X-Dev-Key` admin bypass and its debug stub.
+- **Forum:** clipart banners hidden on forum cards and posts.
+- **How deploys work:**
+  - Vehicle pages (`/v/`), sitemaps, the city and forum pages and the fast listing photos (`/images/photos/`) are rebuilt by the Truck Feed Sync workflow and are not committed.
+  - So the GitHub workflow (`gh workflow run sync.yml`) is the complete deploy.
+  - A direct `wrangler pages deploy` from a laptop serves a stale inventory and the slower original photos (cards fall back to them) until the next sync, unless those builders are run first.
+
 ## v0.20.0 — Smoother phone scrolling, no clipart banners (Oct 13, 2026)
 
 - **Phone scroll no longer looks laggy.** On touch screens the hero walk-around followed raw scroll events, which phones deliver unevenly, so the truck and scenery moved on only ~43% of frames. A stiff, light spring now fills the gaps (98% of frames, settles ~100ms after the finger stops). The background no longer drifts with page scroll on phones, and the truck fades out at the end of the hero instead of sliding up a frame behind the page. Desktop unchanged. `home-hero.js?v=12`.
