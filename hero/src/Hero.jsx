@@ -15,7 +15,7 @@ import Scene from './Scene.jsx';
 import Showroom, { PHOTO_SIZES_ART } from './Showroom.jsx';
 import art from './art.json';
 import Loader from './Loader.jsx';
-import { loadHeroTruck, preload, matchesArt, PHOTO_SIZES } from './data.js';
+import { loadHeroTruck, preload, PHOTO_SIZES } from './data.js';
 
 const ease = [0.22, 1, 0.36, 1];
 // Phones/tablets: scroll drives the walk-around directly (a smoothing spring
@@ -141,9 +141,8 @@ export default function Hero({ copyHTML, sceneHost, loaderHost }) {
     loadHeroTruck().then(async (t) => {
       if (!alive) return;
       progressRaw.set(0.45);
-      // Illustrated truck while the hero is the model the art depicts,
-      // otherwise the listing's own walk-around photos in a glass frame
-      const useArt = matchesArt(t, art.match);
+      // Always the Gemini illustration (the hero is pinned: sync/hero-pin.txt), whatever is in stock
+      const useArt = !!t;
       const orbit = !t ? [] : useArt
         ? art.trucks.map((a) => ({ src: a.src, srcset: a.srcset.map(([u, w]) => `${u} ${w}w`).join(', ') }))
         : t.orbit;
