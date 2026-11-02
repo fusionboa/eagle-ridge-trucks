@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { m, animate, useMotionValue, useTransform } from 'framer-motion';
 import art from './art.json';
 import { STAGE } from './Scene.jsx';
@@ -132,6 +132,19 @@ export default function Showroom({ frame, carX, carScale, exitY, exitOpacity, th
     const a = lerp(art.trucks[i].aspect, art.trucks[Math.min(count - 1, i + 1)].aspect, f - i);
     return a * h * 1.04;
   });
+  // Late angles (slow connection, visitor already scrolling) join in one go.
+  // The angle that was standing in for them fades out over the right one,
+  // instead of the view cutting straight to another side of the truck.
+  const [hold, setHold] = useState(null);
+  const shownAvail = useRef(avail);
+  useEffect(() => {
+    const before = shownAvail.current;
+    shownAvail.current = avail;
+    // the visible angle only changes if the turn is already past the stand-in
+    if (still || avail <= before || frame.get() <= before - 0.58) return;
+    setHold(art.trucks[before - 1]);
+  }, [avail]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // keep the orbit (plus half a chip) inside the screen on phones
   const rx = Math.min(h * 1.75, window.innerWidth / 2 - 72);
   const ry = h * 0.36;
@@ -159,6 +172,23 @@ export default function Showroom({ frame, carX, carScale, exitY, exitOpacity, th
           {chipLayer('back')}
           <m.div className="xc-angles" style={{ height: h, scaleY: pitch }}>
             {trucks.map((t, i) => <Angle key={t.src} t={t} i={i} count={trucks.length} frame={frame} />)}
+            {hold && (
+              <m.img
+                key={`hold-${hold.src}`}
+                className="xc-truck"
+                src={hold.src}
+                srcSet={hold.srcset.map(([src, w]) => `${src} ${w}w`).join(', ')}
+                sizes={PHOTO_SIZES_ART}
+                alt=""
+                decoding="async"
+                draggable="false"
+                style={{ filter: 'none' }}
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 0 }}
+                transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
+                onAnimationComplete={() => setHold(null)}
+              />
+            )}
             <m.div className="xc-lights" style={{ opacity: lights, width: h * art.trucks[0].aspect }}>
               {HEADLIGHTS.map(([fx, fy]) => <i key={fx} style={{ left: `${fx * 100}%`, top: `${fy * 100}%` }} />)}
             </m.div>

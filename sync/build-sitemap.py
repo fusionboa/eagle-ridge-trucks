@@ -373,16 +373,16 @@ PAGE_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{base_rel}css/styles.css?v=27">
+  <link rel="stylesheet" href="{base_rel}css/styles.css?v=28">
   <link rel="stylesheet" href="{base_rel}css/glass.css?v=5">
-  <script src="{base_rel}js/glass.js?v=2" defer></script>
+  <script src="{base_rel}js/glass.js?v=3" defer></script>
   <script src="{base_rel}js/vdp-gallery.js?v=2" defer></script>
 </head>
 <body class="page-vehicle glass">
   <nav class="nav scrolled" id="nav">
     <div class="nav-inner">
       <a href="/" class="nav-logo">
-        <img class="logo-mark logo-img" src="{base_rel}images/logo.png" alt="dangm.ca logo">
+        <img class="logo-mark logo-img" src="{base_rel}images/logo-96.webp" alt="dangm.ca logo" width="40" height="40">
         <span class="logo-text">dangm<em>.ca</em></span>
       </a>
       <div class="nav-links">
@@ -428,7 +428,7 @@ PAGE_TMPL = """<!DOCTYPE html>
   <footer class="footer">
     <div class="footer-inner">
       <div class="footer-brand">
-        <img class="logo-mark logo-img" src="{base_rel}images/logo.png" alt="dangm.ca logo">
+        <img class="logo-mark logo-img" src="{base_rel}images/logo-96.webp" alt="dangm.ca logo" width="40" height="40">
         <span class="logo-text">dangm<em>.ca</em></span>
       </div>
       <p>&copy; {year_now} dangm.ca. All rights reserved.</p>
@@ -445,7 +445,7 @@ PAGE_TMPL = """<!DOCTYPE html>
     </div>
   </footer>
   <script>window.SITE_PAGE = 'landing';</script>
-  <script src="/js/main.js?v=29"></script>
+  <script src="/js/main.js?v=30"></script>
   <!-- OmniEngine: fuel/EV cost badge under the buttons + AI chat (served from dangm.ca/omniengine) -->
   <script src="/omniengine/embed.js" data-omni-key="pk_c072fcf78b945b673f4f" data-target=".vdp-actions" async></script>
 </body>
@@ -540,15 +540,17 @@ SNAPSHOT_FIELDS = ("id", "stockNumber", "year", "make", "model", "trim", "price"
                    "interiorColor", "condition", "vin", "listed", "featured", "updatedAt")
 
 
-def card_html(t, slug):
+def card_html(t, slug, i=99):
     img = cover_image(t)
+    # first row loads straight away (what people see first), the rest lazily
+    load = 'fetchpriority="high"' if i < 3 else 'loading="lazy"'
     name = name_str(t)
     sub = " · ".join(x for x in (nice(t.get("exteriorColor")), km_str(t)) if x)
     body = body_name(t)
     return (
         f'      <a class="truck-card" href="/v/{slug}/">\n'
         f'        <div class="truck-card-img-wrap">'
-        + (f'<img class="truck-card-img" src="{esc(fast_photo(img))}" data-orig="{esc(img)}" onerror="this.onerror=null;this.src=this.dataset.orig" alt="{esc(name)} for sale in Coquitlam BC" loading="lazy" decoding="async">' if img else '<div class="truck-card-img"></div>')
+        + (f'<img class="truck-card-img" src="{esc(fast_photo(img))}" data-orig="{esc(img)}" onerror="this.onerror=null;this.src=this.dataset.orig" alt="{esc(name)} for sale in Coquitlam BC" {load} decoding="async">' if img else '<div class="truck-card-img"></div>')
         + (f'<span class="truck-badge">{esc(body.upper())}</span>' if body else "")
         + '</div>\n'
         f'        <div class="truck-card-body">\n'
@@ -602,7 +604,7 @@ def category_page(c, items, slugs, today):
             {"@type": "ListItem", "position": 3, "name": c["crumb"], "item": url},
         ],
     }
-    cards = "\n".join(card_html(t, slugs[t["id"]]) for t in items)
+    cards = "\n".join(card_html(t, slugs[t["id"]], i) for i, t in enumerate(items))
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -625,15 +627,15 @@ def category_page(c, items, slugs, today):
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=27">
+  <link rel="stylesheet" href="/css/styles.css?v=28">
   <link rel="stylesheet" href="/css/glass.css?v=5">
-  <script src="/js/glass.js?v=2" defer></script>
+  <script src="/js/glass.js?v=3" defer></script>
 </head>
 <body class="page-inventory glass">
   <nav class="nav scrolled" id="nav">
     <div class="nav-inner">
       <a href="/" class="nav-logo">
-        <img class="logo-mark logo-img" src="/images/logo.png" alt="dangm.ca logo">
+        <img class="logo-mark logo-img" src="/images/logo-96.webp" alt="dangm.ca logo" width="40" height="40">
         <span class="logo-text">dangm<em>.ca</em></span>
       </a>
       <div class="nav-links">
@@ -671,7 +673,7 @@ def category_page(c, items, slugs, today):
   <footer class="footer">
     <div class="footer-inner">
       <div class="footer-brand">
-        <img class="logo-mark logo-img" src="/images/logo.png" alt="dangm.ca logo">
+        <img class="logo-mark logo-img" src="/images/logo-96.webp" alt="dangm.ca logo" width="40" height="40">
         <span class="logo-text">dangm<em>.ca</em></span>
       </div>
       <p>&copy; {today[:4]} dangm.ca. All rights reserved.</p>
@@ -687,7 +689,7 @@ def category_page(c, items, slugs, today):
     </div>
   </footer>
   <script>window.SITE_PAGE = 'landing';</script>
-  <script src="/js/main.js?v=29"></script>
+  <script src="/js/main.js?v=30"></script>
 </body>
 </html>
 """

@@ -117,15 +117,15 @@ def render_post(p):
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=27">
+  <link rel="stylesheet" href="/css/styles.css?v=28">
   <link rel="stylesheet" href="/css/glass.css?v=5">
-  <script src="/js/glass.js?v=2" defer></script>
+  <script src="/js/glass.js?v=3" defer></script>
 </head>
 <body class="page-vehicle glass">
   <nav class="nav scrolled" id="nav">
     <div class="nav-inner">
       <a href="/" class="nav-logo">
-        <img class="logo-mark logo-img" src="/images/logo.png" alt="DanGM logo, personal GM consultant in Coquitlam BC">
+        <img class="logo-mark logo-img" src="/images/logo-96.webp" alt="DanGM logo, personal GM consultant in Coquitlam BC" width="40" height="40">
         <span class="logo-text">dangm<em>.ca</em></span>
       </a>
       <div class="nav-links">
@@ -170,7 +170,7 @@ def render_post(p):
   <footer class="footer">
     <div class="footer-inner">
       <div class="footer-brand">
-        <img class="logo-mark logo-img" src="/images/logo.png" alt="DanGM logo, personal GM consultant in Coquitlam BC">
+        <img class="logo-mark logo-img" src="/images/logo-96.webp" alt="DanGM logo, personal GM consultant in Coquitlam BC" width="40" height="40">
         <span class="logo-text">dangm<em>.ca</em></span>
       </div>
       <p>© <span id="year"></span> dangm.ca. All rights reserved.</p>
@@ -191,7 +191,7 @@ def render_post(p):
     window.SITE_PAGE = 'landing';
     window.SITE_CONFIG = {{ apiBase: 'https://eagle-ridge-trucks.fblister.workers.dev/api' }};
   </script>
-  <script src="/js/main.js?v=29"></script>
+  <script src="/js/main.js?v=30"></script>
 </body>
 </html>
 '''

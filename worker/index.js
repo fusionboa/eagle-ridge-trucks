@@ -23,7 +23,10 @@
 // FB Lister uses Firebase Auth with Google provider — tokens have aud='fblisterpro'.
 // We accept the SAME Firebase project so the same Google login works here.
 import { EmailMessage } from 'cloudflare:email';
-const GOOGLE_CERTS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
+// The admin page signs in through Firebase (getIdToken), and Firebase ID tokens
+// are signed with these keys (not the Google OAuth keys at oauth2/v3/certs,
+// which this used before, so no admin token could ever pass)
+const FIREBASE_CERTS_URL = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
 
 async function verifyGoogleToken(token, env) {
   try {
@@ -33,10 +36,10 @@ async function verifyGoogleToken(token, env) {
     const header = JSON.parse(base64url(parts[0]));
     const payload = JSON.parse(base64url(parts[1]));
 
-    // Fetch Google's public keys (cache via KV or re-fetch; simple version re-fetches)
-    const certsResp = await fetch(GOOGLE_CERTS_URL);
-    const certs = await certsResp.json();
-    const jwk = certs.keys.find((k) => k.kid === header.kid);
+    if (header.alg !== 'RS256') throw new Error('Unexpected algorithm');
+    // Fetch Firebase's public keys (simple version re-fetches)
+    const certs = await (await fetch(FIREBASE_CERTS_URL)).json();
+    const jwk = (certs.keys || []).find((k) => k.kid === header.kid);
     if (!jwk) throw new Error('Unknown key id');
 
     // Verify signature using Web Crypto
@@ -47,9 +50,14 @@ async function verifyGoogleToken(token, env) {
     if (!valid) throw new Error('Bad signature');
 
     // Check audience — Firebase project ID (same as FB Lister) + expiry
-    const validAudiences = [env.FIREBASE_PROJECT_ID || 'fblisterpro'];
-    if (!validAudiences.includes(payload.aud)) throw new Error('Wrong audience');
+    const project = env.FIREBASE_PROJECT_ID || 'fblisterpro';
+    if (payload.aud !== project) throw new Error('Wrong audience');
+    if (payload.iss !== `https://securetoken.google.com/${project}`) throw new Error('Wrong issuer');
     if (payload.exp * 1000 < Date.now()) throw new Error('Token expired');
+    // The Firebase project is shared with FB Lister: an email/password account
+    // there could claim an admin's address without owning it. Only accept
+    // addresses the provider has verified (Google sign-in always is).
+    if (payload.email_verified !== true) throw new Error('Email not verified');
 
     return { email: (payload.email || '').toLowerCase(), name: payload.name || '', sub: payload.sub || '' };
   } catch (e) {
@@ -122,7 +130,8 @@ const GEMINI_CLEAN_PROMPT = [
 async function getGeminiImageModel(env) {
   const g = globalThis;
   if (g.__geminiImageModel) return g.__geminiImageModel;
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${env.GEMINI_API_KEY}`);
+  // key in a header, not the URL: URLs end up in logs and error messages
+  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models', { headers: { 'x-goog-api-key': env.GEMINI_API_KEY } });
   if (!r.ok) throw new Error(`model list failed (HTTP ${r.status})`);
   const data = await r.json();
   const names = (data.models || []).map((m) => m.name.replace(/^models\//, ''));
@@ -280,6 +289,27 @@ async function runSync(env, trucks) {
 // Goes to dan@dangm.ca once that address is verified in Email Routing; until then to the
 // verified inbox dan@dangm.ca forwards to (secret LEAD_FALLBACK, kept out of this public repo).
 const oneLine = (v, max) => String(v || '').replace(/[\r\n<>]+/g, ' ').trim().slice(0, max);
+// Form input: drop < > and every control character (newlines included), squeeze spaces
+const cleanText = (v, max) => String(v || '').replace(/[<>\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+
+// Cloudflare Turnstile spam check. Placeholder until the TURNSTILE_SECRET worker
+// secret is set (and the widget is switched on in index.html): until then every
+// submission passes, exactly as before.
+async function turnstileOk(env, token, ip) {
+  if (!env.TURNSTILE_SECRET) return true;
+  if (!token || typeof token !== 'string' || token.length > 2048) return false;
+  try {
+    const form = new FormData();
+    form.append('secret', env.TURNSTILE_SECRET);
+    form.append('response', token);
+    if (ip) form.append('remoteip', ip);
+    const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body: form });
+    const out = await r.json();
+    return out.success === true;
+  } catch (_) {
+    return false;
+  }
+}
 const escHtml = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const EMAIL_RE = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/;
 
@@ -361,7 +391,7 @@ async function notifyLead(env, lead) {
   // the envelope goes to whichever verified inbox works
   for (const to of ['dan@dangm.ca', env.LEAD_FALLBACK].filter(Boolean)) {
     const raw = [
-      'From: "dangm.ca" <website@dangm.ca>',
+      'From: "dangm.ca" <noreply@dangm.ca>',
       'To: "Dan" <dan@dangm.ca>',
       ...(validEmail ? [`Reply-To: ${subjectWord(name)} <${validEmail}>`] : []),
       `Subject: ${subjectWord(`New lead: ${name} (${interest})`)}`,
@@ -384,7 +414,7 @@ async function notifyLead(env, lead) {
       '',
     ].join('\r\n');
     try {
-      await env.LEAD_EMAIL.send(new EmailMessage('website@dangm.ca', to, raw));
+      await env.LEAD_EMAIL.send(new EmailMessage('noreply@dangm.ca', to, raw));
       return; // delivered: stop at the first address that works
     } catch (e) {
       console.warn('lead email to', to, 'failed:', e && e.message);
@@ -467,7 +497,8 @@ async function handle(request, env, ctx) {
           .filter((t) => t.listed === true);
         return json({ trucks });
       } catch (e) {
-        return json({ error: 'DB error: ' + e.message }, 500);
+        console.error('public read failed:', path, e && e.message);
+        return json({ error: 'Could not load this right now' }, 500);
       }
     }
 
@@ -479,21 +510,25 @@ async function handle(request, env, ctx) {
         await ensureLeadsTable(env);
         const b = await request.json().catch(() => ({}));
         if (b.website) return json({ ok: true });
-        const name = String(b.name || '').trim();
+        // Cleaned on the way in, so the stored lead, the admin list and the email
+        // never carry markup or header-breaking newlines
+        const rawName = String(b.name || '');
+        const name = cleanText(rawName, 100);
         const phone = String(b.phone || '').replace(/[^\d+]/g, '');
-        const email = String(b.email || '').trim().toLowerCase();
-        const interest = String(b.interest || '').trim();
+        const email = cleanText(b.email, 254).toLowerCase();
+        const interest = cleanText(b.interest, 60);
         const INTERESTS = ['New to Canada Program', 'Rebuild My Credit', 'Trade-In Appraisals', 'General Vehicle Inquiry'];
-        if (name.length < 2 || name.length > 100) return json({ ok: false, error: 'Please enter your name' }, 400);
+        if (name.length < 2 || rawName.length > 200) return json({ ok: false, error: 'Please enter your name' }, 400);
         if (!/^\+?\d{10,15}$/.test(phone)) return json({ ok: false, error: 'Please enter a valid phone number' }, 400);
-        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ ok: false, error: 'Please enter a valid email' }, 400);
+        if (email && !EMAIL_RE.test(email)) return json({ ok: false, error: 'Please enter a valid email' }, 400);
         if (!INTERESTS.includes(interest)) return json({ ok: false, error: 'Please pick a topic' }, 400);
-        // Per-IP throttle: max 5 leads per IP per 10 minutes.
         const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+        if (!(await turnstileOk(env, b.turnstileToken, ip))) return json({ ok: false, error: 'Spam check failed. Please reload the page and try again.' }, 403);
+        // Per-IP throttle: max 3 leads per IP per 10 minutes.
         const recent = await db.prepare(
           "SELECT COUNT(*) AS n FROM leads WHERE ip = ? AND created_at > datetime('now', '-10 minutes')"
         ).bind(ip).first();
-        if (((recent && recent.n) || 0) >= 5) return json({ ok: false, error: 'Too many requests' }, 429);
+        if (((recent && recent.n) || 0) >= 3) return json({ ok: false, error: 'Too many requests. Please call 604-735-1396 instead.' }, 429);
         await db.prepare(
           "INSERT INTO leads (name, phone, email, interest, ip, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))"
         ).bind(name, phone, email, interest, ip).run();
@@ -501,7 +536,8 @@ async function handle(request, env, ctx) {
         if (ctx) ctx.waitUntil(notifyLead(env, { name, phone, email, interest }));
         return json({ ok: true });
       } catch (e) {
-        return json({ ok: false, error: 'Could not submit: ' + e.message }, 500);
+        console.error('lead submit failed:', e && e.message);
+        return json({ ok: false, error: 'Could not submit right now. Please call 604-735-1396.' }, 500);
       }
     }
 
@@ -557,7 +593,8 @@ async function handle(request, env, ctx) {
         if (truck.listed !== true) return json({ error: 'Not found' }, 404);
         return json({ truck });
       } catch (e) {
-        return json({ error: 'DB error: ' + e.message }, 500);
+        console.error('public read failed:', path, e && e.message);
+        return json({ error: 'Could not load this right now' }, 500);
       }
     }
 
@@ -568,7 +605,8 @@ async function handle(request, env, ctx) {
         const all = await db.prepare('SELECT * FROM forum_posts ORDER BY created_at DESC').all();
         return json({ posts: all.results || [] });
       } catch (e) {
-        return json({ error: 'DB error: ' + e.message }, 500);
+        console.error('public read failed:', path, e && e.message);
+        return json({ error: 'Could not load this right now' }, 500);
       }
     }
 
@@ -581,7 +619,8 @@ async function handle(request, env, ctx) {
         if (!row) return json({ error: 'Not found' }, 404);
         return json({ post: row });
       } catch (e) {
-        return json({ error: 'DB error: ' + e.message }, 500);
+        console.error('public read failed:', path, e && e.message);
+        return json({ error: 'Could not load this right now' }, 500);
       }
     }
 
@@ -734,10 +773,10 @@ async function handle(request, env, ctx) {
       const model = await getGeminiImageModel(env);
 
       const gResp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
           body: JSON.stringify({
             contents: [{ parts: [
               { inline_data: { mime_type: imgResp.headers.get('content-type') || 'image/jpeg', data: bufToB64(imgBuf) } },
@@ -841,7 +880,7 @@ async function handle(request, env, ctx) {
         const openverseApi = 'https://api.openverse.org/v1/images/?q=' + encodeURIComponent(q)
           + '&page_size=20&filter_dead=false';
         const [commonsResp, openverseResp] = await Promise.allSettled([
-          fetch(commonsApi, { headers: { 'User-Agent': 'dangm.ca admin (stock photo picker; contact: jadenmichalmarwaha@gmail.com)' } }),
+          fetch(commonsApi, { headers: { 'User-Agent': 'dangm.ca admin (stock photo picker; contact: https://dangm.ca/about)' } }),
           fetch(openverseApi, { headers: { 'User-Agent': 'dangm.ca admin (stock photo picker)' } }),
         ]);
 

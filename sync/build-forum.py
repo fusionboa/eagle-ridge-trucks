@@ -127,7 +127,7 @@ def breadcrumb_jsonld(title, url):
 NAV = """  <nav class="nav scrolled" id="nav">
     <div class="nav-inner">
       <a href="/" class="nav-logo">
-        <img class="logo-mark logo-img" src="/images/logo.png" alt="DanGM logo, personal GM consultant in Coquitlam BC">
+        <img class="logo-mark logo-img" src="/images/logo-96.webp" alt="DanGM logo, personal GM consultant in Coquitlam BC" width="40" height="40">
         <span class="logo-text">dangm<em>.ca</em></span>
       </a>
       <div class="nav-links">
@@ -148,7 +148,7 @@ NAV = """  <nav class="nav scrolled" id="nav">
 FOOTER = """  <footer class="footer">
     <div class="footer-inner">
       <div class="footer-brand">
-        <img class="logo-mark logo-img" src="/images/logo.png" alt="DanGM logo, personal GM consultant in Coquitlam BC">
+        <img class="logo-mark logo-img" src="/images/logo-96.webp" alt="DanGM logo, personal GM consultant in Coquitlam BC" width="40" height="40">
         <span class="logo-text">dangm<em>.ca</em></span>
       </div>
       <p>© <span id="year"></span> dangm.ca. All rights reserved.</p>
@@ -210,7 +210,7 @@ THREAD_TMPL = """<!DOCTYPE html>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v={css_v}">
   <link rel="stylesheet" href="/css/glass.css?v=5">
-  <script src="/js/glass.js?v=2" defer></script>
+  <script src="/js/glass.js?v=3" defer></script>
 </head>
 <body class="page-vehicle glass">
 {nav}
@@ -278,7 +278,7 @@ HUB_TMPL = """<!DOCTYPE html>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v={css_v}">
   <link rel="stylesheet" href="/css/glass.css?v=5">
-  <script src="/js/glass.js?v=2" defer></script>
+  <script src="/js/glass.js?v=3" defer></script>
 </head>
 <body class="page-inventory glass">
 {nav}

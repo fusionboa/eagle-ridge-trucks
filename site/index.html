@@ -6,7 +6,7 @@
   <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Personal GM Consultant in the Lower Mainland | dangm.ca</title>
-  <meta name="description" content="Personal GM consultant in Coquitlam, BC. Zero-pressure car buying, financing for every credit situation, new-to-Canada programs and fair trade-in appraisals. Call 604-735-1396.">
+  <meta name="description" content="Personal GM consultant at Eagle Ridge GM, the GMC dealer in Coquitlam: Chevy trucks, bad credit financing in the Tri-Cities, newcomer programs. 604-735-1396.">
   <meta name="keywords" content="cars for sale Tri-Cities, trucks Coquitlam, cars Port Coquitlam, trucks Port Moody, used cars Vancouver, GM dealership near me, GMC dealership Vancouver, Chevrolet dealership Coquitlam, Buick dealership Tri-Cities, car financing all credit, bad credit car loans Vancouver, new to Canada car financing, easy auto financing BC, high approval rate car loans, best trade in value Vancouver, trade in my car Coquitlam, cars near me Tri-Cities, trucks near me, GMC for sale, Chevrolet for sale, car consultant Vancouver, dangm.ca">
   <meta name="author" content="dangm.ca">
   <meta name="robots" content="index, follow, max-image-preview:large">
@@ -257,18 +257,25 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=27">
+  <link rel="stylesheet" href="css/styles.css?v=28">
   <link rel="stylesheet" href="css/home.css?v=10">
   <!-- React + Framer Motion hero (source: /hero). Enhances the static hero below. -->
   <script>document.documentElement.classList.add('xh-js');</script>
-  <script src="js/home-hero.js?v=14" defer></script>
+  <!-- Hero art: start downloading now, not after the hero script runs (same files/srcset as the hero) -->
+  <link rel="preload" as="image" href="images/scene/sky.webp" fetchpriority="high">
+  <link rel="preload" as="image" href="images/scene/far.webp">
+  <link rel="preload" as="image" href="images/scene/road.webp">
+  <link rel="preload" as="image" href="images/scene/trees-left.webp">
+  <link rel="preload" as="image" href="images/scene/trees-right.webp">
+  <link rel="preload" as="image" href="images/scene/truck-1-front34-640.webp" imagesrcset="images/scene/truck-1-front34-640.webp 1217w, images/scene/truck-1-front34-360.webp 685w" imagesizes="(max-width: 820px) 70vw, 60vw" fetchpriority="high">
+  <script src="js/home-hero.js?v=15" defer></script>
 </head>
 <body class="home-v2">
   <!-- Navigation -->
   <nav class="nav" id="nav">
     <div class="nav-inner">
       <a href="#top" class="nav-logo">
-        <img class="logo-mark logo-img" src="images/logo.png" alt="dangm.ca logo">
+        <img class="logo-mark logo-img" src="images/logo-96.webp" alt="dangm.ca logo" width="40" height="40">
         <span class="logo-text">dangm<em>.ca</em></span>
       </a>
       <div class="nav-links">
@@ -343,6 +350,11 @@
             <option>General Vehicle Inquiry</option>
           </select>
         </div>
+        <!-- Spam check (Cloudflare Turnstile), off until keys exist. To turn on: put the site key below and
+             uncomment it, load https://challenges.cloudflare.com/turnstile/v0/api.js (async defer), allow
+             challenges.cloudflare.com in the _headers CSP (script-src, frame-src), and set the worker secret
+             TURNSTILE_SECRET. main.js already sends the token and the worker checks it once the secret exists. -->
+        <!-- <div class="cf-turnstile" data-sitekey="YOUR_TURNSTILE_SITE_KEY" data-theme="dark"></div> -->
         <button type="submit" class="btn btn-primary lead-submit" id="leadSubmit">Get Started with Dan</button>
         <p class="lead-error" id="leadError" hidden></p>
         <p class="lead-note">Your info stays private and is only used to contact you about your inquiry. Zero-pressure consultation: if we're not the right fit, we'll say so.</p>
@@ -388,7 +400,7 @@
       <div class="service-card reveal">
         <span class="service-icon">💳</span>
         <h3>All Credit Welcome</h3>
-        <p>Good credit, building credit, or past bumps: financing options for every situation, on every vehicle.</p>
+        <p>Good credit, building credit, or past bumps: financing options for every situation, on every vehicle, including bad credit financing across the Tri-Cities.</p>
       </div>
       <div class="service-card reveal">
         <span class="service-icon">🍁</span>
@@ -486,7 +498,7 @@
     <div class="section-head">
       <p class="eyebrow">SERVING THE LOWER MAINLAND</p>
       <h2 class="section-title">Coquitlam, the Tri-Cities, and beyond</h2>
-      <p class="section-sub">One personal GM consultant for Coquitlam, Port Coquitlam, Port Moody, Burnaby, New Westminster, Surrey, and Vancouver.</p>
+      <p class="section-sub">One personal GM consultant for Coquitlam, Port Coquitlam, Port Moody, Burnaby, New Westminster, Surrey, and Vancouver. Dan works inside Eagle Ridge GM, the Chevrolet Buick GMC dealer in Coquitlam, so new and used Chevy trucks in Coquitlam and the full GMC lineup are on one lot.</p>
     </div>
     <p class="city-links" style="text-align:center;margin-top:28px;line-height:2.2">Car buying and financing help by city: <a href="/locations/coquitlam/">Coquitlam</a> · <a href="/locations/port-coquitlam/">Port Coquitlam</a> · <a href="/locations/port-moody/">Port Moody</a> · <a href="/locations/burnaby/">Burnaby</a> · <a href="/locations/new-westminster/">New Westminster</a> · <a href="/locations/surrey/">Surrey</a> · <a href="/locations/vancouver/">Vancouver</a></p>
   </section>
@@ -494,7 +506,7 @@
   <footer class="footer">
     <div class="footer-inner">
       <div class="footer-brand">
-        <img class="logo-mark logo-img" src="images/logo.png" alt="dangm.ca logo">
+        <img class="logo-mark logo-img" src="images/logo-96.webp" alt="dangm.ca logo" width="40" height="40">
         <span class="logo-text">dangm<em>.ca</em></span>
       </div>
       <p>© <span id="year"></span> dangm.ca. All rights reserved.</p>
@@ -520,6 +532,6 @@
     // Data source: the live Cloudflare Worker (falls back to local data/trucks.json if unreachable)
     window.SITE_CONFIG = { apiBase: 'https://eagle-ridge-trucks.fblister.workers.dev/api' };
   </script>
-  <script src="js/main.js?v=29"></script>
+  <script src="js/main.js?v=30"></script>
 </body>
 </html>

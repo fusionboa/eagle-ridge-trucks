@@ -794,6 +794,35 @@ section { padding: 110px 24px; }
 }
 .truck-card:hover .truck-card-cta { transform: translateX(4px); }
 
+/* ─── Inventory cards: calm motion, easy clicks ──────────── */
+/* Quick fade in (main.js staggers only the first few via --d), no slide. */
+.truck-card.card-in { animation: cardIn 0.35s ease-out backwards; animation-delay: var(--d, 0s); }
+@keyframes cardIn { from { opacity: 0; } }
+/* The card stays put under the pointer (a lifting card makes the pointer
+   fall off its bottom edge, so hover flickers and clicks miss). Hover is a
+   gold edge glow, a gentle photo zoom inside the frame, and the CTA nudge. */
+body.page-inventory .truck-card { transition: border-color 0.25s ease, box-shadow 0.25s ease; }
+body.page-inventory .truck-card:hover {
+  transform: none;
+  border-color: rgba(226, 180, 65, 0.55);
+  box-shadow: 0 0 0 1px rgba(226, 180, 65, 0.22), 0 18px 44px rgba(0, 0, 0, 0.4);
+}
+body.page-inventory .truck-card-img { transition: transform 0.45s var(--ease), opacity 0.35s ease; }
+body.page-inventory .truck-card:hover .truck-card-img { transform: scale(1.03); }
+body.page-inventory .truck-card-cta { transition: transform 0.2s ease; }
+/* Content above the card's glass highlight layer */
+body.page-inventory .truck-card > * { position: relative; z-index: 1; }
+/* Soft placeholder until the photo is in, then the photo fades in */
+body.page-inventory .truck-card-img-wrap {
+  background: radial-gradient(120% 90% at 50% 40%, rgba(226, 180, 65, 0.1), transparent 62%), #0d1120;
+}
+.truck-card-img[data-fade]:not(.is-in) { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .truck-card.card-in { animation: none; }
+  body.page-inventory .truck-card:hover .truck-card-img,
+  body.page-inventory .truck-card:hover .truck-card-cta { transform: none; }
+}
+
 /* ─── Vehicle detail page (VDP) ──────────────────────────── */
 .vehicle-main {
   max-width: 1240px;

@@ -99,7 +99,9 @@ const RISE = [
   '.vdp-details', '.vdp-desc', '.vdp-actions',
 ];
 const GLASS = '.lead-inner, .contact-card, .about-page-body, .vehicle-main, .inv-sidebar, .faq-item, .footer-inner, .truck-card, .forum-card, .service-card';
-const TILT = '.truck-card:not(.truck-card-list), .forum-card, .service-card';
+// Vehicle cards don't tilt: a card swinging under the pointer is hard to click
+// (they keep the pointer-tracked glass highlight). The homepage tilt is separate.
+const TILT = '.forum-card, .service-card';
 
 function boot() {
   injectScene();

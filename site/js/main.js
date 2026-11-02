@@ -591,6 +591,21 @@ function updateViewToggleUI() {
     b.classList.toggle('view-active', b.dataset.view === viewMode));
 }
 
+// Inventory cards: a quick fade in (only the first few are staggered), then
+// they stay put, so a click always lands on the card under the pointer.
+// The `transition-delay` stagger they used to carry also delayed every hover
+// afterwards, and the slide-up replayed on each filter change.
+function cardDelay(i) {
+  return Math.min(i, 6) * 0.03;
+}
+// The first row of photos loads straight away (it's what people see first),
+// the rest as they scroll near. Each photo fades in over a soft placeholder.
+function cardImgHTML(img, title, i) {
+  if (!img) return '<div class="truck-card-img"></div>';
+  const load = i < 3 ? 'fetchpriority="high"' : 'loading="lazy"';
+  return `<img class="truck-card-img" ${photoAttrs(img)} alt="${escapeHtml(title)} for sale in Coquitlam BC" ${load} decoding="async" data-fade onload="this.classList.add('is-in')">`;
+}
+
 // Vertical card variant for grid view on the inventory page
 function gridCardHTML(t, i) {
   const img = t.images[0] || '';
@@ -598,9 +613,9 @@ function gridCardHTML(t, i) {
   const price = formatPrice(t.price);
   const href = vdpHref(t);
   return `
-    <a class="truck-card reveal" href="${href}" style="transition-delay:${Math.min(i * 0.04, 0.3)}s">
+    <a class="truck-card card-in" href="${href}" style="--d:${cardDelay(i)}s">
       <div class="truck-card-img-wrap">
-        ${img ? `<img class="truck-card-img" ${photoAttrs(img)} alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy" decoding="async">` : '<div class="truck-card-img"></div>'}
+        ${cardImgHTML(img, title, i)}
         ${t.bodyStyle ? `<span class="truck-badge">${escapeHtml(t.bodyStyle)}</span>` : ''}
       </div>
       <div class="truck-card-body">
@@ -639,9 +654,9 @@ function cardHTML(t, i, isFlagship) {
 
   // Inventory page — horizontal list card (image left, details right)
   return `
-    <a class="truck-card truck-card-list reveal" href="${href}" style="transition-delay:${Math.min(i * 0.04, 0.3)}s">
+    <a class="truck-card truck-card-list card-in" href="${href}" style="--d:${cardDelay(i)}s">
       <div class="truck-card-img-wrap list-img">
-        ${img ? `<img class="truck-card-img" ${photoAttrs(img)} alt="${escapeHtml(title)} for sale in Coquitlam BC" loading="lazy" decoding="async">` : '<div class="truck-card-img"></div>'}
+        ${cardImgHTML(img, title, i)}
         ${t.bodyStyle ? `<span class="truck-badge">${escapeHtml(t.bodyStyle)}</span>` : ''}
       </div>
       <div class="truck-card-body list-body">
@@ -869,6 +884,8 @@ function initLeadForm() {
       email: (f.email.value || '').trim(),
       interest: f.interest.value || '',
       website: f.website.value || '', // honeypot — must stay empty
+      // Turnstile spam check: only present once the widget is switched on in index.html
+      turnstileToken: (f['cf-turnstile-response'] && f['cf-turnstile-response'].value) || '',
     };
     const showErr = (msg) => {
       err.textContent = msg;

@@ -115,7 +115,11 @@ export default function Hero({ copyHTML, sceneHost, loaderHost }) {
   const [avail, setAvail] = useState(1); // walk-around photos warmed so far
   const [arrived, setArrived] = useState(false); // illustrated truck finished its drive-in
   const arrivedResolve = useRef(null);
-  const arrivedOnce = useRef(new Promise((r) => { arrivedResolve.current = r; }));
+  // Created once: `useRef(new Promise(...))` built a fresh promise on every
+  // render and re-pointed the resolver at it, so the one being awaited never
+  // resolved and phones always waited the full 6s fallback.
+  const arrivedOnce = useRef(null);
+  if (!arrivedOnce.current) arrivedOnce.current = new Promise((r) => { arrivedResolve.current = r; });
   useEffect(() => { if (arrived && arrivedResolve.current) arrivedResolve.current(); }, [arrived]);
   // Arriving on a section link (e.g. /index.html#contact from another page):
   // no long intro, no scroll hold, and we re-jump once the hero has its final
@@ -152,15 +156,24 @@ export default function Hero({ copyHTML, sceneHost, loaderHost }) {
       if (!alive) return;
       progressRaw.set(1);
       setReady(true);
-      // Phones: decoding the other angles mid-drive makes the drive-in stutter,
-      // so warm them only once the truck has parked (or 6s, whichever first)
+      // The other angles used to load one at a time after the truck parked and
+      // join the walk-around one by one, so a visitor who scrolled early saw the
+      // truck stuck on one angle, then flick through the rest as each landed.
+      // Now they all download at once, straight away (download only: no main
+      // thread work, so the drive-in stays smooth)...
+      const rest = orbit.slice(1);
+      const fetched = rest.map((ph) => preload(ph, sizes, { decode: false, timeout: 15000 }));
+      // ...phones decode them only once the truck has parked (or 6s, whichever
+      // first): decoding mid-drive makes the drive-in stutter...
       if (TOUCH && useArt) await Promise.race([arrivedOnce.current, new Promise((r) => setTimeout(r, 6000))]);
-      // warm the rest of the walk-around one at a time, in orbit order
-      for (const ph of orbit.slice(1)) {
-        if (!alive) return;
-        await preload(ph, sizes);
-        if (alive) setAvail((n) => n + 1);
-      }
+      const ok = await Promise.all(fetched);
+      if (!alive) return;
+      const decoded = await Promise.all(rest.map((ph, i) => (ok[i] ? preload(ph, sizes, { timeout: 4000 }) : false)));
+      if (!alive) return;
+      // ...and they join in one go: the unbroken run of angles that loaded
+      // (a missing angle would leave a gap in the turn, so stop before it).
+      const run = decoded.indexOf(false);
+      setAvail(1 + (run === -1 ? rest.length : run));
     });
     return () => { alive = false; };
   }, [progressRaw]);

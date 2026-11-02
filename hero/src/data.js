@@ -94,16 +94,25 @@ export async function loadHeroTruck() {
 
 export const PHOTO_SIZES = '(max-width: 820px) 92vw, min(54vw, 820px)';
 
-// Resolves when the image is decoded (or failed: never blocks the page).
+// Resolves true when the image is in (and decoded, unless decode is false),
+// false if it failed or took longer than `timeout` ms: never blocks the page.
 // Uses the same srcset/sizes as the <img>, so the browser caches the very
-// candidate the page will ask for.
-export function preload(photo, sizes = PHOTO_SIZES) {
+// candidate the page will ask for. decode: false only downloads it, which
+// costs the main thread nothing (decoding is what can make an animation stutter).
+export function preload(photo, sizes = PHOTO_SIZES, { decode = true, timeout = 0 } = {}) {
   return new Promise((resolve) => {
     const img = new Image();
+    let timer = 0;
+    const done = (ok) => {
+      clearTimeout(timer);
+      img.onload = img.onerror = null;
+      resolve(ok);
+    };
     img.decoding = 'async';
     if (photo.srcset) { img.sizes = sizes; img.srcset = photo.srcset; }
-    img.onload = () => (img.decode ? img.decode().catch(() => {}).then(() => resolve(true)) : resolve(true));
-    img.onerror = () => resolve(false);
+    img.onload = () => (decode && img.decode ? img.decode().catch(() => {}).then(() => done(true)) : done(true));
+    img.onerror = () => done(false);
+    if (timeout) timer = setTimeout(() => done(false), timeout);
     img.src = photo.src;
   });
 }
