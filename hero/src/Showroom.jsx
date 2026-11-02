@@ -95,7 +95,7 @@ function Chip({ chip, idx, count, theta, rx, ry, show, layer }) {
 // render, as fractions of the image box), plus a light pool on the road ahead.
 const HEADLIGHTS = [[0.055, 0.4], [0.405, 0.385]];
 
-export default function Showroom({ frame, carX, carScale, exitY, exitOpacity, theta, chipShow, chips, entered, avail, still, quick, narrow, onArrived }) {
+export default function Showroom({ frame, carX, carScale, exitY, exitOpacity, theta, chipShow, chips, entered, avail, still, quick, hurry, narrow, onArrived }) {
   const h = useTruckHeight();
 
   // ── Drive-in: d goes 1 (at the vanishing point) → 0 (parked) ──
@@ -103,15 +103,17 @@ export default function Showroom({ frame, carX, carScale, exitY, exitOpacity, th
   useEffect(() => {
     if (still) { setParked(true); if (onArrived) onArrived(); return; }
     if (!entered) return;
+    // A visitor who scrolls during the drive gets the rest of it in 0.7s
+    // (from wherever the truck is: animate() picks up the current value)
     const ctl = animate(d, 0, {
-      duration: quick ? 1.6 : 4,
+      duration: hurry ? 0.7 : quick ? 1.6 : 4,
       // ease-out quad on distance: with 1/z perspective this reads as a steady
       // approach that grows on you, then a smooth brake into the spot
       ease: [0.25, 0.46, 0.45, 0.94],
       onComplete: () => { setParked(true); if (onArrived) onArrived(); },
     });
     return () => ctl.stop();
-  }, [entered, still]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [entered, still, hurry]); // eslint-disable-line react-hooks/exhaustive-deps
   // Perspective: screen offset from the vanishing point scales with 1/z,
   // so moving the parked position toward the VP by (s - 1) is exact.
   const dx = narrow ? 0 : window.innerWidth * 0.17;          // parked lane offset (carX at rest)

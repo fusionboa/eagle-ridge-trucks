@@ -817,6 +817,16 @@ body.page-inventory .truck-card-img-wrap {
   background: radial-gradient(120% 90% at 50% 40%, rgba(226, 180, 65, 0.1), transparent 62%), #0d1120;
 }
 .truck-card-img[data-fade]:not(.is-in) { opacity: 0; }
+/* Cards render (layout + paint, incl. the glass badge) only when they come
+   near the screen; same look. Before, all 400+ cards and their badges were
+   laid out and composited at once, which froze scrolling during load. The
+   heights only hold the space until a card has rendered once. */
+body.page-inventory .truck-card { content-visibility: auto; contain-intrinsic-height: auto 420px; }
+body.page-inventory .truck-card-list { contain-intrinsic-height: auto 240px; }
+body.page-inventory .truck-grid.grid-view .truck-card { contain-intrinsic-height: auto 490px; }
+@media (max-width: 900px) {
+  body.page-inventory .truck-card-list { contain-intrinsic-height: auto 530px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .truck-card.card-in { animation: none; }
   body.page-inventory .truck-card:hover .truck-card-img,

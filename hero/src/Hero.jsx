@@ -182,10 +182,27 @@ export default function Hero({ copyHTML, sceneHost, loaderHost }) {
   // framer measures the track on resize; nudge it after layout changes
   useEffect(() => { window.dispatchEvent(new Event('resize')); }, [truck, narrow, entered]);
   const showLoader = !still && !entered;
-  // Hold the page still through the first-visit intro and the truck's drive
-  // down the road, so the walk-around never starts mid-drive. 7s hard cap.
-  const driving = !!truck?.art && entered && !arrived;
-  const lock = !quick && !still && (showLoader || driving);
+  // The page never locks scrolling (it used to hold still for up to 7s through
+  // the intro, so early scrolls did nothing and then the page lurched). If the
+  // visitor scrolls during the intro, the intro hurries instead: the loader
+  // clears as soon as the page is ready and the truck finishes its drive fast.
+  const [hurry, setHurry] = useState(false);
+  useEffect(() => {
+    if (still || arrived || hurry) return;
+    const go = () => setHurry(true);
+    const keys = (e) => { if ([' ', 'PageDown', 'PageUp', 'ArrowDown', 'ArrowUp', 'End', 'Home'].includes(e.key)) go(); };
+    const opts = { passive: true };
+    window.addEventListener('wheel', go, opts);
+    window.addEventListener('touchmove', go, opts);
+    window.addEventListener('scroll', go, opts);
+    window.addEventListener('keydown', keys);
+    return () => {
+      window.removeEventListener('wheel', go, opts);
+      window.removeEventListener('touchmove', go, opts);
+      window.removeEventListener('scroll', go, opts);
+      window.removeEventListener('keydown', keys);
+    };
+  }, [still, arrived, hurry]);
 
   useEffect(() => {
     if (!deepLink || truck === undefined || !entered) return;
@@ -206,11 +223,6 @@ export default function Hero({ copyHTML, sceneHost, loaderHost }) {
     const cap = setTimeout(stop, 5000);
     return () => { cancelAnimationFrame(id); clearTimeout(cap); stop(); };
   }, [deepLink, truck, entered]);
-  useEffect(() => {
-    document.documentElement.classList.toggle('xh-locked', lock);
-    const cap = lock ? setTimeout(() => document.documentElement.classList.remove('xh-locked'), 7000) : 0;
-    return () => { clearTimeout(cap); document.documentElement.classList.remove('xh-locked'); };
-  }, [lock]);
 
   // Headline copy is the page's own static HTML (SEO source of truth);
   // stagger it in once the intro clears.
@@ -324,6 +336,7 @@ export default function Hero({ copyHTML, sceneHost, loaderHost }) {
               avail={avail}
               still={still}
               quick={quick}
+              hurry={hurry}
               narrow={narrow}
               onArrived={() => setArrived(true)}
             />
@@ -336,6 +349,7 @@ export default function Hero({ copyHTML, sceneHost, loaderHost }) {
           progress={progress}
           ready={ready}
           quick={quick}
+          hurry={hurry}
           onDone={() => { markIntro(); setEntered(true); }}
         />,
         loaderHost,

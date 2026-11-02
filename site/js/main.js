@@ -551,7 +551,7 @@ function renderGrid(list, isFlagship) {
     grid.innerHTML = list.map((t, i) => cardHTML(t, i, isFlagship)).join('');
   }
   requestAnimationFrame(() => {
-    grid.querySelectorAll('.truck-card').forEach((c) => c.classList.add('in-view'));
+    grid.querySelectorAll('.truck-card.reveal').forEach((c) => c.classList.add('in-view'));
   });
 }
 
@@ -598,6 +598,16 @@ function updateViewToggleUI() {
 function cardDelay(i) {
   return Math.min(i, 6) * 0.03;
 }
+// Only the cards on screen when the list appears fade in. Animating all 400+
+// at once made every card its own compositing layer and froze scrolling while
+// the page loaded (the ones further down are long done by the time you get there).
+const CARD_FADE = 12;
+function cardInClass(i) {
+  return i < CARD_FADE ? ' card-in' : '';
+}
+function cardInStyle(i) {
+  return i < CARD_FADE ? ` style="--d:${cardDelay(i)}s"` : '';
+}
 // The first row of photos loads straight away (it's what people see first),
 // the rest as they scroll near. Each photo fades in over a soft placeholder.
 function cardImgHTML(img, title, i) {
@@ -613,7 +623,7 @@ function gridCardHTML(t, i) {
   const price = formatPrice(t.price);
   const href = vdpHref(t);
   return `
-    <a class="truck-card card-in" href="${href}" style="--d:${cardDelay(i)}s">
+    <a class="truck-card${cardInClass(i)}" href="${href}"${cardInStyle(i)}>
       <div class="truck-card-img-wrap">
         ${cardImgHTML(img, title, i)}
         ${t.bodyStyle ? `<span class="truck-badge">${escapeHtml(t.bodyStyle)}</span>` : ''}
@@ -654,7 +664,7 @@ function cardHTML(t, i, isFlagship) {
 
   // Inventory page — horizontal list card (image left, details right)
   return `
-    <a class="truck-card truck-card-list card-in" href="${href}" style="--d:${cardDelay(i)}s">
+    <a class="truck-card truck-card-list${cardInClass(i)}" href="${href}"${cardInStyle(i)}>
       <div class="truck-card-img-wrap list-img">
         ${cardImgHTML(img, title, i)}
         ${t.bodyStyle ? `<span class="truck-badge">${escapeHtml(t.bodyStyle)}</span>` : ''}

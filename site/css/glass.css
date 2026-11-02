@@ -292,10 +292,12 @@ body.glass :is(.lead-inner, .contact-card, .about-page-body, .vehicle-main, .inv
   z-index: 0;
 }
 body.glass .lg-hot::before { opacity: 1; }
-body.glass :is(.truck-grid, .forum-grid, .service-grid) { perspective: 1400px; }
-body.glass :is(.truck-card, .forum-card, .service-card) { transform-style: preserve-3d; }
+body.glass :is(.forum-grid, .service-grid) { perspective: 1400px; }
+body.glass :is(.forum-card, .service-card) { transform-style: preserve-3d; }
 .lg-w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.08em; margin-bottom: -0.08em; }
-.lg-w > span { display: inline-block; will-change: transform; }
+/* no permanent will-change: one GPU layer per word for the whole visit slowed
+   every frame; the word animation gets its layer only while it runs */
+.lg-w > span { display: inline-block; }
 
 @media (max-width: 820px) {
   body.glass .vehicle-main { margin-top: 92px; width: calc(100% - 24px); padding: 24px 16px 40px; border-radius: 22px; }

@@ -374,7 +374,7 @@ PAGE_TMPL = """<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{base_rel}css/styles.css?v=28">
-  <link rel="stylesheet" href="{base_rel}css/glass.css?v=5">
+  <link rel="stylesheet" href="{base_rel}css/glass.css?v=6">
   <script src="{base_rel}js/glass.js?v=3" defer></script>
   <script src="{base_rel}js/vdp-gallery.js?v=2" defer></script>
 </head>
@@ -628,7 +628,7 @@ def category_page(c, items, slugs, today):
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css?v=28">
-  <link rel="stylesheet" href="/css/glass.css?v=5">
+  <link rel="stylesheet" href="/css/glass.css?v=6">
   <script src="/js/glass.js?v=3" defer></script>
 </head>
 <body class="page-inventory glass">

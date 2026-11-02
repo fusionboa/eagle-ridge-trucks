@@ -1,5 +1,19 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.22.0: Smooth loading and scrolling, calmer inventory cards, audit fixes (Nov 2, 2026)
+
+All effects kept; only how they render changed. Measured on this MacBook's Intel Iris Plus GPU at 2x.
+
+- **Homepage scrolls right away.** The intro no longer locks the page (it held still up to 7s; early scrolls did nothing): first scroll response 7.4s → 0.85s. Scrolling during the intro hurries it (loader clears once ready, truck finishes its drive in 0.7s).
+- **Hero walk-around:** the 5 truck angles download in parallel and join in one go with a crossfade (they joined one by one, so the truck stuck on one angle, then flicked through the rest). Phones no longer always wait the 6s fallback (a promise was rebuilt every render). Hero art is preloaded from the HTML. `home-hero.js?v=15`.
+- **Inventory: 26 → 56 fps while loading and scrolling** (main thread blocked 0.76s → 0.03s). Cards render only near the screen (`content-visibility`), only the first 12 fade in (all 400+ animating at once made ~430 compositing layers), no hover lift/tilt or inherited hover delay, first row of photos loads first and fades in over a placeholder. Scroll-moved hero parts sit on their own GPU layers; pointer effects run once per frame; no permanent layer per title word. `styles.css?v=28`, `home.css?v=11`, `glass.css?v=6`, `main.js?v=30`, `glass.js?v=3`.
+- **Fixed:** the glass highlight threw an error on every mouse move over non-glass areas (`getBoundingClientRect` of null).
+- **Logo:** 2 KB WebP in the nav/footer instead of the 198 KB PNG on every page.
+- **Lead form (Worker):** sent from noreply@dangm.ca (customer only in Reply-To), input stripped of `< >` and control characters, 3 leads per IP per 10 min, Cloudflare Turnstile check (inactive until the `TURNSTILE_SECRET` secret and the widget in `index.html` are set), no internal error text in responses.
+- **Admin sign-in (Worker):** Firebase ID tokens are checked against Firebase's keys (it used Google OAuth keys, which never match), plus issuer, RS256 and `email_verified`.
+- **SEO:** removed an off-screen hidden H2 on the inventory page, added "GMC dealer in Coquitlam", "Chevy trucks in Coquitlam" and "bad credit financing across the Tri-Cities" in visible copy, noindex on the forum-post template and admin.
+- **Other:** Gemini key sent in a header instead of the URL; personal email removed from a request header.
+
 ## v0.21.0: Fixed Sierra hero, email contact, OmniEngine on vehicle pages, feed fixes (Oct 13–22, 2026)
 
 - **Homepage hero fixed to the Sierra illustration.**

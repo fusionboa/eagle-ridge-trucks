@@ -28,7 +28,7 @@ const DROPS = [
   { x: -220, y: 120, s: 40, d: 0.3 },
 ];
 
-export default function Loader({ progress, ready, onDone, quick }) {
+export default function Loader({ progress, ready, onDone, quick, hurry }) {
   const [minPassed, setMinPassed] = useState(false);
   const [capped, setCapped] = useState(false);
   const [open, setOpen] = useState(true);
@@ -40,9 +40,11 @@ export default function Loader({ progress, ready, onDone, quick }) {
     return () => { clearTimeout(a); clearTimeout(b); };
   }, [quick]);
 
+  // a visitor who starts scrolling doesn't wait out the minimum show time
   useEffect(() => {
-    if ((ready && minPassed) || capped) setOpen(false);
-  }, [ready, minPassed, capped]);
+    if ((ready && (minPassed || hurry)) || capped) setOpen(false);
+  }, [ready, minPassed, capped, hurry]);
+  const fast = quick || hurry;
 
   return (
     <AnimatePresence onExitComplete={onDone}>
@@ -53,12 +55,12 @@ export default function Loader({ progress, ready, onDone, quick }) {
           aria-live="polite"
           aria-label="Loading dangm.ca"
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: { duration: quick ? 0.35 : 0.9, ease: [0.4, 0, 0.2, 1], delay: quick ? 0 : 0.25 } }}
+          exit={{ opacity: 0, transition: { duration: fast ? 0.35 : 0.9, ease: [0.4, 0, 0.2, 1], delay: fast ? 0 : 0.25 } }}
         >
           {!quick && (
             <m.div
               className="xl-stage"
-              exit={{ scale: 1.25, opacity: 0, filter: 'blur(14px)', transition: { duration: 0.75, ease: [0.7, 0, 0.3, 1] } }}
+              exit={{ scale: 1.25, opacity: 0, filter: 'blur(14px)', transition: { duration: fast ? 0.35 : 0.75, ease: [0.7, 0, 0.3, 1] } }}
             >
               {!TOUCH && DROPS.map((dr, i) => (
                 <m.span

@@ -33,10 +33,19 @@ export function enhanceNav(reduce) {
     document.documentElement.classList.add('lg-refract');
   }
 
+  // Highlight follows the pointer once per frame (mice report moves far more
+  // often than the screen draws; measuring on every one forced extra layouts)
+  let navEv = null;
+  let navRaf = 0;
   nav.addEventListener('pointermove', (e) => {
-    const r = nav.getBoundingClientRect();
-    nav.style.setProperty('--mx', `${((e.clientX - r.left) / r.width) * 100}%`);
-    nav.style.setProperty('--my', `${((e.clientY - r.top) / r.height) * 100}%`);
+    navEv = e;
+    if (navRaf) return;
+    navRaf = requestAnimationFrame(() => {
+      navRaf = 0;
+      const r = nav.getBoundingClientRect();
+      nav.style.setProperty('--mx', `${((navEv.clientX - r.left) / r.width) * 100}%`);
+      nav.style.setProperty('--my', `${((navEv.clientY - r.top) / r.height) * 100}%`);
+    });
   }, { passive: true });
 
   const links = nav.querySelector('.nav-links');
@@ -218,7 +227,18 @@ export function glassPointer(reduce, { glass: GLASS = HOME_GLASS, tilt: TILT = H
     tx = ty = 0; // tilted card springs back
     kick();
   };
+  // Handled once per frame with the latest position (same effect, a fraction
+  // of the work: moves come in faster than frames, each one forced a layout)
+  let lastEv = null;
+  let moveRaf = 0;
   document.addEventListener('pointermove', (e) => {
+    lastEv = e;
+    if (!moveRaf) moveRaf = requestAnimationFrame(onMove);
+  }, { passive: true });
+  function onMove() {
+    moveRaf = 0;
+    const e = lastEv;
+    if (!e) return;
     const el = e.target.closest && e.target.closest(GLASS);
     if (el !== active) {
       leave();
@@ -231,6 +251,9 @@ export function glassPointer(reduce, { glass: GLASS = HOME_GLASS, tilt: TILT = H
         cx = cy = 0;
       }
     }
+    // pointer over something that isn't glass (and nothing was lit): this
+    // used to call getBoundingClientRect on null and throw on every move
+    if (!el) return;
     const r = el.getBoundingClientRect();
     const px = (e.clientX - r.left) / r.width;
     const py = (e.clientY - r.top) / r.height;
@@ -241,6 +264,6 @@ export function glassPointer(reduce, { glass: GLASS = HOME_GLASS, tilt: TILT = H
       ty = (py - 0.5) * 9;
       kick();
     }
-  }, { passive: true });
+  }
   document.documentElement.addEventListener('pointerleave', leave);
 }
