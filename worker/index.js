@@ -272,9 +272,13 @@ async function runSync(env, trucks) {
   for (const r of missing) {
     const t = JSON.parse(r.data);
     if (t.listed === true) {
-      // Backup the published listing before removing it from live
+      // Backup the published listing before removing it from live. Upsert: a
+      // vehicle that left the feed before, came back and left again already has
+      // a backup row, and a plain INSERT failed on it (UNIQUE backups.id), which
+      // aborted every sync from Oct 29 on: sold vehicles stayed listed and the
+      // workflow never reached its deploy step.
       const backup = { ...t, listed: false, missingFromFeed: true, backedUpAt: now };
-      await db.prepare('INSERT INTO backups (id, data, backed_up_at) VALUES (?, ?, ?)')
+      await db.prepare('INSERT INTO backups (id, data, backed_up_at) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data, backed_up_at = excluded.backed_up_at')
         .bind(t.id, JSON.stringify(backup), now).run();
       backedUp++;
     }
