@@ -18,7 +18,6 @@
       <h1>dangm.ca Admin</h1>
       <p>Sign in with your Google account to manage listings and forum posts.</p>
       <button class="btn btn-primary" id="googleSignIn">Sign in with Google</button>
-      <button class="btn btn-ghost" id="devModeBtn" style="margin-top:10px">🧪 Test mode — skip Google login</button>
       <p class="login-error" id="loginError"></p>
     </div>
   </div>
@@ -74,11 +73,11 @@
   </div>
 
   <!-- JSZip — bundles images into a folder ZIP for bulk download -->
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
 
   <!-- Firebase Auth (same project as FB Lister — same Google login) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" integrity="sha384-ajMUFBUFMCyjh8uxJg6bkGcKe9RTolyjwbxB3yES0QQMenP3Oztj/W9vA2SJPcIh" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" integrity="sha384-xD1t9dGSVKobUztxDkv6xUI0H4AnFz0NxwlgDJJ7FDlblG9xxr1Z9iauCZuJYj6p" crossorigin="anonymous"></script>
   <script>
     // Admin config — same Firebase project + auth as FB Lister
     window.ADMIN_CONFIG = {
@@ -94,6 +93,6 @@
       },
     };
   </script>
-  <script src="js/admin.js?v=11"></script>
+  <script src="js/admin.js?v=12"></script>
 </body>
 </html>

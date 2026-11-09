@@ -1,5 +1,18 @@
 # Eagle Ridge Trucks — Changelog
 
+## v0.23.0: Security audit fixes (Nov 9, 2026)
+
+From `dangm-security-audit.md`. Not live until the Worker and site are deployed.
+
+- **FTP login out of the code.** `sync/sync.js` reads the eDealer username and password only from `sync/.env` or GitHub Secrets; the hardcoded fallback is gone. (It is still in old git history.)
+- **Image proxy locked down (Worker `/api/image`).** Only https images from the dealer feed and the admin's stock-photo sources; only jpeg/png/webp/gif come back, capped at 15 MB, with `nosniff` and `default-src 'none'`. It was an open proxy for any URL and content type.
+- **Admin:** Google sign-in is back on; test mode, its button and the hardcoded dev key are removed. The sign-in token stays in memory, not `localStorage`. Every feed value and image URL in the admin is escaped (https or inline images only). CDN scripts carry SRI hashes. `admin.js?v=12`.
+- **Public site:** image URLs from the feed and forum are escaped and must be https or a site path. `main.js?v=31`.
+- **Worker:** admin truck edits are type-checked (price, mileage and year must be numbers, stored as text like the feed; listed/featured true/false; images https only). Forum images must be https. Uploads only accept jpeg/png/webp/gif up to 8 MB and are served with our own content type. Error responses no longer include internal error text. Bridge token compared in constant time.
+- **CSP enforced** (was report-only), checked with no violations on the home, inventory, vehicle, forum, about, blog, location and vehicle-template pages. `accounts.google.com` removed; the OmniEngine iframe (`frame-src 'self'`) and Turnstile allowed.
+- **Page builders:** JSON-LD can't break out of its `<script>` tag (`</` escaped). The sitemap builder falls back to `data/trucks.json` in the repo instead of `/tmp/trucks.json`.
+- **Other:** Gemini key sent in a header in `sync/gemini-clean.js`; `csv-parse` 5 → 7 (fixes GHSA-8cw4-87c7-c6xx); CI has a read-only token and actions pinned to commit SHAs; the lead form notes that IP addresses are logged to stop spam.
+
 ## v0.22.0: Smooth loading and scrolling, calmer inventory cards, audit fixes (Nov 2, 2026)
 
 All effects kept; only how they render changed. Measured on this MacBook's Intel Iris Plus GPU at 2x.

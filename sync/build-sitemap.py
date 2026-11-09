@@ -24,6 +24,11 @@ import sys
 import urllib.request
 import datetime
 
+
+def ld_json(obj, **kw):
+    """json.dumps for <script type="application/ld+json">: "</" can't close the script tag."""
+    return json.dumps(obj, **kw).replace("</", "<\\/")
+
 API = "https://eagle-ridge-trucks.fblister.workers.dev/api/trucks"
 SITE = os.path.join(os.path.dirname(__file__), "..", "site")
 OUT_SITEMAP = os.path.join(SITE, "sitemap-vehicles.xml")
@@ -53,8 +58,10 @@ def load_trucks():
         with urllib.request.urlopen(req, timeout=30) as r:
             d = json.load(r)
     except Exception as e:
-        print(f"API fetch failed ({e}); falling back to /tmp/trucks.json")
-        with open("/tmp/trucks.json") as f:
+        # fall back to the repo's own copy, never a world-writable path like /tmp
+        local = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "trucks.json")
+        print(f"API fetch failed ({e}); falling back to {os.path.normpath(local)}")
+        with open(local) as f:
             d = json.load(f)
     return d.get("trucks", d if isinstance(d, list) else [])
 
@@ -338,7 +345,7 @@ def vehicle_jsonld(t, page_url, title, desc, img):
         } if price else None,
     }
     ld = {k: v for k, v in ld.items() if v not in (None, "")}
-    return json.dumps(ld, ensure_ascii=False)
+    return ld_json(ld, ensure_ascii=False)
 
 
 PAGE_TMPL = """<!DOCTYPE html>
@@ -445,7 +452,7 @@ PAGE_TMPL = """<!DOCTYPE html>
     </div>
   </footer>
   <script>window.SITE_PAGE = 'landing';</script>
-  <script src="/js/main.js?v=30"></script>
+  <script src="/js/main.js?v=31"></script>
   <!-- OmniEngine: fuel/EV cost badge under the buttons + AI chat (served from dangm.ca/omniengine) -->
   <script src="/omniengine/embed.js" data-omni-key="pk_c072fcf78b945b673f4f" data-target=".vdp-actions" async></script>
 </body>
@@ -476,7 +483,7 @@ def render_page(t, slug, today, categories=()):
     if make_cat:
         crumbs.append((make_cat["crumb"], f"{BASE}/inventory/{make_cat['slug']}/"))
     crumbs.append((h1, slug_url))
-    breadcrumb_ld = json.dumps({
+    breadcrumb_ld = ld_json({
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
         "itemListElement": [
@@ -622,8 +629,8 @@ def category_page(c, items, slugs, today):
   <meta property="og:url" content="{url}">
   <meta property="og:image" content="{esc(cover_image(items[0]) or BASE + '/images/og-logo.png')}">
   <meta property="og:locale" content="en_CA">
-  <script type="application/ld+json">{json.dumps(item_list, ensure_ascii=False)}</script>
-  <script type="application/ld+json">{json.dumps(crumbs, ensure_ascii=False)}</script>
+  <script type="application/ld+json">{ld_json(item_list, ensure_ascii=False)}</script>
+  <script type="application/ld+json">{ld_json(crumbs, ensure_ascii=False)}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -689,7 +696,7 @@ def category_page(c, items, slugs, today):
     </div>
   </footer>
   <script>window.SITE_PAGE = 'landing';</script>
-  <script src="/js/main.js?v=30"></script>
+  <script src="/js/main.js?v=31"></script>
 </body>
 </html>
 """

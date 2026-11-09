@@ -114,9 +114,16 @@ function fastPhoto(url) {
 }
 // <img> attributes: fast copy + automatic fallback to the original
 function photoAttrs(url) {
+  url = safeUrl(url);
+  if (!url) return 'src=""';
   const fast = fastPhoto(url);
-  if (fast === url) return `src="${url}"`;
-  return `src="${fast}" data-orig="${url}" onerror="this.onerror=null;this.src=this.dataset.orig"`;
+  if (fast === url) return `src="${escapeHtml(url)}"`;
+  return `src="${escapeHtml(fast)}" data-orig="${escapeHtml(url)}" onerror="this.onerror=null;this.src=this.dataset.orig"`;
+}
+// Image URLs from the feed / forum: https or a path on this site only. Anything else is dropped.
+function safeUrl(u) {
+  const s = String(u || '').trim();
+  return /^https:\/\//i.test(s) || /^\/(?!\/)/.test(s) ? s : '';
 }
 
 // Shared price helper ("34544 CAD" → 34544)
@@ -245,10 +252,10 @@ function renderRelatedVehicles(current) {
       <div class="truck-grid">
         ${related.map((r) => {
           const rTitle = [r.year, r.make, r.model, r.trim].filter(Boolean).join(' ');
-          const rImg = (r.images || [])[0] || '';
+          const rImg = safeUrl((r.images || [])[0]);
           return `
             <a href="${vdpHref(r)}" class="truck-card-small">
-              ${rImg ? `<img src="${rImg}" alt="${escapeHtml(rTitle)}" loading="lazy" class="related-img">` : '<div class="related-noimg">📷</div>'}
+              ${rImg ? `<img src="${escapeHtml(rImg)}" alt="${escapeHtml(rTitle)}" loading="lazy" class="related-img">` : '<div class="related-noimg">📷</div>'}
               <div class="related-info">
                 <span class="related-title">${escapeHtml(rTitle)}</span>
                 <span class="related-price">${formatPrice(r.price)}</span>
@@ -974,8 +981,9 @@ function forumCardHTML(p) {
   const full = String(p.body || '');
   const body = full.replace(/\n/g, ' ').slice(0, 160);
   // The forum feed points some posts at the old clipart banners: never show those
-  const img = p.image && !p.image.includes('/images/banners/')
-    ? `<div class="forum-card-img-wrap"><img class="forum-card-img" src="${p.image}" alt="${escapeHtml(title)} - Lower Mainland Auto Forum" loading="lazy"></div>`
+  const pImg = safeUrl(p.image);
+  const img = pImg && !pImg.includes('/images/banners/')
+    ? `<div class="forum-card-img-wrap"><img class="forum-card-img" src="${escapeHtml(pImg)}" alt="${escapeHtml(title)} - Lower Mainland Auto Forum" loading="lazy"></div>`
     : '';
   return `
     <a class="forum-card reveal" href="/forum/${forumSlug(p)}/">
@@ -1021,7 +1029,7 @@ async function loadForumPost() {
       <div class="forum-post">
         <a href="/forum/" class="vdp-back">← Back to forum</a>
         <h1 class="forum-post-title">${escapeHtml(p.title)}</h1>
-        ${p.image && !p.image.includes('/images/banners/') ? `<img class="forum-post-img" src="${p.image}" alt="${escapeHtml(p.title)}">` : ''}
+        ${safeUrl(p.image) && !p.image.includes('/images/banners/') ? `<img class="forum-post-img" src="${escapeHtml(safeUrl(p.image))}" alt="${escapeHtml(p.title)}">` : ''}
         <div class="forum-post-body">${formatPostBody(p.body)}</div>
         <div class="forum-post-cta">
           <a href="/inventory" class="btn btn-primary">Browse Inventory</a>

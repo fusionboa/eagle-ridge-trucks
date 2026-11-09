@@ -145,7 +145,7 @@ const API = 'https://generativelanguage.googleapis.com/v1beta';
 async function resolveModel() {
   if (CONFIG.model) return CONFIG.model;
   if (state.model) return state.model;
-  const r = await fetch(`${API}/models?key=${CONFIG.apiKey}`);
+  const r = await fetch(`${API}/models`, { headers: { 'x-goog-api-key': CONFIG.apiKey } });
   if (!r.ok) throw new Error(`model list failed: HTTP ${r.status}`);
   const data = await r.json();
   const names = (data.models || []).map((m) => m.name.replace(/^models\//, ''));
@@ -164,9 +164,9 @@ async function geminiEdit(model, imgB64) {
     contents: [{ parts: [{ inline_data: { mime_type: 'image/jpeg', data: imgB64 } }, { text: PROMPT }] }],
   };
   for (let attempt = 1; attempt <= 4; attempt++) {
-    const r = await fetch(`${API}/models/${model}:generateContent?key=${CONFIG.apiKey}`, {
+    const r = await fetch(`${API}/models/${model}:generateContent`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': CONFIG.apiKey },
       body: JSON.stringify(body),
     });
     if (r.status === 429 || r.status >= 500) {

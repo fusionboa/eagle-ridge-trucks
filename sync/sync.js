@@ -42,8 +42,8 @@ loadEnv();
 const CONFIG = {
   // FTP credentials — same feed as FB Lister (Eagle Ridge GM)
   host: process.env.FTP_HOST || 'ftp.edealer.ca',
-  username: process.env.FTP_USER || 'FBEagleRidgeGM',
-  password: process.env.FTP_PASS || 'f=k8vnGy4P5BC87W',
+  username: process.env.FTP_USER,
+  password: process.env.FTP_PASS,  // only from sync/.env or GitHub Secrets, never hardcoded
   port: process.env.FTP_PORT ? parseInt(process.env.FTP_PORT) : 21,
   path: process.env.FTP_PATH || '/',
 

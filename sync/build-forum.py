@@ -23,6 +23,11 @@ import sys
 import urllib.request
 import datetime
 
+
+def ld_json(obj, **kw):
+    """json.dumps for <script type="application/ld+json">: "</" can't close the script tag."""
+    return json.dumps(obj, **kw).replace("</", "<\\/")
+
 API = "https://eagle-ridge-trucks.fblister.workers.dev/api/forum"
 SITE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "site")
 OUT_HUB = os.path.join(SITE, "forum", "index.html")
@@ -34,7 +39,7 @@ PHONE = "604-735-1396"
 PHONE_HREF = "tel:6047351396"
 TODAY = datetime.date.today().isoformat()
 CSS_V = "27"
-JS_V = "29"
+JS_V = "31"
 
 
 def esc(s):
@@ -106,11 +111,11 @@ def thread_jsonld(p, slug, url, title, desc, img):
         "isPartOf": {"@type": "WebPage", "@id": f"{BASE}/forum/", "name": "Lower Mainland Auto Forum"},
         "about": {"@type": "Thing", "name": "Car buying and auto financing in Coquitlam, BC"},
     }
-    return json.dumps(ld, ensure_ascii=False)
+    return ld_json(ld, ensure_ascii=False)
 
 
 def breadcrumb_jsonld(title, url):
-    return json.dumps(
+    return ld_json(
         {
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
@@ -346,7 +351,7 @@ def render_hub(posts, slugs):
         '        </div>\n      </a>'
         for i, p in enumerate(posts)
     )
-    itemlist_ld = json.dumps(
+    itemlist_ld = ld_json(
         {
             "@context": "https://schema.org",
             "@type": "ItemList",
@@ -357,7 +362,7 @@ def render_hub(posts, slugs):
         },
         ensure_ascii=False,
     )
-    breadcrumb_ld = json.dumps(
+    breadcrumb_ld = ld_json(
         {
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",

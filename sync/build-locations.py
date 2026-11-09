@@ -22,6 +22,11 @@ import re
 import sys
 import datetime
 
+
+def ld_json(obj, **kw):
+    """json.dumps for <script type="application/ld+json">: "</" can't close the script tag."""
+    return json.dumps(obj, **kw).replace("</", "<\\/")
+
 SITE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "site")
 OUT_DIR = os.path.join(SITE, "locations")
 OUT_SITEMAP = os.path.join(SITE, "sitemap-locations.xml")
@@ -33,7 +38,7 @@ TODAY = datetime.date.today().isoformat()
 # Date the city pages' content last changed (sitemap lastmod). Bump on edits.
 CONTENT_DATE = "2026-10-13"
 CSS_V = "27"
-JS_V = "29"
+JS_V = "31"
 
 
 def esc(s):
@@ -295,7 +300,7 @@ CTAS = {
 
 
 def service_jsonld(c):
-    return json.dumps({
+    return ld_json({
         "@context": "https://schema.org",
         "@type": "Service",
         "name": f"Bad Credit Auto Financing {c['name']}",
@@ -307,14 +312,14 @@ def service_jsonld(c):
 
 
 def faq_jsonld(c):
-    return json.dumps({
+    return ld_json({
         "@context": "https://schema.org", "@type": "FAQPage",
         "mainEntity": [{"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in c["faq"]],
     }, ensure_ascii=False)
 
 
 def breadcrumb_jsonld(c):
-    return json.dumps({
+    return ld_json({
         "@context": "https://schema.org", "@type": "BreadcrumbList",
         "itemListElement": [
             {"@type": "ListItem", "position": 1, "name": "Home", "item": f"{BASE}/"},
@@ -384,7 +389,7 @@ LEAD = """  <section class="lead" id="lead">
         </div>
         <button type="submit" class="btn btn-primary lead-submit" id="leadSubmit">Get Started with Dan</button>
         <p class="lead-error" id="leadError" hidden></p>
-        <p class="lead-note">Your info stays private and is only used to contact you about your inquiry. Zero-pressure consultation: if we're not the right fit, we'll say so.</p>
+        <p class="lead-note">Your info stays private and is only used to contact you about your inquiry (we also log your IP address to stop spam). Zero-pressure consultation: if we're not the right fit, we'll say so.</p>
       </form>
     </div>
   </section>
@@ -625,13 +630,13 @@ def render_hub(cities):
         '          <span class="forum-card-cta">View %s financing →</span>\n'
         '        </div>\n      </a>' % (c["slug"], esc(c["name"]), esc(c["name"]), esc(c["name"]))
         for c in cities)
-    itemlist_ld = json.dumps({
+    itemlist_ld = ld_json({
         "@context": "https://schema.org", "@type": "ItemList",
         "itemListElement": [
             {"@type": "ListItem", "position": i + 1, "name": f"Car Financing {c['name']}", "url": f"{BASE}/locations/{c['slug']}/"}
             for i, c in enumerate(cities)],
     }, ensure_ascii=False)
-    breadcrumb_ld = json.dumps({
+    breadcrumb_ld = ld_json({
         "@context": "https://schema.org", "@type": "BreadcrumbList",
         "itemListElement": [
             {"@type": "ListItem", "position": 1, "name": "Home", "item": f"{BASE}/"},

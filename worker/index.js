@@ -456,14 +456,84 @@ ${facts ? `Key specs: ${facts}` : ''}`;
   }
 }
 
+
+// ─── Security helpers ───────────────────────────────────────────────────────
+// Constant-time token compare (bridge token).
+async function tokenOk(given, expected) {
+  if (!expected || typeof given !== 'string' || !given) return false;
+  const enc = new TextEncoder();
+  const [a, b] = await Promise.all([crypto.subtle.digest('SHA-256', enc.encode(given)), crypto.subtle.digest('SHA-256', enc.encode(expected))]);
+  if (crypto.subtle.timingSafeEqual) return crypto.subtle.timingSafeEqual(a, b);
+  const x = new Uint8Array(a), y = new Uint8Array(b); let d = 0;
+  for (let i = 0; i < x.length; i++) d |= x[i] ^ y[i];
+  return d === 0;
+}
+
+// Only these image types are stored or served; anything else is refused.
+const IMAGE_TYPES = { 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
+function imageType(ct) {
+  const t = String(ct || '').split(';')[0].trim().toLowerCase();
+  const ext = IMAGE_TYPES[t];
+  return ext ? { contentType: t === 'image/jpg' ? 'image/jpeg' : t, ext } : null;
+}
+
+// /api/image only fetches https images from the dealer feed and the stock-photo sources the admin uses.
+const PROXY_HOSTS = ['images.edealer.ca', 'edealer.ca', 'upload.wikimedia.org', 'live.staticflickr.com', 'farm1.staticflickr.com', 'farm2.staticflickr.com', 'farm3.staticflickr.com', 'farm4.staticflickr.com', 'farm5.staticflickr.com', 'farm6.staticflickr.com', 'farm7.staticflickr.com', 'farm8.staticflickr.com', 'farm9.staticflickr.com', 'api.openverse.org', 'api.openverse.engineering', 'dangm.ca'];
+const PROXY_MAX_BYTES = 15 * 1024 * 1024;
+function proxyTarget(raw) {
+  let u; try { u = new URL(String(raw || '')); } catch (e) { return null; }
+  if (u.protocol !== 'https:' || u.username || u.password || (u.port && u.port !== '443')) return null;
+  const h = u.hostname.toLowerCase();
+  return PROXY_HOSTS.some((a) => h === a || h.endsWith('.' + a)) ? u.toString() : null;
+}
+
+// https URL or null (for image fields edited in the admin).
+function httpsUrl(v) {
+  if (typeof v !== 'string') return null;
+  const s = v.trim();
+  if (!s || s.length > 2048) return null;
+  try { const u = new URL(s); return u.protocol === 'https:' ? u.toString() : null; } catch (e) { return null; }
+}
+
+// Admin truck edits: types checked so a bad value can't break the site or the page builders.
+function cleanTruckEdits(b) {
+  const v = {};
+  const str = (k, max) => { if (b[k] === undefined) return; if (b[k] === null) { v[k] = ''; return; } if (typeof b[k] !== 'string' && typeof b[k] !== 'number') throw `${k} must be text`; v[k] = String(b[k]).slice(0, max); };
+  const num = (k, lo, hi, int) => {
+    if (b[k] === undefined) return;
+    if (b[k] === null || b[k] === '') { v[k] = null; return; }
+    // stored as text, like the feed ("19995 CAD", "222100", "2017")
+    const raw = String(b[k]).trim().slice(0, 40);
+    const m = raw.replace(/[$,\s]/g, '').match(/^\d+(\.\d+)?/);
+    const n = m ? Number(m[0]) : NaN;
+    if (!Number.isFinite(n) || n < lo || n > hi || (k !== 'price' && !/^[\d,\s.]+$/.test(raw))) throw `${k} must be a number`;
+    v[k] = k === 'price' ? raw : String(int ? Math.round(n) : n);
+  };
+  try {
+    for (const k of ['listed', 'featured']) { if (b[k] !== undefined) { if (typeof b[k] !== 'boolean') throw `${k} must be true or false`; v[k] = b[k]; } }
+    num('price', 0, 10000000, false); num('mileage', 0, 2000000, true); num('year', 1900, 2100, true);
+    for (const k of ['make', 'model', 'trim', 'exteriorColor', 'interiorColor', 'transmission', 'drivetrain', 'fuelType', 'engine', 'bodyStyle']) str(k, 120);
+    for (const k of ['description', 'aiDescription']) str(k, 20000);
+    if (b.customImages !== undefined) {
+      if (b.customImages === null) v.customImages = [];
+      else {
+        if (!Array.isArray(b.customImages) || b.customImages.length > 100) throw 'customImages must be a list of up to 100 URLs';
+        v.customImages = b.customImages.map((u) => { const h = httpsUrl(u); if (!h) throw 'every image must be an https URL'; return h; });
+      }
+    }
+  } catch (e) { return { error: String(e) }; }
+  return { v };
+}
+
 // ─── Router ─────────────────────────────────────────────────────────────────
 export default {
   async fetch(request, env, ctx) {
     return handle(request, env, ctx).catch((e) =>
-      new Response(JSON.stringify({ error: 'Internal error: ' + (e && e.message ? e.message : String(e)) }), {
+      (console.error('unhandled:', e && e.stack ? e.stack : String(e)),
+      new Response(JSON.stringify({ error: 'Internal error' }), {
         status: 500,
         headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-      })
+      }))
     );
   },
 };
@@ -552,32 +622,40 @@ async function handle(request, env, ctx) {
       try {
         const obj = await env.IMAGES.getWithMetadata(key, 'arrayBuffer');
         if (!obj || !obj.value) return json({ error: 'Not found' }, 404);
-        const contentType = (obj.metadata && obj.metadata.contentType) || 'image/jpeg';
+        const stored = imageType((obj.metadata && obj.metadata.contentType) || 'image/jpeg');
+        const contentType = stored ? stored.contentType : 'application/octet-stream';
         return new Response(obj.value, {
           headers: {
             'Content-Type': contentType,
+            'X-Content-Type-Options': 'nosniff',
             'Access-Control-Allow-Origin': '*',
             'Cache-Control': 'public, max-age=31536000, immutable',
           },
         });
       } catch (e) {
-        return json({ error: 'KV error: ' + e.message }, 500);
+        console.error('kv read failed:', e && e.message); return json({ error: 'Could not load this image' }, 500);
       }
     }
 
     // PUBLIC: image proxy — lets the admin fetch dealer-hosted images that lack
     // CORS headers (needed for ZIP downloads + editing).
     if (path === '/api/image' && request.method === 'GET') {
-      const target = new URL(request.url).searchParams.get('url');
-      if (!target || !/^https?:\/\//i.test(target)) return json({ error: 'url param required' }, 400);
+      const target = proxyTarget(new URL(request.url).searchParams.get('url'));
+      if (!target) return json({ error: 'url must be an https image on an allowed host' }, 400);
       try {
-        const resp = await fetch(target, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        const resp = await fetch(target, { headers: { 'User-Agent': 'Mozilla/5.0' }, redirect: 'manual' });
         if (!resp.ok) return json({ error: 'image fetch failed: ' + resp.status }, 502);
-        const contentType = resp.headers.get('content-type') || 'image/jpeg';
+        const img = imageType(resp.headers.get('content-type') || '');
+        if (!img) return json({ error: 'not an image' }, 415);
+        const len = Number(resp.headers.get('content-length') || 0);
+        if (len > PROXY_MAX_BYTES) return json({ error: 'image too large' }, 413);
         const body = await resp.arrayBuffer();
+        if (body.byteLength > PROXY_MAX_BYTES) return json({ error: 'image too large' }, 413);
         return new Response(body, {
           headers: {
-            'Content-Type': contentType,
+            'Content-Type': img.contentType,
+            'X-Content-Type-Options': 'nosniff',
+            'Content-Security-Policy': "default-src 'none'",
             'Access-Control-Allow-Origin': '*',
             'Cache-Control': 'public, max-age=86400',
           },
@@ -632,13 +710,13 @@ async function handle(request, env, ctx) {
     // background-removal batch). Raw bytes in the body, token in the header.
     if (path === '/api/bridge/image' && request.method === 'POST') {
       const bridgeToken = request.headers.get('X-Bridge-Token') || '';
-      if (!env.BRIDGE_TOKEN || bridgeToken !== env.BRIDGE_TOKEN) {
+      if (!(await tokenOk(bridgeToken, env.BRIDGE_TOKEN))) {
         return json({ error: 'Forbidden — bad bridge token' }, 403);
       }
       try {
-        const contentType = request.headers.get('Content-Type') || 'image/png';
-        const m = contentType.match(/image\/(jpeg|png|webp|gif)/i);
-        const ext = m ? (m[1].toLowerCase() === 'jpeg' ? 'jpg' : m[1].toLowerCase()) : 'png';
+        const img = imageType(request.headers.get('Content-Type') || 'image/png');
+        if (!img) return json({ error: 'only jpeg, png, webp or gif' }, 415);
+        const { contentType, ext } = img;
         const key = `img-${crypto.randomUUID()}.${ext}`;
         const body = await request.arrayBuffer();
         if (!body.byteLength) return json({ error: 'empty body' }, 400);
@@ -647,7 +725,7 @@ async function handle(request, env, ctx) {
         const origin = new URL(request.url).origin;
         return json({ url: `${origin}/images/${key}` });
       } catch (e) {
-        return json({ error: 'Upload failed: ' + e.message }, 500);
+        console.error('upload failed:', e && e.message); return json({ error: 'Upload failed' }, 500);
       }
     }
 
@@ -655,7 +733,7 @@ async function handle(request, env, ctx) {
     // The public site already prefers customImages over feed images.
     if (/^\/api\/bridge\/images\/[^/]+$/.test(path) && request.method === 'POST') {
       const bridgeToken = request.headers.get('X-Bridge-Token') || '';
-      if (!env.BRIDGE_TOKEN || bridgeToken !== env.BRIDGE_TOKEN) {
+      if (!(await tokenOk(bridgeToken, env.BRIDGE_TOKEN))) {
         return json({ error: 'Forbidden — bad bridge token' }, 403);
       }
       const truckId = decodeURIComponent(path.split('/').pop());
@@ -674,7 +752,7 @@ async function handle(request, env, ctx) {
     // skip VIN-decoding / AI-description work it already did.
     if (path === '/api/bridge/state' && request.method === 'GET') {
       const bridgeToken = request.headers.get('X-Bridge-Token') || '';
-      if (!env.BRIDGE_TOKEN || bridgeToken !== env.BRIDGE_TOKEN) {
+      if (!(await tokenOk(bridgeToken, env.BRIDGE_TOKEN))) {
         return json({ error: 'Forbidden — bad bridge token' }, 403);
       }
       const all = await db.prepare('SELECT id, data FROM trucks').all();
@@ -689,7 +767,7 @@ async function handle(request, env, ctx) {
     // it uses its own shared-secret auth, not Google login)
     if (path === '/api/bridge/upload' && request.method === 'POST') {
       const bridgeToken = request.headers.get('X-Bridge-Token') || '';
-      if (!env.BRIDGE_TOKEN || bridgeToken !== env.BRIDGE_TOKEN) {
+      if (!(await tokenOk(bridgeToken, env.BRIDGE_TOKEN))) {
         return json({ error: 'Forbidden — bad bridge token' }, 403);
       }
       const body = await request.json().catch(() => ({}));
@@ -703,7 +781,7 @@ async function handle(request, env, ctx) {
     // sync job after each upload — capped so it ramps up gradually).
     if (path === '/api/bridge/describe' && request.method === 'POST') {
       const bridgeToken = request.headers.get('X-Bridge-Token') || '';
-      if (!env.BRIDGE_TOKEN || bridgeToken !== env.BRIDGE_TOKEN) {
+      if (!(await tokenOk(bridgeToken, env.BRIDGE_TOKEN))) {
         return json({ error: 'Forbidden — bad bridge token' }, 403);
       }
       const cap = parseInt((request.headers.get('X-Desc-Cap') || '10'), 10);
@@ -816,7 +894,7 @@ async function handle(request, env, ctx) {
         .bind(JSON.stringify(d), new Date().toISOString(), truckId).run();
       return json({ ok: true, url, index: idx });
     } catch (e) {
-      return json({ error: 'gemini-one failed: ' + e.message }, 500);
+      console.error('gemini-one failed:', e && e.message); return json({ error: 'Image cleanup failed' }, 500);
     }
   }
 
@@ -852,17 +930,18 @@ async function handle(request, env, ctx) {
     // store in customImages. Images go to KV because D1 rows cap at 2MB.
     if (path === '/api/admin/upload-image' && request.method === 'POST') {
       try {
-        const contentType = request.headers.get('Content-Type') || 'image/jpeg';
-        const m = contentType.match(/image\/(jpeg|png|webp|gif)/i);
-        const ext = m ? (m[1].toLowerCase() === 'jpeg' ? 'jpg' : m[1].toLowerCase()) : 'jpg';
+        const img = imageType(request.headers.get('Content-Type') || 'image/jpeg');
+        if (!img) return json({ error: 'only jpeg, png, webp or gif' }, 415);
+        const { contentType, ext } = img;
         const key = `img-${crypto.randomUUID()}.${ext}`;
         const body = await request.arrayBuffer();
         if (!body.byteLength) return json({ error: 'empty body' }, 400);
+        if (body.byteLength > 8 * 1024 * 1024) return json({ error: 'image too large (8MB cap)' }, 413);
         await env.IMAGES.put(key, body, { metadata: { contentType } });
         const origin = new URL(request.url).origin;
         return json({ url: `${origin}/images/${key}` });
       } catch (e) {
-        return json({ error: 'Upload failed: ' + e.message }, 500);
+        console.error('upload failed:', e && e.message); return json({ error: 'Upload failed' }, 500);
       }
     }
 
@@ -950,7 +1029,7 @@ async function handle(request, env, ctx) {
         results.sort((a, b) => (b.w * b.h) - (a.w * a.h));
         return json({ results: results.slice(0, 36) });
       } catch (e) {
-        return json({ error: 'stock search failed: ' + (e && e.message ? e.message : String(e)) }, 500);
+        console.error('stock search failed:', e && e.message); return json({ error: 'Stock search failed' }, 500);
       }
     }
 
@@ -963,8 +1042,10 @@ async function handle(request, env, ctx) {
       const truck = JSON.parse(existing.data);
       // Allow updating details + admin fields
       const editable = ['listed', 'featured', 'price', 'description', 'aiDescription', 'year', 'make', 'model', 'trim', 'mileage', 'exteriorColor', 'interiorColor', 'transmission', 'drivetrain', 'fuelType', 'engine', 'bodyStyle', 'customImages'];
+      const clean = cleanTruckEdits(body);
+      if (clean.error) return json({ error: clean.error }, 400);
       for (const k of editable) {
-        if (body[k] !== undefined) truck[k] = body[k];
+        if (clean.v[k] !== undefined) truck[k] = clean.v[k];
       }
       truck.updatedAt = new Date().toISOString();
       await db.prepare('UPDATE trucks SET data = ?, updated_at = ? WHERE id = ?')
@@ -978,15 +1059,17 @@ async function handle(request, env, ctx) {
       const body = await request.json().catch(() => ({}));
       const title = String(body.title || '').trim();
       if (!title) return json({ error: 'title required' }, 400);
+      const forumImage = body.image ? httpsUrl(body.image) : '';
+      if (forumImage === null) return json({ error: 'image must be an https URL' }, 400);
       const now = new Date().toISOString();
       const id = body.id || `post-${crypto.randomUUID()}`;
       const existing = await db.prepare('SELECT id FROM forum_posts WHERE id = ?').bind(id).first();
       if (existing) {
         await db.prepare('UPDATE forum_posts SET title = ?, body = ?, image = ?, updated_at = ? WHERE id = ?')
-          .bind(title, String(body.body || ''), String(body.image || ''), now, id).run();
+          .bind(title, String(body.body || ''), forumImage, now, id).run();
       } else {
         await db.prepare('INSERT INTO forum_posts (id, title, body, image, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
-          .bind(id, title, String(body.body || ''), String(body.image || ''), now, now).run();
+          .bind(id, title, String(body.body || ''), forumImage, now, now).run();
       }
       const row = await db.prepare('SELECT * FROM forum_posts WHERE id = ?').bind(id).first();
       return json({ ok: true, post: row });

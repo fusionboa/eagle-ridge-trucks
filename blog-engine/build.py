@@ -8,6 +8,11 @@ cards in site/blog/index.html between <!--POSTS:START--> markers.
 """
 import html, importlib.util, json, os, re, sys, datetime
 
+
+def ld_json(obj, **kw):
+    """json.dumps for <script type="application/ld+json">: "</" can't close the script tag."""
+    return json.dumps(obj, **kw).replace("</", "<\\/")
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE = os.path.join(ROOT, "site")
 POSTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "posts")
@@ -61,7 +66,7 @@ def render_post(p):
     # raster copy for Article/og:image (Google + link previews ignore SVG)
     img_png = img[:-4] + ".png" if img.endswith(".svg") else img
     url = f"{BASE}/blog/{slug}/"
-    article_ld = json.dumps({
+    article_ld = ld_json({
         "@context": "https://schema.org", "@type": "Article",
         "headline": h1, "description": desc, "image": img_png, "inLanguage": "en-CA",
         "datePublished": p.get("date", CONTENT_DATE), "dateModified": p.get("updated", p.get("date", CONTENT_DATE)),
@@ -69,11 +74,11 @@ def render_post(p):
         "author": {"@type": "Person", "@id": f"{BASE}/about#dan", "name": "Dan", "jobTitle": "Personal GM Consultant", "url": f"{BASE}/about", "worksFor": {"@id": f"{BASE}/#dealer"}},
         "publisher": {"@type": "Organization", "@id": f"{BASE}/#business", "name": "DanGM", "url": f"{BASE}/", "logo": {"@type": "ImageObject", "url": f"{BASE}/images/logo.png"}},
     }, ensure_ascii=False)
-    faq_ld = json.dumps({
+    faq_ld = ld_json({
         "@context": "https://schema.org", "@type": "FAQPage",
         "mainEntity": [{"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in p["faq"]],
     }, ensure_ascii=False)
-    bc_ld = json.dumps({
+    bc_ld = ld_json({
         "@context": "https://schema.org", "@type": "BreadcrumbList",
         "itemListElement": [
             {"@type": "ListItem", "position": 1, "name": "Home", "item": f"{BASE}/"},
@@ -191,7 +196,7 @@ def render_post(p):
     window.SITE_PAGE = 'landing';
     window.SITE_CONFIG = {{ apiBase: 'https://eagle-ridge-trucks.fblister.workers.dev/api' }};
   </script>
-  <script src="/js/main.js?v=30"></script>
+  <script src="/js/main.js?v=31"></script>
 </body>
 </html>
 '''

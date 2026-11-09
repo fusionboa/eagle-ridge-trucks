@@ -12,9 +12,9 @@ window.loadTrucks = loadTrucks;
 let allTrucks = [];
 let allBackups = [];
 let forumPosts = [];
-let authToken = localStorage.getItem('er_admin_token') || '';
-let devMode = localStorage.getItem('er_dev_mode') === 'true';
-const DEV_KEY = 'er-dev-2026-test';
+// The Google ID token lives in memory only (Firebase keeps the session); never in localStorage.
+let authToken = '';
+try { localStorage.removeItem('er_admin_token'); localStorage.removeItem('er_dev_mode'); } catch (e) {}
 let currentTab = 'listed';
 
 // ─── Auth (Firebase, same project as FB Lister) ────────────
@@ -29,13 +29,11 @@ function initAuth() {
   firebaseAuth.onAuthStateChanged(async (user) => {
     if (user) {
       authToken = await user.getIdToken();
-      localStorage.setItem('er_admin_token', authToken);
       showApp();
       // Auto-refresh token every 30 min (like FB Lister)
       setInterval(async () => {
         if (firebaseAuth.currentUser) {
           authToken = await firebaseAuth.currentUser.getIdToken(true);
-          localStorage.setItem('er_admin_token', authToken);
         }
       }, 30 * 60 * 1000);
     } else {
@@ -48,20 +46,7 @@ function initAuth() {
 function signOut() {
   if (firebaseAuth) firebaseAuth.signOut();
   authToken = '';
-  devMode = false;
-  localStorage.removeItem('er_admin_token');
-  localStorage.removeItem('er_dev_mode');
   location.reload();
-}
-
-// TEST MODE — skip Google login (worker must have DEV_MODE=true + DEV_KEY set)
-function enterDevMode() {
-  devMode = true;
-  localStorage.setItem('er_dev_mode', 'true');
-  authToken = DEV_KEY;
-  document.getElementById('loginGate').hidden = true;
-  document.getElementById('app').hidden = false;
-  loadTrucks();
 }
 
 // ─── App boot ───────────────────────────────────────────────
@@ -88,11 +73,8 @@ async function loadTrucks() {
   loadBackups();
 }
 
-// Headers for API calls — dev mode sends X-Dev-Key, real mode sends the Google token
+// Headers for API calls — the Google ID token
 function authHeaders(extra = {}) {
-  if (devMode) {
-    return { 'X-Dev-Key': authToken, ...extra };
-  }
   return { 'Authorization': `Bearer ${authToken}`, ...extra };
 }
 
@@ -141,11 +123,11 @@ function renderList() {
       return;
     }
     list.innerHTML = allBackups.map((t) => `
-      <div class="truck-row is-backup" data-id="${t.id}">
+      <div class="truck-row is-backup" data-id="${escapeHtml(t.id)}">
         <div class="truck-row-img">${truckImage(t)}</div>
         <div class="truck-row-info">
-          <div class="truck-row-title">${[t.year, t.make, t.model, t.trim].filter(Boolean).join(' ') || t.id}</div>
-          <div class="truck-row-sub">${t.id} · left the feed · backed up ${t.backedUpAt ? new Date(t.backedUpAt).toLocaleString() : ''}</div>
+          <div class="truck-row-title">${escapeHtml([t.year, t.make, t.model, t.trim].filter(Boolean).join(' ') || t.id)}</div>
+          <div class="truck-row-sub">${escapeHtml(t.id)} · left the feed · backed up ${t.backedUpAt ? new Date(t.backedUpAt).toLocaleString() : ''}</div>
         </div>
         <div class="truck-row-price">${formatPrice(t.price)}</div>
         <div class="truck-row-actions">
@@ -173,8 +155,8 @@ function renderList() {
       return;
     }
     list.innerHTML = forumPosts.map((p) => `
-      <div class="truck-row" data-id="${p.id}">
-        <div class="truck-row-img">${p.image ? `<img src="${p.image}" alt="">` : '<div class="img-placeholder">📝</div>'}</div>
+      <div class="truck-row" data-id="${escapeHtml(p.id)}">
+        <div class="truck-row-img">${safeImg(p.image) ? `<img src="${safeImg(p.image)}" alt="">` : '<div class="img-placeholder">📝</div>'}</div>
         <div class="truck-row-info">
           <div class="truck-row-title">${escapeHtml(p.title)}</div>
           <div class="truck-row-sub">${escapeHtml(String(p.body || '').slice(0, 140))}</div>
@@ -207,13 +189,13 @@ function renderList() {
   }
 
   list.innerHTML = filtered.map((t) => `
-    <div class="truck-row ${t.listed ? 'is-listed' : ''}" data-id="${t.id}">
+    <div class="truck-row ${t.listed ? 'is-listed' : ''}" data-id="${escapeHtml(t.id)}">
       <div class="truck-row-img">
         ${truckImage(t)}
       </div>
       <div class="truck-row-info">
-        <div class="truck-row-title">${[t.year, t.make, t.model, t.trim].filter(Boolean).join(' ') || t.id}</div>
-        <div class="truck-row-sub">${t.id} · ${t.mileage ? `${Number(t.mileage).toLocaleString()} km` : '—'} · ${t.exteriorColor || '—'}</div>
+        <div class="truck-row-title">${escapeHtml([t.year, t.make, t.model, t.trim].filter(Boolean).join(' ') || t.id)}</div>
+        <div class="truck-row-sub">${escapeHtml(t.id)} · ${t.mileage ? `${escapeHtml(Number(t.mileage).toLocaleString())} km` : '—'} · ${escapeHtml(t.exteriorColor || '—')}</div>
       </div>
       <div class="truck-row-price">${formatPrice(t.price)}</div>
       <div class="truck-row-actions">
@@ -234,8 +216,8 @@ function renderList() {
 
 function truckImage(t) {
   const img = (t.customImages && t.customImages[0]) || (t.images && t.images[0]);
-  if (!img) return '<div class="img-placeholder">📷</div>';
-  return `<img src="${img}" alt="">`;
+  if (!safeImg(img)) return '<div class="img-placeholder">📷</div>';
+  return `<img src="${safeImg(img)}" alt="">`;
 }
 
 // ─── Toggle listed ──────────────────────────────────────────
@@ -273,7 +255,7 @@ function openEditModal(id) {
     </label>`;
 
   body.innerHTML = `
-    <h2>Edit — ${[truck.year, truck.make, truck.model].filter(Boolean).join(' ') || truck.id}</h2>
+    <h2>Edit — ${escapeHtml([truck.year, truck.make, truck.model].filter(Boolean).join(' ') || truck.id)}</h2>
     <div class="edit-form">
       ${field('Year', 'year')}
       ${field('Make', 'make')}
@@ -324,12 +306,12 @@ function openImagesModal(id) {
   const title = [truck.year, truck.make, truck.model].filter(Boolean).join(' ') || truck.id;
 
   body.innerHTML = `
-    <h2>Images: ${title}</h2>
+    <h2>Images: ${escapeHtml(title)}</h2>
     <p class="hint">Download the originals, edit them (remove branding / enhance) in Gemini, then upload the edited versions back.</p>
     <div class="img-grid">
       ${imgs.map((im, i) => `
         <div class="img-cell">
-          <img src="${im}" alt="">
+          <img src="${safeImg(im)}" alt="">
           <span class="img-idx">#${i + 1}</span>
           ${i === 0
             ? '<span class="img-cover-badge" title="Cover photo">⭐ Cover</span>'
@@ -634,7 +616,7 @@ function openStockPicker(id, currentImgs) {
   const vehicle = [truck.year, truck.make, truck.model, truck.trim].filter(Boolean).join(' ');
 
   body.innerHTML = `
-    <h2>📷 Stock photos — ${vehicle || id}</h2>
+    <h2>📷 Stock photos — ${escapeHtml(vehicle || id)}</h2>
     <p class="hint">Free-licensed photos from Wikimedia Commons + Openverse (Flickr CC &amp; more) — no watermarks, no dealer banners. Commercial-safe licenses only (CC BY / BY-SA / CC0 / public domain). Attribution appreciated — add it to the listing description if you want to be extra safe.</p>
     <div class="edit-form">
       <label class="field field-full">
@@ -673,10 +655,10 @@ function openStockPicker(id, currentImgs) {
           ${data.results.map((r, i) => `
             <label class="stock-cell">
               <input type="checkbox" class="stock-pick" data-idx="${i}" style="width:auto">
-              <img src="${r.thumb}" alt="" loading="lazy">
+              <img src="${safeImg(r.thumb)}" alt="" loading="lazy">
               <div class="stock-meta">
                 <div class="stock-title">${escapeHtml(r.title.slice(0, 48))}</div>
-                <div class="stock-sub">${escapeHtml(r.source || '')} · ${r.w}×${r.h} · ${escapeHtml(r.license || 'see file page')}${r.artist ? ' · ' + escapeHtml(r.artist) : ''}</div>
+                <div class="stock-sub">${escapeHtml(r.source || '')} · ${Number(r.w) || 0}×${Number(r.h) || 0} · ${escapeHtml(r.license || 'see file page')}${r.artist ? ' · ' + escapeHtml(r.artist) : ''}</div>
               </div>
             </label>`).join('')}
         </div>
@@ -745,8 +727,14 @@ function formatPrice(p) {
   return n === null ? '—' : `$${n.toLocaleString()}`;
 }
 
+// Image URLs from the feed / stock search / KV: https (or an inline data image) only, escaped for an attribute.
+function safeImg(u) {
+  const s = String(u || '').trim();
+  return /^https:\/\//i.test(s) || /^data:image\/(png|jpe?g|webp|gif);/i.test(s) ? escapeHtml(s) : '';
+}
+
 function escapeHtml(s) {
-  return String(s || '').replace(/[&<>"']/g, (c) => ({
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c]));
 }
@@ -785,7 +773,7 @@ function openForumModal(post) {
       <label class="field field-full">
         <span>Image (optional)</span>
         <input type="file" id="forumImageInput" accept="image/*">
-        ${p.image ? `<div class="hint">Current image:</div><img src="${p.image}" style="max-height:80px;border-radius:6px;margin-top:8px">` : ''}
+        ${safeImg(p.image) ? `<div class="hint">Current image:</div><img src="${safeImg(p.image)}" style="max-height:80px;border-radius:6px;margin-top:8px">` : ''}
       </label>
     </div>
     <div class="modal-actions">
@@ -860,8 +848,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('signOutBtn').addEventListener('click', signOut);
 
-  // Test mode — skip Google login
-  document.getElementById('devModeBtn').addEventListener('click', enterDevMode);
   document.getElementById('syncNowBtn').addEventListener('click', async () => {
     alert('Sync requested — the bridge on the server pulls from FTP hourly. If you just changed the feed, it will update on the next sync.');
   });
@@ -884,8 +870,5 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
-  // 🔧 TEST MODE: boot straight into the admin (no Google login).
-  // Comment out enterDevMode() and uncomment initAuth() to go back to Google sign-in.
-  enterDevMode();
-  // initAuth();
+  initAuth();
 });
